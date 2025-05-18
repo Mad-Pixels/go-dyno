@@ -5,7 +5,7 @@ import (
 	"strings"
 	"text/template"
 
-	godyno "github.com/Mad-Pixels/go-dyno"
+	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -22,13 +22,13 @@ func Command() *cli.Command {
 		"Join": strings.Join,
 	}).Parse(usageTemplate)
 	if err != nil {
-		godyno.Logger.Fatal(err)
+		logger.Log.Fatal(err)
 	}
 
 	var bText bytes.Buffer
 	err = tmpl.Execute(&bText, tmplUsage{})
 	if err != nil {
-		godyno.Logger.Fatal(err)
+		logger.Log.Fatal(err)
 	}
 
 	return &cli.Command{
