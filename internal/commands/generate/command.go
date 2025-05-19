@@ -12,6 +12,8 @@ import (
 var (
 	name  = "gen"
 	usage = "generate static golang code from config"
+
+	flagCfg = "cfg"
 )
 
 type tmplUsage struct {
