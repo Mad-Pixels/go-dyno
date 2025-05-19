@@ -1,6 +1,6 @@
 package godyno
 
-const (
+var (
 	Name      = "godyno"
 	Version   = "0.0.1"
 	Usage     = "generate dynamoDB objects"
