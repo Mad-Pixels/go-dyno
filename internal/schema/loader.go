@@ -5,12 +5,10 @@ import (
 )
 
 func LoadSchema(path string) (*DynamoSchema, error) {
-	var schema dynamoSchema
+	var schema DynamoSchema
 
 	if err := utils.ReadAndParseJsonFile(path, &schema); err != nil {
 		return nil, err
 	}
-	return &DynamoSchema{
-		schema: schema,
-	}, nil
+	return &schema, nil
 }

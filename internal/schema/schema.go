@@ -1,10 +1,13 @@
 package schema
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 )
 
-type dynamoSchema struct {
+type DynamoSchema struct {
 	TableName        string            `json:"table_name"`
 	HashKey          string            `json:"hash_key"`
 	RangeKey         string            `json:"range_key"`
@@ -13,12 +16,12 @@ type dynamoSchema struct {
 	SecondaryIndexes []SecondaryIndex  `json:"secondary_indexes"`
 }
 
-type DynamoSchema struct {
-	schema dynamoSchema
+func (ds DynamoSchema) PackageName() string {
+	return strings.ToLower(utils.ToSafeName(ds.TableName))
 }
 
-func (ds DynamoSchema) TableName() string {
-	return utils.ToUpperCamelCase(ds.schema.TableName)
+func (ds DynamoSchema) packageDir(root string) string {
+	return filepath.Join(root, ds.PackageName())
 }
 
 type CompositeKeyPart struct {

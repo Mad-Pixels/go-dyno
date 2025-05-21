@@ -20,16 +20,15 @@ func ToSafeName(s string) string {
 
 	switch {
 	case s == "":
-		return "_empty"
+		return "x"
 	case unicode.IsDigit(rune(s[0])):
-		s = "_" + s
+		s = "x" + s
 	}
 
 	if reservedWords[strings.ToLower(s)] {
-		s = s + "_"
+		s = s + "x"
 	}
 	return s
-
 }
 
 func ToGolangBaseType(dynamoType string) string {
