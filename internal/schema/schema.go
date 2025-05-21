@@ -20,7 +20,7 @@ func (ds DynamoSchema) PackageName() string {
 	return strings.ToLower(utils.ToSafeName(ds.TableName))
 }
 
-func (ds DynamoSchema) packageDir(root string) string {
+func (ds DynamoSchema) PackageDir(root string) string {
 	return filepath.Join(root, ds.PackageName())
 }
 
