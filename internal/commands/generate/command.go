@@ -1,11 +1,8 @@
 package generate
 
 import (
-	"bytes"
-	"strings"
-	"text/template"
+	"github.com/Mad-Pixels/go-dyno/internal/utils"
 
-	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -21,23 +18,11 @@ type tmplUsage struct {
 }
 
 func Command() *cli.Command {
-	tmpl, err := template.New("usage").Funcs(template.FuncMap{
-		"Join": strings.Join,
-	}).Parse(usageTemplate)
-	if err != nil {
-		logger.Log.Error().Err(err).Msg("command")
-	}
-
-	var bText bytes.Buffer
-	err = tmpl.Execute(&bText, tmplUsage{})
-	if err != nil {
-		logger.Log.Error().Err(err).Msg("command")
-	}
 
 	return &cli.Command{
 		Name:      name,
 		Usage:     usage,
-		UsageText: bText.String(),
+		UsageText: utils.MustParseTemplateToString(usageTemplate, tmplUsage{}),
 		Action:    action,
 		Flags:     flags(),
 	}
