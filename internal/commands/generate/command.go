@@ -18,11 +18,15 @@ type tmplUsage struct {
 }
 
 func Command() *cli.Command {
+	usageText := utils.MustParseTemplateToString(
+		usageTemplate,
+		tmplUsage{},
+	)
 
 	return &cli.Command{
 		Name:      name,
 		Usage:     usage,
-		UsageText: utils.MustParseTemplateToString(usageTemplate, tmplUsage{}),
+		UsageText: usageText,
 		Action:    action,
 		Flags:     flags(),
 	}
