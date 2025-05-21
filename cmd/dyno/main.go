@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	logger.Init()
 	app := &cli.App{
 		Name:    godyno.Name,
 		Usage:   godyno.Usage,
@@ -21,7 +22,9 @@ func main() {
 		},
 	}
 
+	logger.Log.Info().Msg("ASDAD")
+
 	if err := app.Run(os.Args); err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Error().Err(err).Msg("shit")
 	}
 }

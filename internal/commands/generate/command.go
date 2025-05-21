@@ -25,13 +25,13 @@ func Command() *cli.Command {
 		"Join": strings.Join,
 	}).Parse(usageTemplate)
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Error().Err(err).Msg("command")
 	}
 
 	var bText bytes.Buffer
 	err = tmpl.Execute(&bText, tmplUsage{})
 	if err != nil {
-		logger.Log.Fatal(err)
+		logger.Log.Error().Err(err).Msg("command")
 	}
 
 	return &cli.Command{
