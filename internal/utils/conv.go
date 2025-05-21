@@ -1,61 +1,21 @@
-package tmpl
+package utils
 
 import (
-	"bytes"
-	"os"
 	"regexp"
 	"strings"
-	"text/template"
 	"unicode"
-
-	"github.com/Mad-Pixels/go-dyno/internal/logger"
-	"github.com/Mad-Pixels/go-dyno/internal/schema"
-
-	"github.com/rs/zerolog"
 )
 
-func MustParseTemplate(b *bytes.Buffer, tmpl string, vars any) {
-	t, err := template.New("tmpl").Funcs(
-		template.FuncMap{
-			"Join":             strings.Join,
-			"ToUpperCamelCase": fmToUpperCamelCase,
-			"ToLowerCamelCase": fmToLowerCamelCase,
-			"ToSafeName":       fmToSafeName,
-			"ToGolangBaseType": fmToGolangBaseType,
-			"ToGolangZeroType": fmToGolangZeroType,
-			"ToGolangAttrType": fmToGolangAttrType,
-		},
-	).
-		Parse(tmpl)
-
-	if err != nil {
-		logger.NewFailure("internal: failed to create template", err).
-			Log(zerolog.FatalLevel)
-		os.Exit(1)
-	}
-	if err = t.Execute(b, vars); err != nil {
-		logger.NewFailure("internal: failed to write template data", err).
-			Log(zerolog.FatalLevel)
-		os.Exit(1)
-	}
-}
-
-func MustParseTemplateToString(tmpl string, vars any) string {
-	var b bytes.Buffer
-	MustParseTemplate(&b, tmpl, vars)
-	return b.String()
-}
-
-func fmToUpperCamelCase(s string) string {
+func ToUpperCamelCase(s string) string {
 	return toCamelCase(s)
 }
 
-func fmToLowerCamelCase(s string) string {
+func ToLowerCamelCase(s string) string {
 	res := toCamelCase(s)
 	return strings.ToLower(res[:1]) + res[1:]
 }
 
-func fmToSafeName(s string) string {
+func ToSafeName(s string) string {
 	s = unsupportedSymbols.ReplaceAllString(s, "_")
 
 	switch {
@@ -72,7 +32,7 @@ func fmToSafeName(s string) string {
 
 }
 
-func fmToGolangBaseType(dynamoType string) string {
+func ToGolangBaseType(dynamoType string) string {
 	switch dynamoType {
 	case "S":
 		return "string"
@@ -85,7 +45,7 @@ func fmToGolangBaseType(dynamoType string) string {
 	}
 }
 
-func fmToGolangZeroType(dynamoType string) string {
+func ToGolangZeroType(dynamoType string) string {
 	switch dynamoType {
 	case "S":
 		return `""`
@@ -98,10 +58,10 @@ func fmToGolangZeroType(dynamoType string) string {
 	}
 }
 
-func fmToGolangAttrType(attrName string, attributes []schema.Attribute) string {
+func ToGolangAttrType(attrName string, attributes []Attribute) string {
 	for _, attr := range attributes {
 		if attr.Name == attrName {
-			return fmToGolangBaseType(attr.Type)
+			return ToGolangBaseType(attr.Type)
 		}
 	}
 	return "any"

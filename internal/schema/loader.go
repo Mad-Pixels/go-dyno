@@ -1,14 +1,16 @@
 package schema
 
 import (
-	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
+	"github.com/Mad-Pixels/go-dyno/internal/utils"
 )
 
 func LoadSchema(path string) (*DynamoSchema, error) {
-	var s DynamoSchema
+	var schema dynamoSchema
 
-	if err := fs.ReadAndParseJsonFile(path, &s); err != nil {
+	if err := utils.ReadAndParseJsonFile(path, &schema); err != nil {
 		return nil, err
 	}
-	return &s, nil
+	return &DynamoSchema{
+		schema: schema,
+	}, nil
 }

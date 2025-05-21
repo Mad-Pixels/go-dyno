@@ -1,7 +1,7 @@
 package generate
 
 import (
-	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
+	"github.com/Mad-Pixels/go-dyno/internal/utils"
 
 	"github.com/urfave/cli/v2"
 )
@@ -11,10 +11,10 @@ func action(ctx *cli.Context) (err error) {
 		cfgFl  = getFlagCfgValue(ctx)
 		destFl = getFlagDestValue(ctx)
 	)
-	if err = fs.IsFileOrError(cfgFl); err != nil {
+	if err = utils.IsFileOrError(cfgFl); err != nil {
 		return err
 	}
-	if err = fs.IsDirOrCreate(destFl); err != nil {
+	if err = utils.IsDirOrCreate(destFl); err != nil {
 		return err
 	}
 

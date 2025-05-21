@@ -1,17 +1,24 @@
 package schema
 
-type DynamoSchema struct {
-	TableName        string           `json:"table_name"`
-	HashKey          string           `json:"hash_key"`
-	RangeKey         string           `json:"range_key"`
-	Attributes       []Attribute      `json:"attributes"`
-	CommonAttributes []Attribute      `json:"common_attributes"`
-	SecondaryIndexes []SecondaryIndex `json:"secondary_indexes"`
+import (
+	"github.com/Mad-Pixels/go-dyno/internal/utils"
+)
+
+type dynamoSchema struct {
+	TableName        string            `json:"table_name"`
+	HashKey          string            `json:"hash_key"`
+	RangeKey         string            `json:"range_key"`
+	Attributes       []utils.Attribute `json:"attributes"`
+	CommonAttributes []utils.Attribute `json:"common_attributes"`
+	SecondaryIndexes []SecondaryIndex  `json:"secondary_indexes"`
 }
 
-type Attribute struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+type DynamoSchema struct {
+	schema dynamoSchema
+}
+
+func (ds DynamoSchema) TableName() string {
+	return utils.ToUpperCamelCase(ds.schema.TableName)
 }
 
 type CompositeKeyPart struct {
