@@ -1,13 +1,13 @@
 package utils
 
 import (
-	"regexp"
 	"strings"
 	"unicode"
 )
 
 func ToUpperCamelCase(s string) string {
-	return ToSafeName(toCamelCase(s))
+	res := ToSafeName(toCamelCase(s))
+	return strings.ToUpper(res[:1]) + res[1:]
 }
 
 func ToLowerCamelCase(s string) string {
@@ -15,20 +15,43 @@ func ToLowerCamelCase(s string) string {
 	return strings.ToLower(res[:1]) + res[1:]
 }
 
+func ToLowerInlineCase(s string) string {
+	res := strings.ReplaceAll(ToSafeName(s), "_", "")
+	return strings.ToLower(res)
+}
+
+func ToUpperinlineCase(s string) string {
+	res := strings.ReplaceAll(ToSafeName(s), "_", "")
+	return strings.ToUpper(res)
+}
+
 func ToSafeName(s string) string {
-	s = unsupportedSymbols.ReplaceAllString(s, "_")
+	s = strings.TrimFunc(s, func(r rune) bool {
+		return !((r >= 'A' && r <= 'Z') ||
+			(r >= 'a' && r <= 'z') ||
+			(r >= '0' && r <= '9'))
+	})
 
-	switch {
-	case s == "":
-		return "x"
-	case unicode.IsDigit(rune(s[0])):
-		s = "x" + s
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case (r >= 'A' && r <= 'Z') ||
+			(r >= 'a' && r <= 'z') ||
+			(r >= '0' && r <= '9'):
+			b.WriteRune(r)
+		case r == '-' || r == '_':
+			b.WriteRune('_')
+		}
 	}
 
-	if reservedWords[strings.ToLower(s)] {
-		s = s + "x"
+	result := b.String()
+	if result == "" {
+		result = "xxx"
 	}
-	return s
+	if unicode.IsDigit(rune(result[0])) {
+		result = "x" + result
+	}
+	return result
 }
 
 func ToGolangBaseType(dynamoType string) string {
@@ -65,10 +88,6 @@ func ToGolangAttrType(attrName string, attributes []Attribute) string {
 	}
 	return "any"
 }
-
-var (
-	unsupportedSymbols = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-)
 
 var reservedWords = map[string]bool{
 	"break":       true,

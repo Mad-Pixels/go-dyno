@@ -18,17 +18,36 @@ type DynamoSchema struct {
 }
 
 func (ds DynamoSchema) TableName() string {
-	return ""
+	return utils.ToUpperCamelCase(ds.schema.TableName)
 }
 
-//
-// func (ds DynamoSchema) PackageName() string {
-// 	return strings.ToLower(utils.ToSafeName(ds.TableName))
-// }
-//
-// func (ds DynamoSchema) PackageDir(root string) string {
-// 	return filepath.Join(root, ds.PackageName())
-// }
+func (ds DynamoSchema) HashKey() string {
+	return ds.schema.HashKey
+}
+
+func (ds DynamoSchema) RangeKey() string {
+	return ds.schema.RangeKey
+}
+
+func (ds DynamoSchema) PackageName() string {
+	return utils.ToLowerInlineCase(ds.schema.TableName)
+}
+
+func (ds DynamoSchema) Dictionary() string {
+	return utils.ToSafeName(ds.schema.TableName)
+}
+
+func (ds DynamoSchema) Attributes() []utils.Attribute {
+	return ds.schema.Attributes
+}
+
+func (ds DynamoSchema) CommonAttributes() []utils.Attribute {
+	return ds.schema.CommonAttributes
+}
+
+func (ds DynamoSchema) SecondaryIndexes() []SecondaryIndex {
+	return ds.schema.SecondaryIndexes
+}
 
 type CompositeKeyPart struct {
 	IsConstant bool

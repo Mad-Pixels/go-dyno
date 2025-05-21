@@ -1,6 +1,8 @@
 package generate
 
 import (
+	"path/filepath"
+
 	"github.com/Mad-Pixels/go-dyno/internal/schema"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 
@@ -21,7 +23,7 @@ func action(ctx *cli.Context) (err error) {
 		return err
 	}
 	if err = utils.IsDirOrCreate(
-		dynamoSchema.PackageDir(destFl),
+		filepath.Join(destFl, dynamoSchema.Dictionary()),
 	); err != nil {
 		return err
 	}
