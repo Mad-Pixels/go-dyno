@@ -7,11 +7,11 @@ import (
 )
 
 func ToUpperCamelCase(s string) string {
-	return toCamelCase(s)
+	return ToSafeName(toCamelCase(s))
 }
 
 func ToLowerCamelCase(s string) string {
-	res := toCamelCase(s)
+	res := ToSafeName(toCamelCase(s))
 	return strings.ToLower(res[:1]) + res[1:]
 }
 
@@ -109,7 +109,7 @@ func toCamelCase(s string) string {
 		capNext = true
 	)
 
-	for _, r := range s {
+	for _, r := range strings.ToLower(s) {
 		switch {
 		case r == '_' || r == '-':
 			capNext = true
