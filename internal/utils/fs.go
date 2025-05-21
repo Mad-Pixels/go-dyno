@@ -1,20 +1,24 @@
 package utils
 
 import (
-	"fmt"
 	"os"
+
+	"github.com/Mad-Pixels/go-dyno/internal/logger"
 )
 
 func IsFileOrError(path string) error {
 	exist, isDir, err := statPath(path)
 	if err != nil {
-		return err
+		return logger.NewFailure("failed to stat path", err).
+			With("path", path)
 	}
 	if !exist {
-		return fmt.Errorf("ERROR: file '%s' doesn't exist", path)
+		return logger.NewFailure("file doesn't exist", nil).
+			With("path", path)
 	}
 	if isDir {
-		return fmt.Errorf("ERROR: '%s' is not a file", path)
+		return logger.NewFailure("path is not a file", nil).
+			With("path", path)
 	}
 	return nil
 }
@@ -22,16 +26,18 @@ func IsFileOrError(path string) error {
 func IsDirOrCreate(path string) error {
 	exist, isDir, err := statPath(path)
 	if err != nil {
-		return err
+		return logger.NewFailure("failed to stat path", err).
+			With("path", path)
 	}
 	if exist && !isDir {
-		return fmt.Errorf("ERROR: '%s' already exist and it's not a directory", path)
+		return logger.NewFailure("path already exist and it's not a directory", nil).
+			With("path", path)
 	}
 	if exist {
 		return nil
 	}
 	if err := os.MkdirAll(path, 0755); err != nil {
-		return fmt.Errorf("ERROR: failed to create '%s' directory, %w", path, err)
+		return logger.NewFailure("failed to create a dictionary", err).With("path", path)
 	}
 	return nil
 }
