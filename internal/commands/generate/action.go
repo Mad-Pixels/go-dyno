@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"github.com/Mad-Pixels/go-dyno/internal/schema"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 
 	"github.com/urfave/cli/v2"
@@ -11,10 +12,17 @@ func action(ctx *cli.Context) (err error) {
 		cfgFl  = getFlagCfgValue(ctx)
 		destFl = getFlagDestValue(ctx)
 	)
+
 	if err = utils.IsFileOrError(cfgFl); err != nil {
 		return err
 	}
-	if err = utils.IsDirOrCreate(destFl); err != nil {
+	dynamoSchema, err := schema.LoadSchema(cfgFl)
+	if err != nil {
+		return err
+	}
+	if err = utils.IsDirOrCreate(
+		dynamoSchema.PackageDir(destFl),
+	); err != nil {
 		return err
 	}
 
@@ -22,26 +30,6 @@ func action(ctx *cli.Context) (err error) {
 }
 
 // func processSchemaFile(jsonPath, rootDir string) {
-// 	jsonFile, err := os.ReadFile(jsonPath)
-// 	if err != nil {
-// 		fmt.Printf("Failed to read json %s: %v\n", jsonPath, err)
-// 		return
-// 	}
-//
-// 	var schema DynamoSchema
-// 	err = json.Unmarshal(jsonFile, &schema)
-// 	if err != nil {
-// 		fmt.Printf("Failed to parse json %s: %v\n", jsonPath, err)
-// 		return
-// 	}
-//
-// 	packageName := strings.ReplaceAll(schema.TableName, "-", "")
-// 	packageDir := filepath.Join(rootDir, "gen", packageName)
-//
-// 	if err = os.MkdirAll(packageDir, os.ModePerm); err != nil {
-// 		fmt.Printf("Failed to create directory %s: %v\n", packageDir, err)
-// 		return
-// 	}
 // 	outputPath := filepath.Join(packageDir, packageName+".go")
 //
 // 	funcMap := template.FuncMap{
