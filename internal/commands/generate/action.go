@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 
 	"github.com/urfave/cli/v2"
