@@ -48,16 +48,20 @@ const (
 	jsonTag = "`json:\"S\"`"
 )
 
-func action(ctx *cli.Context) error {
+func action(ctx *cli.Context) (err error) {
 	var (
-		cfgFl = getFlagCfgValue(ctx)
+		cfgFl  = getFlagCfgValue(ctx)
+		destFl = getFlagDestValue(ctx)
 	)
 
-	if err := utils.IsFileOrError(cfgFl); err != nil {
+	if err = utils.IsFileOrError(cfgFl); err != nil {
+		return err
+	}
+	if err = utils.IsDirOrCreate(destFl); err != nil {
 		return err
 	}
 
-	processSchemaFile(cfgFl, "/tmp")
+	processSchemaFile(cfgFl, destFl)
 	return nil
 }
 

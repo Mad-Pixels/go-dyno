@@ -13,7 +13,8 @@ var (
 	name  = "gen"
 	usage = "generate static golang code from config"
 
-	flagCfg = "cfg"
+	flagCfg  = "cfg"
+	flagDest = "dest"
 )
 
 type tmplUsage struct {
