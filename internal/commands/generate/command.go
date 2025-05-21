@@ -1,7 +1,7 @@
 package generate
 
 import (
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/tmpl"
 
 	cli "github.com/urfave/cli/v2"
 )
@@ -18,7 +18,7 @@ type tmplUsage struct {
 }
 
 func Command() *cli.Command {
-	usageText := utils.MustParseTemplateToString(
+	usageText := tmpl.MustParseTemplateToString(
 		usageTemplate,
 		tmplUsage{},
 	)

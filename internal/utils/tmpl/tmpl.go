@@ -1,4 +1,4 @@
-package utils
+package tmpl
 
 import (
 	"bytes"
@@ -27,12 +27,12 @@ func MustParseTemplate(b *bytes.Buffer, tmpl string, vars any) {
 		},
 	).
 		Parse(tmpl)
+
 	if err != nil {
 		logger.NewFailure("internal: failed to create template", err).
 			Log(zerolog.FatalLevel)
 		os.Exit(1)
 	}
-
 	if err = t.Execute(b, vars); err != nil {
 		logger.NewFailure("internal: failed to write template data", err).
 			Log(zerolog.FatalLevel)

@@ -1,10 +1,33 @@
-package utils
+package fs
 
 import (
+	"encoding/json"
 	"os"
 
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 )
+
+func ReadFile(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, logger.NewFailure("failed read content from file", err).
+			With("path", path)
+	}
+	return data, nil
+}
+
+func ReadAndParseJsonFile(path string, obj any) error {
+	b, err := ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(b, obj); err != nil {
+		return logger.NewFailure("failed to parse JSON", err).
+			With("path", path)
+	}
+	return nil
+}
 
 func IsFileOrError(path string) error {
 	exist, isDir, err := statPath(path)

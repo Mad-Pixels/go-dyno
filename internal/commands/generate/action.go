@@ -1,7 +1,7 @@
 package generate
 
 import (
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
 
 	"github.com/urfave/cli/v2"
 )
@@ -11,65 +11,15 @@ func action(ctx *cli.Context) (err error) {
 		cfgFl  = getFlagCfgValue(ctx)
 		destFl = getFlagDestValue(ctx)
 	)
-	if err = utils.IsFileOrError(cfgFl); err != nil {
+	if err = fs.IsFileOrError(cfgFl); err != nil {
 		return err
 	}
-	if err = utils.IsDirOrCreate(destFl); err != nil {
+	if err = fs.IsDirOrCreate(destFl); err != nil {
 		return err
 	}
 
 	return nil
 }
-
-// type DynamoSchema struct {
-// 	TableName        string           `json:"table_name"`
-// 	HashKey          string           `json:"hash_key"`
-// 	RangeKey         string           `json:"range_key"`
-// 	Attributes       []Attribute      `json:"attributes"`
-// 	CommonAttributes []Attribute      `json:"common_attributes"`
-// 	SecondaryIndexes []SecondaryIndex `json:"secondary_indexes"`
-// }
-
-// type Attribute struct {
-// 	Name string `json:"name"`
-// 	Type string `json:"type"`
-// }
-
-// type CompositeKeyPart struct {
-// 	IsConstant bool
-// 	Value      string
-// }
-
-// type SecondaryIndex struct {
-// 	Name             string `json:"name"`
-// 	HashKey          string `json:"hash_key"`
-// 	HashKeyParts     []CompositeKeyPart
-// 	RangeKey         string `json:"range_key"`
-// 	RangeKeyParts    []CompositeKeyPart
-// 	ProjectionType   string   `json:"projection_type"`
-// 	NonKeyAttributes []string `json:"non_key_attributes"`
-// }
-
-// const (
-// 	jsonTag = "`json:\"S\"`"
-// )
-
-// func action(ctx *cli.Context) (err error) {
-// 	var (
-// 		cfgFl  = getFlagCfgValue(ctx)
-// 		destFl = getFlagDestValue(ctx)
-// 	)
-//
-// 	if err = utils.IsFileOrError(cfgFl); err != nil {
-// 		return err
-// 	}
-// 	if err = utils.IsDirOrCreate(destFl); err != nil {
-// 		return err
-// 	}
-//
-// 	// processSchemaFile(cfgFl, destFl)
-// 	return nil
-// }
 
 // func processSchemaFile(jsonPath, rootDir string) {
 // 	jsonFile, err := os.ReadFile(jsonPath)
@@ -168,100 +118,3 @@ func action(ctx *cli.Context) (err error) {
 // 	return false
 // }
 //
-// func toCamelCase(s string) string {
-// 	var result string
-// 	capitalizeNext := true
-// 	for _, r := range s {
-// 		if r == '_' || r == '-' {
-// 			capitalizeNext = true
-// 		} else if capitalizeNext {
-// 			result += string(unicode.ToUpper(r))
-// 			capitalizeNext = false
-// 		} else {
-// 			result += string(r)
-// 		}
-// 	}
-// 	return result
-// }
-//
-// func toLowerCamelCase(s string) string {
-// 	if s == "" {
-// 		return ""
-// 	}
-// 	s = toCamelCase(s)
-// 	return strings.ToLower(s[:1]) + s[1:]
-// }
-//
-// var reservedWords = map[string]bool{
-// 	// List of Go reserved words
-// 	"break":       true,
-// 	"default":     true,
-// 	"func":        true,
-// 	"interface":   true,
-// 	"select":      true,
-// 	"case":        true,
-// 	"defer":       true,
-// 	"go":          true,
-// 	"map":         true,
-// 	"struct":      true,
-// 	"chan":        true,
-// 	"else":        true,
-// 	"goto":        true,
-// 	"package":     true,
-// 	"switch":      true,
-// 	"const":       true,
-// 	"fallthrough": true,
-// 	"if":          true,
-// 	"range":       true,
-// 	"type":        true,
-// 	"continue":    true,
-// 	"for":         true,
-// 	"import":      true,
-// 	"return":      true,
-// 	"var":         true,
-// }
-//
-// func safeName(s string) string {
-// 	// Сначала заменяем # на _
-// 	s = strings.ReplaceAll(s, "#", "_")
-//
-// 	if reservedWords[s] {
-// 		return s + "_"
-// 	}
-// 	return s
-// }
-//
-// func typeGo(dynamoType string) string {
-// 	switch dynamoType {
-// 	case "S":
-// 		return "string"
-// 	case "N":
-// 		return "int"
-// 	case "B":
-// 		return "bool"
-// 	default:
-// 		return "interface{}"
-// 	}
-// }
-//
-// func typeZero(dynamoType string) string {
-// 	switch dynamoType {
-// 	case "S":
-// 		return `""`
-// 	case "N":
-// 		return "0"
-// 	case "B":
-// 		return "false"
-// 	default:
-// 		return "nil"
-// 	}
-// }
-//
-// func typeGoAttr(attrName string, attributes []Attribute) string {
-// 	for _, attr := range attributes {
-// 		if attr.Name == attrName {
-// 			return typeGo(attr.Type)
-// 		}
-// 	}
-// 	return "interface{}"
-// }
