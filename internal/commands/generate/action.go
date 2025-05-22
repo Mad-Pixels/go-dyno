@@ -23,7 +23,7 @@ func action(ctx *cli.Context) (err error) {
 		return err
 	}
 	if err = utils.IsDirOrCreate(
-		filepath.Join(destFl, dynamoSchema.Dictionary()),
+		filepath.Join(destFl, dynamoSchema.Directory()),
 	); err != nil {
 		return err
 	}

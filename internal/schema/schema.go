@@ -33,8 +33,12 @@ func (ds DynamoSchema) PackageName() string {
 	return utils.ToLowerInlineCase(ds.schema.TableName)
 }
 
-func (ds DynamoSchema) Dictionary() string {
+func (ds DynamoSchema) Directory() string {
 	return utils.ToSafeName(ds.schema.TableName)
+}
+
+func (ds DynamoSchema) Filename() string {
+	return utils.ToSafeName(ds.schema.TableName) + ".go"
 }
 
 func (ds DynamoSchema) Attributes() []utils.Attribute {
