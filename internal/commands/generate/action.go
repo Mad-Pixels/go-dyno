@@ -44,7 +44,7 @@ func process(dynamoSchema *schema.DynamoSchema, p string) error {
 		RangeKey:         dynamoSchema.RangeKey(),
 		Attributes:       dynamoSchema.Attributes(),
 		CommonAttributes: dynamoSchema.CommonAttributes(),
-		AllAtributes:     dynamoSchema.AllAtributes(),
+		AllAttributes:    dynamoSchema.AllAttributes(),
 		SecondaryIndexes: dynamoSchema.SecondaryIndexes(),
 	}
 

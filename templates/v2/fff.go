@@ -30,7 +30,7 @@ const (
 
 const (
     {{range .AllAttributes}}
-    Column{{SafeName .Name | ToCamelCase}} = "{{.Name}}"
+    Column{{ToSafeName .Name | ToUpperCamelCase}} = "{{.Name}}"
     {{- end}}
 )
 
@@ -91,7 +91,7 @@ type SecondaryIndex struct {
 // SchemaItem represents an item in "{{.TableName}}"
 type SchemaItem struct {
     {{range .AllAttributes}}
-    {{SafeName .Name | ToCamelCase}} {{TypeGo .Type}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
+    {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .Type}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
     {{end}}
 }
 
@@ -149,9 +149,9 @@ func NewQueryBuilder() *QueryBuilder {
 }
 
 {{range .AllAttributes}}
-func (qb *QueryBuilder) With{{SafeName .Name | ToCamelCase}}({{SafeName .Name | ToLowerCamelCase}} {{TypeGo .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .Type}}) *QueryBuilder {
     attrName := "{{.Name}}"
-    qb.Attributes[attrName] = {{SafeName .Name | ToLowerCamelCase}}
+    qb.Attributes[attrName] = {{ToSafeName .Name | ToLowerCamelCase}}
     qb.UsedKeys[attrName] = true
     return qb
 }
@@ -162,8 +162,8 @@ func (qb *QueryBuilder) With{{SafeName .Name | ToCamelCase}}({{SafeName .Name | 
 {{ $methodParams := "" }}
 {{ range $index, $part := .HashKeyParts }}
     {{ if not $part.IsConstant }}
-        {{ $paramName := (SafeName $part.Value | ToLowerCamelCase) }}
-        {{ $paramType := (TypeGoAttr $part.Value $.AllAttributes) }}
+        {{ $paramName := (ToSafeName $part.Value | ToLowerCamelCase) }}
+        {{ $paramType := (ToGolangAttrType $part.Value $.AllAttributes) }}
         {{ if eq $methodParams "" }}
             {{ $methodParams = printf "%s %s" $paramName $paramType }}
         {{ else }}
@@ -171,7 +171,7 @@ func (qb *QueryBuilder) With{{SafeName .Name | ToCamelCase}}({{SafeName .Name | 
         {{ end }}
     {{ end }}
 {{ end }}
-func (qb *QueryBuilder) With{{ToCamelCase .Name}}HashKey({{ $methodParams }}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{ $methodParams }}) *QueryBuilder {
     {{ range $index, $part := .HashKeyParts }}
     {{ if not $part.IsConstant }}
     {
@@ -197,8 +197,8 @@ func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
 {{ $methodParams := "" }}
 {{ range $index, $part := .RangeKeyParts }}
     {{ if not $part.IsConstant }}
-        {{ $paramName := (SafeName $part.Value | ToLowerCamelCase) }}
-        {{ $paramType := (TypeGoAttr $part.Value $.AllAttributes) }}
+        {{ $paramName := (ToSafeName $part.Value | ToLowerCamelCase) }}
+        {{ $paramType := (ToGolangAttrType $part.Value $.AllAttributes) }}
         {{ if eq $methodParams "" }}
             {{ $methodParams = printf "%s %s" $paramName $paramType }}
         {{ else }}
@@ -206,7 +206,7 @@ func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
         {{ end }}
     {{ end }}
 {{ end }}
-func (qb *QueryBuilder) With{{ToCamelCase .Name}}RangeKey({{ $methodParams }}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{ $methodParams }}) *QueryBuilder {
     {{ range .RangeKeyParts }}
     {{ if not .IsConstant }}
     {
@@ -510,22 +510,22 @@ func (qb *QueryBuilder) Execute(ctx context.Context, client *dynamodb.Client) ([
 }
 
 {{range .AllAttributes}}
-{{if eq (TypeGo .Type) "int"}}
-func (qb *QueryBuilder) With{{SafeName .Name | ToCamelCase}}Between(start, end {{TypeGo .Type}}) *QueryBuilder {
+{{if eq (ToGolangBaseType .Type) "int"}}
+func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}Between(start, end {{ToGolangBaseType .Type}}) *QueryBuilder {
     attrName := "{{.Name}}"
     qb.KeyConditions[attrName] = expression.Key(attrName).Between(expression.Value(start), expression.Value(end))
     qb.UsedKeys[attrName] = true
     return qb
 }
 
-func (qb *QueryBuilder) With{{SafeName .Name | ToCamelCase}}GreaterThan(value {{TypeGo .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
     attrName := "{{.Name}}"
     qb.KeyConditions[attrName] = expression.Key(attrName).GreaterThan(expression.Value(value))
     qb.UsedKeys[attrName] = true
     return qb
 }
 
-func (qb *QueryBuilder) With{{SafeName .Name | ToCamelCase}}LessThan(value {{TypeGo .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}LessThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
     attrName := "{{.Name}}"
     qb.KeyConditions[attrName] = expression.Key(attrName).LessThan(expression.Value(value))
     qb.UsedKeys[attrName] = true
@@ -597,13 +597,13 @@ func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Schema
     {{range .AllAttributes}}
     if val, ok := dbEvent.Change.NewImage["{{.Name}}"]; ok {
         {{if eq .Type "S"}}
-        item.{{SafeName .Name | ToCamelCase}} = val.String()
+        item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
         {{else if eq .Type "N"}}
         if n, err := strconv.Atoi(val.Number()); err == nil {
-            item.{{SafeName .Name | ToCamelCase}} = n
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = n
         }
         {{else if eq .Type "B"}}
-        item.{{SafeName .Name | ToCamelCase}} = val.Boolean()
+        item.{{ToSafeName .Name | ToUpperCamelCase}} = val.Boolean()
         {{end}}
     }
     {{end}}
@@ -678,7 +678,7 @@ func CreateKeyFromItem(item SchemaItem) (map[string]types.AttributeValue, error)
     
     var hashKeyValue interface{}
     {{range .AllAttributes}}{{if eq .Name $.HashKey}}
-    hashKeyValue = item.{{SafeName .Name | ToCamelCase}}
+    hashKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
     {{end}}{{end}}
     
     hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
@@ -690,7 +690,7 @@ func CreateKeyFromItem(item SchemaItem) (map[string]types.AttributeValue, error)
     if TableSchema.RangeKey != "" {
         var rangeKeyValue interface{}
         {{range .AllAttributes}}{{if eq .Name $.RangeKey}}
-        rangeKeyValue = item.{{SafeName .Name | ToCamelCase}}
+        rangeKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
         {{end}}{{end}}
         
         rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)

@@ -54,6 +54,6 @@ func (ds DynamoSchema) SecondaryIndexes() []common.SecondaryIndex {
 	return ds.schema.SecondaryIndexes
 }
 
-func (ds DynamoSchema) AllAtributes() []common.Attribute {
+func (ds DynamoSchema) AllAttributes() []common.Attribute {
 	return append(ds.Attributes(), ds.CommonAttributes()...)
 }

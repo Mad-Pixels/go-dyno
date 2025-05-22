@@ -14,8 +14,8 @@ func LoadSchema(path string) (*DynamoSchema, error) {
 		return nil, err
 	}
 	for i, idx := range schema.SecondaryIndexes() {
-		schema.schema.SecondaryIndexes[i].HashKeyParts = parseCompositeKeys(idx.HashKey, schema.AllAtributes())
-		schema.schema.SecondaryIndexes[i].RangeKeyParts = parseCompositeKeys(idx.RangeKey, schema.AllAtributes())
+		schema.schema.SecondaryIndexes[i].HashKeyParts = parseCompositeKeys(idx.HashKey, schema.AllAttributes())
+		schema.schema.SecondaryIndexes[i].RangeKeyParts = parseCompositeKeys(idx.RangeKey, schema.AllAttributes())
 	}
 
 	return &schema, nil

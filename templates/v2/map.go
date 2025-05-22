@@ -9,6 +9,6 @@ type TemplateMapV2 struct {
 	RangeKey         string
 	Attributes       []common.Attribute
 	CommonAttributes []common.Attribute
-	AllAtributes     []common.Attribute
+	AllAttributes    []common.Attribute
 	SecondaryIndexes []common.SecondaryIndex
 }
