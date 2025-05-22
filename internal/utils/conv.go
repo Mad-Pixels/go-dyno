@@ -3,6 +3,8 @@ package utils
 import (
 	"strings"
 	"unicode"
+
+	"github.com/Mad-Pixels/go-dyno/internal/schema/common"
 )
 
 func ToUpperCamelCase(s string) string {
@@ -80,7 +82,7 @@ func ToGolangZeroType(dynamoType string) string {
 	}
 }
 
-func ToGolangAttrType(attrName string, attributes []Attribute) string {
+func ToGolangAttrType(attrName string, attributes []common.Attribute) string {
 	for _, attr := range attributes {
 		if attr.Name == attrName {
 			return ToGolangBaseType(attr.Type)
