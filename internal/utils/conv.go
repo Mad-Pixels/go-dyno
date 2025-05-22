@@ -41,8 +41,11 @@ func ToSafeName(s string) string {
 			(r >= 'a' && r <= 'z') ||
 			(r >= '0' && r <= '9'):
 			b.WriteRune(r)
-		case r == '-' || r == '_':
+		default:
 			b.WriteRune('_')
+
+			//case r == '-' || r == '_':
+			//		b.WriteRune('_')
 		}
 	}
 
@@ -132,7 +135,7 @@ func toCamelCase(s string) string {
 
 	for _, r := range strings.ToLower(s) {
 		switch {
-		case r == '_' || r == '-':
+		case r == '_' || r == '-' || r == '#':
 			capNext = true
 		case capNext:
 			res.WriteRune(unicode.ToUpper(r))
