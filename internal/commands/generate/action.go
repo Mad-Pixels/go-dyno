@@ -31,7 +31,7 @@ func action(ctx *cli.Context) (err error) {
 	}
 
 	if err = process(dynamoSchema, genFilepath); err != nil {
-		utils.RemovePath(destFl)
+		utils.RemovePath(destFl) //nolint:errcheck
 	}
 	return err
 }

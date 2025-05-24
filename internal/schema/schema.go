@@ -1,59 +1,50 @@
+// Package schema provides functionality for loading and accessing DynamoDB table schema definitions.
+//
+// A DynamoSchema represents the full structure of a DynamoDB table, including:
+//   - Table name and workspace-friendly representations (PackageName, Filename, Directory)
+//   - Hash and range keys
+//   - Primary attributes and reusable common attributes
+//   - Secondary indexes with optional composite keys
+//
+// Schema definitions are loaded from JSON files using LoadSchema and parsed into
+// a uniform internal representation. Composite keys such as `user#123` are parsed
+// into parts, distinguishing between constants and dynamic attribute references.
+//
+// Example JSON schema:
+//
+//	{
+//	  "table_name": "user_activity",
+//	  "hash_key": "user_id",
+//	  "range_key": "activity#type",
+//	  "attributes": [
+//	    { "name": "user_id", "type": "S" },
+//	    { "name": "activity", "type": "S" }
+//	  ],
+//	  "common_attributes": [
+//	    { "name": "created_at", "type": "N" }
+//	  ],
+//	  "secondary_indexes": [
+//	    {
+//	      "name": "by_activity",
+//	      "hash_key": "activity",
+//	      "range_key": "created_at",
+//	      "projection_type": "ALL"
+//	    }
+//	  ]
+//	}
+//
+// Usage:
+//
+//	schema, err := schema.LoadSchema("schemas/user_activity.json")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	fmt.Println(schema.TableName())  // → UserActivity
+//	fmt.Println(schema.Filename())   // → user_activity.go
+//	fmt.Println(schema.AllAttributes())
+//
+// This package is designed to support code generation pipelines,
+// and is typically used in conjunction with template engines for producing Go files
+// based on schema definitions.
 package schema
-
-import (
-	"github.com/Mad-Pixels/go-dyno/internal/schema/common"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
-)
-
-type dynamoSchema struct {
-	TableName        string                  `json:"table_name"`
-	HashKey          string                  `json:"hash_key"`
-	RangeKey         string                  `json:"range_key"`
-	Attributes       []common.Attribute      `json:"attributes"`
-	CommonAttributes []common.Attribute      `json:"common_attributes"`
-	SecondaryIndexes []common.SecondaryIndex `json:"secondary_indexes"`
-}
-
-type DynamoSchema struct {
-	schema dynamoSchema
-}
-
-func (ds DynamoSchema) TableName() string {
-	return utils.ToUpperCamelCase(ds.schema.TableName)
-}
-
-func (ds DynamoSchema) HashKey() string {
-	return ds.schema.HashKey
-}
-
-func (ds DynamoSchema) RangeKey() string {
-	return ds.schema.RangeKey
-}
-
-func (ds DynamoSchema) PackageName() string {
-	return utils.ToLowerInlineCase(ds.schema.TableName)
-}
-
-func (ds DynamoSchema) Directory() string {
-	return utils.ToSafeName(ds.schema.TableName)
-}
-
-func (ds DynamoSchema) Filename() string {
-	return utils.ToSafeName(ds.schema.TableName) + ".go"
-}
-
-func (ds DynamoSchema) Attributes() []common.Attribute {
-	return ds.schema.Attributes
-}
-
-func (ds DynamoSchema) CommonAttributes() []common.Attribute {
-	return ds.schema.CommonAttributes
-}
-
-func (ds DynamoSchema) SecondaryIndexes() []common.SecondaryIndex {
-	return ds.schema.SecondaryIndexes
-}
-
-func (ds DynamoSchema) AllAttributes() []common.Attribute {
-	return append(ds.Attributes(), ds.CommonAttributes()...)
-}

@@ -8,6 +8,12 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 )
 
+// ReadFile reads the contents of a file at the given path.
+// Returns the file contents or an error wrapped with context.
+//
+// Example:
+//
+//	data, err := utils.ReadFile("config.json")
 func ReadFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -17,7 +23,13 @@ func ReadFile(path string) ([]byte, error) {
 	return data, nil
 }
 
-func ReadAndParseJsonFile(path string, obj any) error {
+// ReadAndParseJSON reads a JSON file and decodes its contents into the provided object.
+//
+// Example:
+//
+//	var cfg Config
+//	err := utils.ReadAndParseJSON("config.json", &cfg)
+func ReadAndParseJSON(path string, obj any) error {
 	b, err := ReadFile(path)
 	if err != nil {
 		return err
@@ -30,6 +42,12 @@ func ReadAndParseJsonFile(path string, obj any) error {
 	return nil
 }
 
+// IsFileOrError checks if the given path exists and is a file.
+// Returns a descriptive error if the path does not exist or is a directory.
+//
+// Example:
+//
+//	err := utils.IsFileOrError("data.json")
 func IsFileOrError(path string) error {
 	exist, isDir, err := statPath(path)
 	if err != nil {
@@ -47,6 +65,12 @@ func IsFileOrError(path string) error {
 	return nil
 }
 
+// IsFileOrCreate checks if a file exists at the given path, and creates it if it does not.
+// Ensures the parent directory exists.
+//
+// Example:
+//
+//	err := utils.IsFileOrCreate("output/result.txt")
 func IsFileOrCreate(path string) error {
 	exist, isDir, err := statPath(path)
 	if err != nil {
@@ -72,6 +96,12 @@ func IsFileOrCreate(path string) error {
 	return nil
 }
 
+// WriteToFile writes data to a file, creating it if necessary.
+// Overwrites any existing content.
+//
+// Example:
+//
+//	err := utils.WriteToFile("data.json", []byte(`{"key": "value"}`))
 func WriteToFile(path string, data []byte) error {
 	if err := IsFileOrCreate(path); err != nil {
 		return err
@@ -89,6 +119,12 @@ func WriteToFile(path string, data []byte) error {
 	return nil
 }
 
+// IsDirOrCreate checks if the given path exists and is a directory.
+// If it does not exist, it creates the directory (and all parent directories).
+//
+// Example:
+//
+//	err := utils.IsDirOrCreate("generated/output")
 func IsDirOrCreate(path string) error {
 	exist, isDir, err := statPath(path)
 	if err != nil {
@@ -108,6 +144,11 @@ func IsDirOrCreate(path string) error {
 	return nil
 }
 
+// RemovePath removes a file or directory at the specified path recursively.
+//
+// Example:
+//
+//	err := utils.RemovePath("tmp/build")
 func RemovePath(path string) error {
 	if err := os.RemoveAll(path); err != nil {
 		return logger.NewFailure("failed to remove path", err).

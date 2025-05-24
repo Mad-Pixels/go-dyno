@@ -1,6 +1,7 @@
 package generate
 
 import (
+	godyno "github.com/Mad-Pixels/go-dyno"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 
 	cli "github.com/urfave/cli/v2"
@@ -14,12 +15,25 @@ var (
 	flagDest = "dest"
 )
 
-type tmplUsage struct{}
+type tmplUsage struct {
+	Command     string
+	FlagCfg     string
+	FlagDst     string
+	EnvPrefix   string
+	ExampleJSON string
+}
 
+// Command ...
 func Command() *cli.Command {
 	usageText := utils.MustParseTemplateToString(
 		usageTemplate,
-		tmplUsage{},
+		tmplUsage{
+			Command:     name,
+			FlagCfg:     flagCfg,
+			FlagDst:     flagCfg,
+			EnvPrefix:   godyno.EnvPrefix,
+			ExampleJSON: "dynamo_db_description.json",
+		},
 	)
 
 	return &cli.Command{

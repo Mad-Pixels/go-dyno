@@ -1,3 +1,4 @@
+// Package main define an entrypoint for cli.
 package main
 
 import (
