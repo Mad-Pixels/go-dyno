@@ -15,4 +15,4 @@ jobs:
     with:
       platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
       upload_artifacts: true 
-      version: ${{ format('pr-{0}', github.head_ref }}
+      version: ${{ format('pr-{0}', github.head_ref) }}
