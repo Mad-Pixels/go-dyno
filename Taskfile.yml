@@ -1,0 +1,112 @@
+version: "3"
+
+vars:
+  git_root:
+    sh: git rev-parse --show-toplevel
+  go_root:
+    sh: go env GOPATH
+  go_version:
+    sh: grep '^go ' ./go.mod | awk '{print $2}'
+  
+  go_imports: latest
+  go_fumpt: latest
+  go_lint: v2.1.2
+
+tasks:
+  default:
+    desc: Default task.
+    cmds:
+      - echo "Please enter a task or use '-l' or '--list-all' to list all available tasks"
+    silent: true
+
+  # =================================================
+  # ---------------------INTERNAL-------------------#
+  # =================================================
+
+  _go/version/check:
+    desc: Check actual golang version.
+    dir: "{{.git_root}}"
+    cmds:
+      - |
+        required_version="{{.go_version}}"
+        current_version=$(go version | awk '{print $3}' | sed 's/go//')
+        
+        version_compare() {
+          if [ "$(echo -e "$1\n$2" | sort -V | head -n1)" = "$1" ]; then
+            return 0
+          else
+            return 1
+          fi
+        }
+        if ! version_compare "$required_version" "$current_version"; then
+          echo "Error: Go version $required_version or higher is required, but you have $current_version"
+          exit 1
+        fi
+    silent: true
+    internal: true
+
+  _go/install/lint:
+    desc: Install 'golangci-lint'.
+    deps:
+      - _go/version/check
+    cmds:
+      - cmd: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b {{.go_root}}/bin {{.golint_version}}
+      - "{{.go_root}}/bin/golangci-lint version"
+    sources:
+      - "{{.go_root}}/bin/golangci-lint"
+    internal: true
+    silent: true
+
+  _go/install/fumpt:
+    desc: Install 'gofumpt'.
+    deps:
+      - _go/version/check
+    cmd: go install mvdan.cc/gofumpt@{{.go_fumpt}}
+    sources: 
+     - "{{.go_root}}/bin/gofumpt"
+    internal: true
+    silent: true
+
+  # =================================================
+  # ----------------------PUBLIC--------------------#
+  # =================================================
+
+  go/mod/vendor:
+    desc: Run 'go mod vendor'.
+    dir: "{{.git_root}}"
+    deps:
+      - _go/version/check
+    cmds:
+      - |
+        if [ -d "{{.git_root}}/vendor" ]; then
+          cd {{.git_root}} && go mod tidy
+        else 
+          cd {{.git_root}} && go mod tidy && go mod vendor
+        fi
+    silent: true
+
+  go/run/fumpt:
+    desc: Run 'gofumpt'.
+    dir: "{{.git_root}}"
+    deps:
+      - _go/install/fumpt
+    cmd: gofumpt -l -w .
+    silent: true
+
+  go/run/lint:
+    desc: Run 'golangci-lint'.
+    dir: "{{.git_root}}"
+    deps:
+      - _go/install/lint
+      - go/mod/vendor 
+    cmds: 
+      - "{{.go_root}}/bin/golangci-lint run"
+    silent: true
+
+  go/run/tests:
+    desc: Tests 
+    dir: "{{ .git_root }}" 
+    deps:
+      - go/mod/vendor 
+    cmd: go test ./...
+    silent: true

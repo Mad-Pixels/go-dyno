@@ -1,0 +1,17 @@
+name: Base commit 
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+concurrency:
+  group: base-commit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: (Base) Commit Checks
+    uses: ./.github/checks.yml
+    secrets:
+      gitleaks: ${{ secrets.GITLEAKS_LICENSE }}
