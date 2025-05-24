@@ -79,14 +79,15 @@ tasks:
     vars:
       BINARY_NAME: "{{.base_name}}"
       OUTPUT_DIR: "{{.bin_dir}}"
-      BUILD_VERSION: "{{.go_version}}"
+      BUILD_VERSION: 
+        sh: echo "${VERSION:-0.0.1}"
     cmds: 
       - mkdir -p {{.OUTPUT_DIR}}
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} go build \
           -ldflags="-s -w -X 'github.com/Mad-Pixels/go-dyno.Version={{.BUILD_VERSION}}'" \
           -o {{.OUTPUT_DIR}}/{{.BINARY_NAME}}_{{.GOOS}}_{{.GOARCH}}{{if eq .GOOS "windows"}}.exe{{end}} \
-          {{.git_root}}/cmd/dyno 
+          ./cmd/dyno
     silent: true
     internal: true
 
