@@ -44,7 +44,7 @@ func ToSafeName(s string) string {
 		default:
 			b.WriteRune('_')
 
-			//case r == '-' || r == '_':
+			// case r == '-' || r == '_':
 			//		b.WriteRune('_')
 		}
 	}

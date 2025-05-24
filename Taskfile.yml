@@ -62,6 +62,8 @@ tasks:
     deps:
       - _go/version/check
     cmd: go install mvdan.cc/gofumpt@{{.go_fumpt}}
+    sources: 
+     - "{{.go_root}}/bin/gofumpt"
     internal: true
     silent: true
 
@@ -74,9 +76,6 @@ tasks:
     dir: "{{.git_root}}"
     deps:
       - _go/version/check
-      - go/generate/dynamo
-      - go/generate/openapi
-      - go/generate/openapispec
     cmds:
       - |
         if [ -d "{{.git_root}}/vendor" ]; then
@@ -102,6 +101,7 @@ tasks:
       - go/mod/vendor 
     cmds: 
       - "{{.go_root}}/bin/golangci-lint run"
+    silent: true
 
   go/run/tests:
     desc: Tests 

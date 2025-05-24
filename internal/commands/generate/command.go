@@ -14,8 +14,7 @@ var (
 	flagDest = "dest"
 )
 
-type tmplUsage struct {
-}
+type tmplUsage struct{}
 
 func Command() *cli.Command {
 	usageText := utils.MustParseTemplateToString(

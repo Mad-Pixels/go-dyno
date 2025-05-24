@@ -76,7 +76,7 @@ func WriteToFile(path string, data []byte) error {
 	if err := IsFileOrCreate(path); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 	if err != nil {
 		return logger.NewFailure("couldn't open a file", err).
 			With("path", path)
@@ -102,7 +102,7 @@ func IsDirOrCreate(path string) error {
 	if exist {
 		return nil
 	}
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(path, 0o755); err != nil {
 		return logger.NewFailure("failed to create a dictionary", err).With("path", path)
 	}
 	return nil

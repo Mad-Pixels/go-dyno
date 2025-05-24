@@ -24,7 +24,6 @@ func MustParseTemplate(b *bytes.Buffer, tmpl string, vars any) {
 		},
 	).
 		Parse(tmpl)
-
 	if err != nil {
 		logger.NewFailure("internal: failed to create template", err).
 			Log(zerolog.FatalLevel)
