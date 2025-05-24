@@ -3,8 +3,6 @@ name: Base PR
 on:
   pull_request:
     types: [opened, synchronize]
-    branches-ignore:
-      - main
 
 concurrency:
   group: base-pr-${{ github.event.pull_request.number }}
