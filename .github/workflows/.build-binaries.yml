@@ -1,0 +1,46 @@
+name: Build Binaries
+
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        description: 'JSON array of platforms to build'
+        required: false
+        type: string
+        default: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64", "windows_amd64"]'
+      upload_artifacts:
+        description: 'Whether to upload build artifacts'
+        required: false
+        type: boolean
+        default: true
+      version:
+        description: 'Version to build (will be injected into binary)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJson(inputs.platforms) }}
+    
+    steps:
+      - name: Build Binary for ${{ matrix.platform }}
+        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        with:
+          command: go/build/${{ matrix.platform }}
+        env:
+          VERSION: ${{ inputs.version != '' && inputs.version || format('dev-{0}', github.sha) }}
+      
+      - name: Upload Artifacts
+        if: inputs.upload_artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: godyno-${{ matrix.platform }}
+          path: bin/godyno_*
+          retention-days: 7
+          if-no-files-found: error

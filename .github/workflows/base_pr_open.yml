@@ -1,0 +1,20 @@
+name: Base PR
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches-ignore:
+      - main
+
+concurrency:
+  group: base-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: (Base) Pr Checks
+    uses: ./.github/workflows/.build-binaries.yml
+    with:
+      platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
+      upload_artifacts: true 
+      version: ${{ format('pr-{0}', github.head_ref }}
