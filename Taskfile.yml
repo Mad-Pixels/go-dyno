@@ -12,6 +12,9 @@ vars:
   go_fumpt: latest
   go_lint: v2.1.2
 
+  base_name: godyno
+  bin_dir: "{{.git_root}}/bin/"
+
 tasks:
   default:
     desc: Default task.
@@ -67,6 +70,26 @@ tasks:
     internal: true
     silent: true
 
+  _go/dyno/build:
+    desc: Internal build task template.
+    dir: "{{.git_root}}"
+    deps:
+      - _go/version/check
+      - go/mod/vendor
+    vars:
+      BINARY_NAME: "{{.base_name}}"
+      OUTPUT_DIR: "{{.bin_dir}}"
+      BUILD_VERSION: "{{.go_version}}"
+    cmds: 
+      - mkdir -p {{.OUTPUT_DIR}}
+      - |
+        GOOS={{.GOOS}} GOARCH={{.GOARCH}} go build \
+          -ldflags="-s -w -X 'github.com/Mad-Pixels/go-dyno.Version={{.BUILD_VERSION}}'" \
+          -o {{.OUTPUT_DIR}}/{{.BINARY_NAME}}_{{.GOOS}}_{{.GOARCH}}{{if eq .GOOS "windows"}}.exe{{end}} \
+          {{.git_root}}/cmd/dyno 
+    silent: true
+    internal: true
+
   # =================================================
   # ----------------------PUBLIC--------------------#
   # =================================================
@@ -109,4 +132,110 @@ tasks:
     deps:
       - go/mod/vendor 
     cmd: go test ./...
+    silent: true
+
+  # =================================================
+  # ----------------------BUILD---------------------#
+  # =================================================
+
+  go/build/darwin_amd64:
+    desc: Build for macOS Intel (darwin/amd64)
+    cmds:
+      - task: _go/dyno/build
+        vars:
+          GOOS: darwin 
+          GOARCH: amd64 
+
+  go/build/darwin_arm64:
+    desc: Build for macOS Apple Silicon (darwin/arm64)
+    cmds: 
+      - task: _go/dyno/build
+        vars: 
+          GOOS: darwin 
+          GOARCH: arm64 
+  
+  go/build/linux_amd64:
+    desc: Build for Linux x86_64 (linux/amd64)
+    cmds: 
+      - task: _go/dyno/build
+        vars:
+          GOOS: linux
+          GOARCH: amd64
+
+  go/build/linux_386:
+    desc: Build for linux 32-bit (linux/386)
+    cmds:
+      - task: _go/dyno/build
+        vars: 
+          GOOS: linux
+          GOARCH: "386"
+
+  go/build/linux_arm:
+    desc: Build for Linux ARM 32-bit (linux/arm)
+    cmds:
+      - task: _go/dyno/build
+        vars: 
+          GOOS: linux
+          GOARCH: arm
+          GOARM: "7"
+
+  go/build/linux_arm64:
+    desc: Build for Linux ARM 6640bit (linux/arm64)
+    cmds: 
+      - task: _go/dyno/build
+        vars:
+          GOOS: linux
+          GOARCH: arm64
+  
+  go/build/windows_amd64:
+    desc: Build for Windows 64-bit (windows/amd64).
+    cmds:
+      - task: _go/dyno/build
+        vars:
+          GOOS: windows
+          GOARCH: amd64
+
+  go/build/windows_386:
+    desc: Build for Windows 32-bit (windows/386).
+    cmds:
+      - task: _go/dyno/build
+        vars:
+          GOOS: windows
+          GOARCH: "386"
+
+  go/build/freebsd_amd64:
+    desc: Build for FreeBSD 64-bit (freebsd/amd64).
+    cmds:
+      - task: _go/dyno/build
+        vars:
+          GOOS: freebsd
+          GOARCH: amd64
+
+  go/build/openbsd_amd64:
+    desc: Build for OpenBSD 64-bit (openbsd/amd64).
+    cmds:
+      - task: _go/dyno/build
+        vars:
+          GOOS: openbsd
+          GOARCH: amd64
+
+  go/build/all:
+    desc: Build for all supported platforms.
+    cmds:
+      - task: go/build/darwin_amd64
+      - task: go/build/darwin_arm64
+      - task: go/build/linux_amd64
+      - task: go/build/linux_386
+      - task: go/build/linux_arm
+      - task: go/build/linux_arm64
+      - task: go/build/windows_amd64
+      - task: go/build/windows_386
+      - task: go/build/freebsd_amd64
+      - task: go/build/openbsd_amd64
+
+  go/build/clean:
+    desc: Clean build artifacts.
+    dir: "{{.git_root}}"
+    cmds:
+      - rm -rf build/
     silent: true
