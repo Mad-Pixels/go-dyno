@@ -93,7 +93,7 @@ tasks:
           -gcflags="{{.GCFLAGS}}" \
           -asmflags="{{.ASMFLAGS}}" \
           -o {{.OUTPUT_DIR}}/{{.BINARY_NAME}}_{{.GOOS}}_{{.GOARCH}}{{if eq .GOOS "windows"}}.exe{{end}} \
-          ./cmd/main.go
+          ./cmd/dyno
     silent: true
     internal: true
 
