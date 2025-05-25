@@ -80,7 +80,7 @@ tasks:
       BINARY_NAME: "{{.base_name}}"
       OUTPUT_DIR: "{{.bin_dir}}"
       BUILD_VERSION: 
-        sh: echo "${VERSION:-{{.go_version}}}"
+        sh: echo "${VERSION:-dev"
       LDFLAGS: "-s -w -extldflags '-static' -X 'github.com/Mad-Pixels/go-dyno.Version={{.BUILD_VERSION}}'"
       GCFLAGS: "-trimpath -N -l"
       ASMFLAGS: "-trimpath"

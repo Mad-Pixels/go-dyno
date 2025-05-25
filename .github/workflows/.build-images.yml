@@ -1,0 +1,53 @@
+name: Build Images
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'App version'
+        required: true
+        type: string
+    secrets:
+      docker_user:
+        required: true
+      docker_token:
+        required: true
+
+jobs:
+  prepare-build-args:
+    name: Prepare Build Arguments
+    runs-on: ubuntu-latest
+    outputs:
+      build_args: ${{ steps.merge-args.outputs.build_args }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Go Version and Prepare Build Args
+        id: merge-args
+        run: |
+          GO_VERSION=$(grep '^go ' ./go.mod | awk '{print $2}')
+          
+          BUILD_ARGS=$(jq -n \
+            --arg version "${{ inputs.version }}" \
+            --arg go_version "$GO_VERSION" \
+            '{
+              "VERSION": $version,
+              "GO_VERSION": $go_version
+            }')
+          
+          echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: prepare-build-args
+    uses: Mad-Pixels/github-workflows/.github/workflows/dockerhub-build-push.yml@main
+    with:
+      repository: madpixels/go-dyno
+      tag: ${{ inputs.version }}
+      build_args: ${{ needs.prepare-build-args.outputs.build_args }}
+      platforms: "linux/amd64,linux/arm64"
+      context: "./"
+    secrets:
+      docker_user: ${{ secrets.docker_user }}
+      docker_token: ${{ secrets.docker_token }}
