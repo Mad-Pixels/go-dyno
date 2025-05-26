@@ -34,7 +34,7 @@ RUN --mount=type=cache,target=${GOCACHE} \
              -ldflags="${LD_FLAGS_BASE} -X 'github.com/Mad-Pixels/go-dyno.Version=${VERSION}'" \
              -gcflags="${GC_FLAGS}" \
              -o /bin/${APP_NAME} \
-             ${APP_PATH}}
+             ${APP_PATH}
 RUN upx --best --lzma /bin/${APP_NAME}
 
 # arm64
@@ -63,7 +63,7 @@ RUN --mount=type=cache,target=${GOCACHE} \
              -ldflags="${LD_FLAGS_BASE} -X 'github.com/Mad-Pixels/go-dyno.Version=${VERSION}'" \
              -gcflags="${GC_FLAGS}" \
              -o /bin/${APP_NAME} \
-             ${APP_PATH}} 
+             ${APP_PATH} 
 RUN upx --best --lzma /bin/${APP_NAME}
 
 # Final amd64 image
