@@ -1,0 +1,48 @@
+name: Build Images
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'App version'
+        required: true
+        type: string
+    secrets:
+      docker_user:
+        required: true
+      docker_token:
+        required: true
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Go Version and Prepare Build Args
+        id: prepare-args
+        run: |
+          GO_VERSION=$(grep -E '^go [0-9]+\.' ./go.mod | awk '{print $2}' | head -1)
+          if [ -z "$GO_VERSION" ]; then
+            echo "ERROR: Go version not found in go.mod, exit"
+            exit 1
+          fi
+          
+          BUILD_ARGS=$(jq -nc \
+            --arg version "${{ inputs.version }}" \
+            --arg go_version "$GO_VERSION" \
+            '{"VERSION": $version, "GO_VERSION": $go_version}')
+          echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
+
+      - name: Build and Push to DockerHub
+        uses: Mad-Pixels/github-workflows/.github/actions/dockerhub-build-push@main
+        with:
+          docker_user:  ${{ secrets.docker_user }}
+          docker_token: ${{ secrets.docker_token }}
+          
+          build_args: ${{ steps.prepare-args.outputs.build_args }}
+          tag:        ${{ inputs.version }} 
+          
+          repository: madpixels/go-dyno

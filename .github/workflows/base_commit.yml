@@ -12,6 +12,15 @@ concurrency:
 jobs:
   checks:
     name: (Base) Commit Checks
-    uses: ./.github/checks.yml
+    uses: ./.github/workflows/.checks.yml
     secrets:
       gitleaks: ${{ secrets.GITLEAKS_LICENSE }}
+  
+  commit-check:
+    name: (Base) Commit Check
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: |
+          echo "✅ All Commit checks completed successfully!"

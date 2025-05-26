@@ -1,0 +1,84 @@
+name: Create tag
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create (e.g., v1.0.0)'
+        required: true
+        type: string
+      force:
+        description: 'Force overwrite existing tag'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: manual-tag-${{ inputs.tag }}
+  cancel-in-progress: true
+
+jobs:
+  create-tag:
+    name: Create Tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate tag format
+        run: |
+          TAG="${{ inputs.tag }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "Invalid tag format: $TAG"
+            echo "Expected format: v1.0.0 or v1.0.0-beta"
+            exit 1
+          fi
+
+      - name: Check if tag exists
+        id: check-tag
+        run: |
+          TAG="${{ inputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "️Tag $TAG already exists"
+            
+            if [ "${{ inputs.force }}" != "true" ]; then
+              echo "Tag already exists. Use 'force' option to overwrite."
+              exit 1
+            else
+              echo "Force option enabled, will overwrite existing tag"
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create/Update tag
+        run: |
+          TAG="${{ inputs.tag }}"
+          COMMIT_SHA=$(git rev-parse HEAD)
+          
+          echo "Tag Details:"
+          echo "  Tag: $TAG"
+          echo "  Commit: $COMMIT_SHA"
+          echo "  Branch: main"
+          echo "  Author: ${{ github.actor }}"
+          echo "  Force: ${{ inputs.force }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if [ "${{ steps.check-tag.outputs.exists }}" == "true" ] && [ "${{ inputs.force }}" == "true" ]; then
+            git tag -f "$TAG" "$COMMIT_SHA"
+            git push origin ":refs/tags/$TAG" 
+            sleep 2
+            git push origin "$TAG"
+          else
+            git tag "$TAG" "$COMMIT_SHA"
+            git push origin "$TAG"
+          fi

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run GoLint
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile@main
+        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
         with:
           command: go/run/lint
 
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Go Tests
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile@main
+        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
         with:
           command: go/run/tests
   
