@@ -18,7 +18,7 @@ jobs:
       version: ${{ format('pr-{0}', github.head_ref) }}
 
   build-images:
-    name: (Base) Pr Images
+    name: (Base) Pr Images create
     uses: ./.github/workflows/.build-images.yml
     with:
       version: ${{ format('pr-{0}', github.head_ref) }}
