@@ -16,3 +16,14 @@ jobs:
       platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
       upload_artifacts: true 
       version: ${{ format('pr-{0}', github.head_ref) }}
+    
+  pr-check:
+    name: (Base) PR Check
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: |
+          echo "✅ All PR checks completed successfully!"
+          echo "Build binaries: completed"
+          echo "Ready to merge! 🚀"
