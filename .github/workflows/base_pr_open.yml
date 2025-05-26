@@ -9,10 +9,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks:
-    name: (Base) Pr Checks
+  build-binaries:
+    name: (Base) Pr Build
     uses: ./.github/workflows/.build-binaries.yml
     with:
       platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
       upload_artifacts: true 
       version: ${{ format('pr-{0}', github.head_ref) }}
+
+  build-images:
+    name: (Base) Pr Images
+    uses: ./.github/workflows/.build-images.yml
+    with:
+      version: ${{ format('pr-{0}', github.head_ref) }}
+    secrets:
+      docker_user: ${{ secrets.DOCKER_USER }}
+      docker_token: ${{ secrets.DOCKER_TOKEN }}
