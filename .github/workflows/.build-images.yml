@@ -29,10 +29,8 @@ jobs:
           cat go.mod || echo "Cannot read go.mod"
           echo "========================"
           
-          # Извлекаем версию Go с более надежным паттерном
           GO_VERSION=$(grep -E '^go [0-9]+\.' ./go.mod | awk '{print $2}' | head -1)
           
-          # Fallback если не найдено
           if [ -z "$GO_VERSION" ]; then
             echo "Warning: Go version not found in go.mod, using default 1.21"
             GO_VERSION="1.21"
@@ -40,19 +38,16 @@ jobs:
           
           echo "Found Go version: $GO_VERSION"
           
-          BUILD_ARGS=$(jq -n \
+          BUILD_ARGS=$(jq -nc \
             --arg version "${{ inputs.version }}" \
             --arg go_version "$GO_VERSION" \
-            '{
-              "VERSION":    $version,
-              "GO_VERSION": $go_version
-            }')
+            '{"VERSION": $version, "GO_VERSION": $go_version}')
           
           echo "Build args: $BUILD_ARGS"
           echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
 
       - name: Build and Push to DockerHub
-        uses: Mad-Pixels/github-workflows/.github/actions/dockerhub-build-push@main
+        uses: Mad-Pixels/github-workflows/.github/actions/dockerhub-push@main
         with:
           docker_user:  ${{ secrets.docker_user }}
           docker_token: ${{ secrets.docker_token }}
