@@ -4,16 +4,31 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - main
 
 concurrency:
   group: release-tag-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
+  check-main-branch:
+    name: Verify tag from main branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if tag is from main branch
+        run: |
+          TAG_COMMIT=$(git rev-list -n 1 ${{ github.ref_name }})
+          if ! git merge-base --is-ancestor $TAG_COMMIT origin/main; then
+            exit 1
+          fi
+
   build-binaries:
     name: (Release) Build Binaries
+    needs: check-main-branch
     uses: ./.github/workflows/.build-binaries.yml
     with:
       platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
@@ -22,6 +37,7 @@ jobs:
 
   build-images:
     name: (Release) Build Docker Images
+    needs: check-main-branch
     uses: ./.github/workflows/.build-images.yml
     with:
       version: ${{ github.ref_name }}
@@ -31,6 +47,7 @@ jobs:
 
   generate-changelog:
     name: (Release) Generate Changelog
+    needs: check-main-branch
     runs-on: ubuntu-latest
     outputs:
       changelog: ${{ steps.changelog.outputs.changelog }}
@@ -66,7 +83,7 @@ jobs:
           if [ -n "$DOCS" ]; then
             CHANGELOG="$CHANGELOG### 📚 Documentation\n$DOCS\n\n"
           fi
-          OTHER=$(git log --pretty=format:"- %s" --invert-grep --grep="^feat" --grep="^fix" --grep="^improve" --grep="^perf" --grep="^refactor" --grep="^feature" --grep="^bugfix" $PREVIOUS_TAG..${{ github.ref_name }} | head -10)
+          OTHER=$(git log --pretty=format:"- %s" --invert-grep --grep="^\[feature\]" --grep="^\[feat\]" --grep="^\[fix\]" --grep="^\[bugfix\]" --grep="^\[hotfix\]" --grep="^\[improve\]" --grep="^\[perf\]" --grep="^\[refactor\]" --grep="^\[optimize\]" --grep="^\[docs\]" --grep="^\[doc\]" $PREVIOUS_TAG..${{ github.ref_name }} | head -10)
           if [ -n "$OTHER" ]; then
             CHANGELOG="$CHANGELOG### 📝 Other Changes\n$OTHER\n\n"
           fi
@@ -110,6 +127,32 @@ jobs:
             - 🔍 **Composite key handling** for complex queries
             - 📦 **Zero dependencies** in generated code _(except aws-sdk-v2)_
             - 🚀 **AWS SDK v2 compatibility**
+            - ⚡ **Terraform integration** - single JSON schema for both infrastructure and code!
+
+            ## 🔥 Terraform Integration
+
+            **The game-changer:** Use the **same JSON schema** for both Terraform infrastructure provisioning and Go code generation!
+
+            ```hcl
+            # terraform/main.tf
+            module "dynamodb_table" {
+              source = "terraform-aws-modules/dynamodb-table/aws"
+              
+              # Use the same schema.json for infrastructure
+              table_schema = file("./schema/user-activity.json")
+            }
+            ```
+
+            ```bash
+            # Generate Go code from the same schema
+            godyno gen --cfg ./schema/user-activity.json --dest ./generated
+            ```
+
+            **Benefits:**
+            - 📋 **Single source of truth** for table structure
+            - 🔄 **Perfect sync** between infrastructure and code
+            - 🛡️ **No schema drift** between Terraform and application
+            - 🚀 **Faster development** with consistent definitions
 
             ---
             
@@ -138,6 +181,7 @@ jobs:
             ```
 
             ## 🔥 Example Usage
+
             ### 1. Define your schema once
             ```json
             // schema/user-activity.json
