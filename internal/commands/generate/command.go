@@ -11,8 +11,8 @@ var (
 	name  = "gen"
 	usage = "generate static golang code from config"
 
-	flagCfg  = "cfg"
-	flagDest = "dest"
+	flagCfg = "cfg"
+	flagDst = "dest"
 )
 
 type tmplUsage struct {
@@ -30,7 +30,7 @@ func Command() *cli.Command {
 		tmplUsage{
 			Command:     name,
 			FlagCfg:     flagCfg,
-			FlagDst:     flagCfg,
+			FlagDst:     flagDst,
 			EnvPrefix:   godyno.EnvPrefix,
 			ExampleJSON: "dynamo_db_description.json",
 		},
