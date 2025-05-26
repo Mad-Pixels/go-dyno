@@ -24,26 +24,16 @@ jobs:
       - name: Extract Go Version and Prepare Build Args
         id: prepare-args
         run: |
-          echo "=== Debugging go.mod ==="
-          ls -la go.mod || echo "go.mod not found"
-          cat go.mod || echo "Cannot read go.mod"
-          echo "========================"
-          
           GO_VERSION=$(grep -E '^go [0-9]+\.' ./go.mod | awk '{print $2}' | head -1)
-          
           if [ -z "$GO_VERSION" ]; then
-            echo "Warning: Go version not found in go.mod, using default 1.21"
-            GO_VERSION="1.21"
+            echo "ERROR: Go version not found in go.mod, exit"
+            exit 1
           fi
-          
-          echo "Found Go version: $GO_VERSION"
           
           BUILD_ARGS=$(jq -nc \
             --arg version "${{ inputs.version }}" \
             --arg go_version "$GO_VERSION" \
             '{"VERSION": $version, "GO_VERSION": $go_version}')
-          
-          echo "Build args: $BUILD_ARGS"
           echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
 
       - name: Build and Push to DockerHub

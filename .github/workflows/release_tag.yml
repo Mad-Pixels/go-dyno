@@ -1,0 +1,64 @@
+name: Release Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-tag-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-binaries:
+    name: (Release) Build Binaries
+    uses: ./.github/workflows/.build-binaries.yml
+    with:
+      platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
+      upload_artifacts: true 
+      version: ${{ github.ref_name }}
+
+  build-images:
+    name: (Release) Build Docker Images
+    uses: ./.github/workflows/.build-images.yml
+    with:
+      version: ${{ github.ref_name }}
+    secrets:
+      docker_user: ${{ secrets.DOCKERHUB_USERNAME }}
+      docker_token: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+  publish-release:
+    name: Publish Release
+    needs: [build-binaries, build-images]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## 🚀 Release ${{ github.ref_name }}
+            
+            ### 📦 Docker Image
+            ```bash
+            docker pull madpixels/go-dyno:${{ github.ref_name }}
+            ```
+            
+            ### 🔧 Binaries
+            Download the appropriate binary for your platform from the assets below.
+            
+            ### 📋 Changelog
+            - Auto-generated release from tag ${{ github.ref_name }}
+          files: |
+            ./artifacts/**/*
+          draft: false
+          prerelease: false
