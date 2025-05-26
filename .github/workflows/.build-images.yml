@@ -49,8 +49,8 @@ jobs:
       - name: Build and Push to DockerHub
         uses: Mad-Pixels/github-workflows/.github/actions/dockerhub-build-push@main
         with:
-          docker_user:  ${{ secrets.DOCKERHUB_USERNAME }}
-          docker_token: ${{ secrets.DOCKERHUB_PASSWORD }}
+          docker_user:  ${{ secrets.docker_user }}
+          docker_token: ${{ secrets.docker_token }}
           
           build_args: ${{ steps.prepare-args.outputs.build_args }}
           tag:        ${{ inputs.version }} 

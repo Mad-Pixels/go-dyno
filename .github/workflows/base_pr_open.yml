@@ -23,5 +23,5 @@ jobs:
     with:
       version: ${{ format('pr-{0}', github.head_ref) }}
     secrets:
-      docker_user: ${{ secrets.DOCKER_USER }}
-      docker_token: ${{ secrets.DOCKER_TOKEN }}
+      docker_user: ${{ secrets.DOCKERHUB_USERNAME }}
+      docker_token: ${{ secrets.DOCKERHUB_PASSWORD }}
