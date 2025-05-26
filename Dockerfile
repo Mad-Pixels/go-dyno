@@ -1,6 +1,7 @@
 ARG ALPINE_VERSION=3.20
 ARG GO_VERSION=1.23.0
 ARG APP_NAME=godyno
+ARG APP_PATH=./cmd/dyno
 ARG GOCACHE=/root/.cache/go-build
 ARG ASM_FLAGS="-trimpath"
 ARG GC_FLAGS="-trimpath"
@@ -14,6 +15,7 @@ ARG GC_FLAGS
 ARG LD_FLAGS_BASE
 ARG GOCACHE
 ARG APP_NAME
+ARG APP_PATH
 ARG VERSION
 
 WORKDIR /go/src/${APP_NAME}
@@ -32,7 +34,7 @@ RUN --mount=type=cache,target=${GOCACHE} \
              -ldflags="${LD_FLAGS_BASE} -X 'github.com/Mad-Pixels/go-dyno.Version=${VERSION}'" \
              -gcflags="${GC_FLAGS}" \
              -o /bin/${APP_NAME} \
-             ./cmd/main.go
+             ${APP_PATH}}
 RUN upx --best --lzma /bin/${APP_NAME}
 
 # arm64
@@ -42,6 +44,7 @@ ARG GC_FLAGS
 ARG LD_FLAGS_BASE
 ARG GOCACHE
 ARG APP_NAME
+ARG APP_PATH
 ARG VERSION
 
 WORKDIR /go/src/${APP_NAME}
@@ -60,7 +63,7 @@ RUN --mount=type=cache,target=${GOCACHE} \
              -ldflags="${LD_FLAGS_BASE} -X 'github.com/Mad-Pixels/go-dyno.Version=${VERSION}'" \
              -gcflags="${GC_FLAGS}" \
              -o /bin/${APP_NAME} \
-             ./cmd/main.go
+             ${APP_PATH}} 
 RUN upx --best --lzma /bin/${APP_NAME}
 
 # Final amd64 image
