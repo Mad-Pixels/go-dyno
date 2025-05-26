@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
 
 concurrency:
   group: release-tag-${{ github.ref_name }}
