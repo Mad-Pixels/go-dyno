@@ -28,8 +28,7 @@ ENV GOARCH=amd64
 ENV GOOS=linux
 
 RUN --mount=type=cache,target=${GOCACHE} \
-    go build -mod=vendor \
-             -asmflags="${ASM_FLAGS}" \
+    go build -asmflags="${ASM_FLAGS}" \
              -ldflags="${LD_FLAGS_BASE} -X 'github.com/Mad-Pixels/go-dyno.Version=${VERSION}'" \
              -gcflags="${GC_FLAGS}" \
              -o /bin/${APP_NAME} \
@@ -57,8 +56,7 @@ ENV GOARCH=arm64
 ENV GOOS=linux
 
 RUN --mount=type=cache,target=${GOCACHE} \
-    go build -mod=vendor \
-             -asmflags="${ASM_FLAGS}" \
+    go build -asmflags="${ASM_FLAGS}" \
              -ldflags="${LD_FLAGS_BASE} -X 'github.com/Mad-Pixels/go-dyno.Version=${VERSION}'" \
              -gcflags="${GC_FLAGS}" \
              -o /bin/${APP_NAME} \
