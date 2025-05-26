@@ -1,0 +1,214 @@
+name: Publish Release 
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+
+concurrency:
+  group: release-tag-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-binaries:
+    name: (Release) Build Binaries
+    uses: ./.github/workflows/.build-binaries.yml
+    with:
+      platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
+      upload_artifacts: true 
+      version: ${{ github.ref_name }}
+
+  build-images:
+    name: (Release) Build Docker Images
+    uses: ./.github/workflows/.build-images.yml
+    with:
+      version: ${{ github.ref_name }}
+    secrets:
+      docker_user: ${{ secrets.DOCKERHUB_USERNAME }}
+      docker_token: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+  generate-changelog:
+    name: (Release) Generate Changelog
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+    
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${{ github.ref_name }}$" | head -n1)
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi 
+
+          CHANGELOG=""
+          FEATURES=$(git log --pretty=format:"- %s" --grep="^\[feature\]" --grep="^\[feat\]" $PREVIOUS_TAG..${{ github.ref_name }} | head -20)
+          if [ -n "$FEATURES" ]; then
+            CHANGELOG="$CHANGELOG### ✨ New Features\n$FEATURES\n\n"
+          fi 
+          FIXES=$(git log --pretty=format:"- %s" --grep="^\[fix\]" --grep="^\[bugfix\]" --grep="^\[hotfix\]" $PREVIOUS_TAG..${{ github.ref_name }} | head -20)
+          if [ -n "$FIXES" ]; then
+            CHANGELOG="$CHANGELOG### 🐛 Bug Fixes\n$FIXES\n\n"
+          fi 
+          IMPROVEMENTS=$(git log --pretty=format:"- %s" --grep="^\[improve\]" --grep="^\[perf\]" --grep="^\[refactor\]" --grep="^\[optimize\]" $PREVIOUS_TAG..${{ github.ref_name }} | head -10)
+          if [ -n "$IMPROVEMENTS" ]; then
+            CHANGELOG="$CHANGELOG### 🚀 Improvements\n$IMPROVEMENTS\n\n"
+          fi
+          DOCS=$(git log --pretty=format:"- %s" --grep="^\[docs\]" --grep="^\[doc\]" $PREVIOUS_TAG..${{ github.ref_name }} | head -10)
+          if [ -n "$DOCS" ]; then
+            CHANGELOG="$CHANGELOG### 📚 Documentation\n$DOCS\n\n"
+          fi
+          OTHER=$(git log --pretty=format:"- %s" --invert-grep --grep="^feat" --grep="^fix" --grep="^improve" --grep="^perf" --grep="^refactor" --grep="^feature" --grep="^bugfix" $PREVIOUS_TAG..${{ github.ref_name }} | head -10)
+          if [ -n "$OTHER" ]; then
+            CHANGELOG="$CHANGELOG### 📝 Other Changes\n$OTHER\n\n"
+          fi
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="### 📋 Changes\n- Release ${{ github.ref_name }}\n\n"
+          fi
+
+          COMMIT_COUNT=$(git rev-list --count $PREVIOUS_TAG..${{ github.ref_name }})
+          CHANGELOG="$CHANGELOG### 📊 Stats\n- **$COMMIT_COUNT** commits since $PREVIOUS_TAG\n"
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  publish-release:
+    name: Publish Release
+    needs: [build-binaries, build-images, generate-changelog]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "🚀 GoDyno ${{ github.ref_name }}"
+          body: |
+            # 🎯 DynamoDB Code Generator
+
+            **GoDyno** is a powerful CLI tool that generates strongly-typed Go code for AWS DynamoDB operations. Transform your DynamoDB table schemas into production-ready Go structs, query builders, and utilities with zero boilerplate.
+
+            ## 🌟 Key Features
+            - 🔧 **Schema-driven code generation** from JSON definitions
+            - 🏗️ **Type-safe query builders** with fluent API
+            - 🎯 **Multi-index support** with automatic optimization
+            - 🔍 **Composite key handling** for complex queries
+            - 📦 **Zero dependencies** in generated code _(except aws-sdk-v2)_
+            - 🚀 **AWS SDK v2 compatibility**
+
+            ---
+            
+            ## 🐳 Quick Start with Docker
+            ```bash
+            # Pull the image
+            docker pull madpixels/go-dyno:${{ github.ref_name }}
+            
+            # Generate code from schema
+            docker run --rm -v $(pwd):/workspace madpixels/go-dyno:${{ github.ref_name }} \
+              gen --cfg /workspace/schema.json --dest /workspace/generated
+            ```
+
+            ## 📥 Installation
+            ### Download Binary
+            Choose the appropriate binary for your platform from the **Assets** section below.
+            ### Using Docker
+            ```bash
+            docker pull madpixels/go-dyno:${{ github.ref_name }}
+            ```
+            ### Build from Source
+            ```bash
+            git clone https://github.com/Mad-Pixels/go-dyno.git
+            cd go-dyno
+            go build -o godyno ./cmd/main.go
+            ```
+
+            ## 🔥 Example Usage
+            ### 1. Define your schema once
+            ```json
+            // schema/user-activity.json
+            {
+              "table_name": "user_activity",
+              "hash_key": "user_id",
+              "range_key": "activity_timestamp",
+              "attributes": [
+                {"name": "user_id", "type": "S"},
+                {"name": "activity_timestamp", "type": "N"},
+                {"name": "activity_type", "type": "S"}
+              ],
+              "secondary_indexes": [
+                {
+                  "name": "by_activity_type",
+                  "hash_key": "activity_type",
+                  "range_key": "activity_timestamp"
+                }
+              ]
+            }
+            ```
+
+            ### 2. Create infrastructure with Terraform
+            ```hcl
+            module "user_activity_table" {
+              source = "your-terraform-module/dynamodb"
+              schema = file("./schema/user-activity.json")
+            }
+            ```
+
+            ### 3. Generate Go code
+            ```bash
+            godyno gen --cfg ./schema/user-activity.json --dest ./generated
+            ```
+
+            ### 4. Use type-safe code
+            ```go
+            import "your-project/generated/user_activity"
+            
+            query := user_activity.NewQueryBuilder().
+              WithUserId("user123").
+              WithActivityType("login").
+              OrderByDesc().
+              Limit(10)
+            
+            items, err := query.Execute(ctx, dynamoClient)
+            ```
+
+            **Result:** Infrastructure and code are always in perfect sync! 🎯
+
+            ---
+
+            ${{ needs.generate-changelog.outputs.changelog }}
+
+            ---
+
+            ## 🏆 Platform Support
+            | Platform       | Architecture          | Status |
+            |----------------|-----------------------|--------|
+            | 🍎 **macOS**   | Intel (x64)           | ✅     |
+            | 🍎 **macOS**   | Apple Silicon (ARM64) | ✅     |
+            | 🐧 **Linux**   | x86_64                | ✅     |
+            | 🐧 **Linux**   | ARM64                 | ✅     |
+            
+            ## 📚 Documentation
+            - [📖 Getting Started Guide](https://github.com/Mad-Pixels/go-dyno#readme)
+
+            ## 🤝 Community
+            - [🐛 Report Issues](https://github.com/Mad-Pixels/go-dyno/issues)
+            - [⭐ Give us a star!](https://github.com/Mad-Pixels/go-dyno)
+          files: |
+            ./artifacts/**/*
+          draft: false
+          prerelease: false
