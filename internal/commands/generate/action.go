@@ -37,7 +37,7 @@ func action(ctx *cli.Context) (err error) {
 }
 
 func process(dynamoSchema *schema.DynamoSchema, p string) error {
-	schemaMap := v2.TemplateMapV2{
+	schemaMap := v2.TemplateMap{
 		PackageName:      dynamoSchema.PackageName(),
 		TableName:        dynamoSchema.TableName(),
 		HashKey:          dynamoSchema.HashKey(),

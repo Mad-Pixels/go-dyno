@@ -1,18 +1,18 @@
 package v2
 
-// ImportsTemplate ...
+// ImportsTemplate difine imports block in generated file.
 const ImportsTemplate = `import (
-    "fmt"
-    "context"
-    "encoding/json"
-    "strings"
-    "strconv"
-    "sort"
+	"context"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 
-    "github.com/aws/aws-sdk-go-v2/aws"
-    "github.com/aws/aws-sdk-go-v2/service/dynamodb"
-    "github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-    "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-    "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-    "github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )`
