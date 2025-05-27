@@ -48,7 +48,7 @@ func process(dynamoSchema *schema.DynamoSchema, p string) error {
 		SecondaryIndexes: dynamoSchema.SecondaryIndexes(),
 	}
 
-	res := utils.MustParseTemplateToString(v2.CodeTemplate, schemaMap)
+	res := utils.MustParseTemplateFormattedToString(v2.CodeTemplate, schemaMap)
 	if err := utils.WriteToFile(p, []byte(res)); err != nil {
 		return err
 	}

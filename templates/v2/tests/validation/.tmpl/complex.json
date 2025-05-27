@@ -1,0 +1,51 @@
+{
+  "table_name": "test-blog-posts",
+  "hash_key": "user_id",
+  "range_key": "post_id",
+  "attributes": [
+    { "name": "user_id", "type": "S" },
+    { "name": "post_id", "type": "S" },
+    { "name": "created_at", "type": "N" },
+    { "name": "likes", "type": "N" },
+    { "name": "is_published", "type": "N" },
+    { "name": "is_featured", "type": "B" },
+    { "name": "category#is_published", "type": "S" },
+    { "name": "tag#is_published", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "title", "type": "S" },
+    { "name": "content", "type": "S" },
+    { "name": "category", "type": "S" },
+    { "name": "tag", "type": "S" },
+    { "name": "views", "type": "N" },
+    { "name": "is_premium", "type": "B" }
+  ],
+  "secondary_indexes": [
+    {
+      "name": "PublishedByDateIndex",
+      "hash_key": "is_published",
+      "range_key": "created_at",
+      "projection_type": "ALL"
+    },
+    {
+      "name": "PublishedByLikesIndex",
+      "hash_key": "is_published", 
+      "range_key": "likes",
+      "projection_type": "KEYS_ONLY"
+    },
+    {
+      "name": "CategoryPublishedIndex",
+      "hash_key": "category#is_published",
+      "range_key": "created_at",
+      "projection_type": "INCLUDE",
+      "non_key_attributes": ["title", "views", "likes"]
+    },
+    {
+      "name": "TagPublishedIndex",
+      "hash_key": "tag#is_published",
+      "range_key": "likes",
+      "projection_type": "INCLUDE",
+      "non_key_attributes": ["title", "content", "views"]
+    }
+  ]
+}

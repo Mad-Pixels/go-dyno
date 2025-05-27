@@ -2,13 +2,13 @@ package utils
 
 import (
 	"bytes"
-	"go/format"
 	"os"
 	"strings"
 	"text/template"
 
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/rs/zerolog"
+	"mvdan.cc/gofumpt/format"
 )
 
 // MustParseTemplate renders the given Go text template `tmpl` into buffer `b`
@@ -41,7 +41,7 @@ func MustParseTemplate(b *bytes.Buffer, tmpl string, vars any) {
 }
 
 // MustParseTemplateFormatted renders the given Go text template `tmpl` into buffer `b`
-// using the provided `vars` and automatically formats the result using go/format.
+// using the provided `vars` and automatically formats the result using gofumpt.
 // If parsing, execution, or formatting fails, it logs and exits.
 //
 // This function provides the same built-in helper functions as MustParseTemplate
@@ -49,6 +49,7 @@ func MustParseTemplate(b *bytes.Buffer, tmpl string, vars any) {
 // - Correct indentation and spacing
 // - Aligned struct fields and tags
 // - Proper import grouping and sorting
+// - Stricter formatting rules than go fmt
 //
 // This is intended for Go code generation that must be production-ready.
 //
@@ -93,7 +94,7 @@ func MustParseTemplateToString(tmpl string, vars any) string {
 }
 
 // MustParseTemplateFormattedToString renders the provided template with variables,
-// formats the result using go/format, and returns it as a string. Panics fatally on any error.
+// formats the result using gofumpt, and returns it as a string. Panics fatally on any error.
 //
 // It's a convenience wrapper around MustParseTemplateFormatted.
 //
@@ -147,14 +148,13 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 
 	// Apply formatting if requested
 	if shouldFormat {
-		formatted, err := format.Source(b.Bytes())
+		formatted, err := format.Source(b.Bytes(), format.Options{})
 		if err != nil {
-			logger.NewFailure("internal: failed to format generated code", err).
+			logger.NewFailure("internal: failed to format generated code with gofumpt", err).
 				Log(zerolog.FatalLevel)
 			os.Exit(1)
 		}
 
-		// Replace buffer content with formatted code
 		b.Reset()
 		b.Write(formatted)
 	}
