@@ -17,10 +17,10 @@ type ExecResult struct {
 	Stderr string
 }
 
-// TestAllFormattersUnchanged tests that Go formatters (go fmt, goimports, gofumpt) don't modify the provided code.
+// AllFormattersUnchanged checks that Go formatters (go fmt, goimports, gofumpt) don't modify the provided code.
 // This validates that the code is already properly formatted according to Go standards.
-// Example: TestAllFormattersUnchanged(t, "package main\n\nfunc main() {}\n")
-func TestAllFormattersUnchanged(t *testing.T, originalCode string) {
+// Example: AllFormattersUnchanged(t, "package main\n\nfunc main() {}\n")
+func AllFormattersUnchanged(t *testing.T, originalCode string) {
 	if !strings.HasSuffix(originalCode, "\n") {
 		originalCode += "\n"
 	}

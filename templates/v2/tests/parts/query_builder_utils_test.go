@@ -48,7 +48,7 @@ func TestQueryBuilderUtilsTemplate(t *testing.T) {
 		}
 
 		rendered := utils.MustParseTemplateToString(v2.QueryBuilderUtilsTemplate, templateMap)
-		testQueryBuilderUtilsContent(t, rendered, templateMap)
+		testQueryBuilderUtilsContent(t, rendered)
 	})
 
 	// Test complex composite keys scenario
@@ -95,12 +95,12 @@ func TestQueryBuilderUtilsTemplate(t *testing.T) {
 		}
 
 		rendered := utils.MustParseTemplateToString(v2.QueryBuilderUtilsTemplate, templateMap)
-		testQueryBuilderUtilsContent(t, rendered, templateMap)
+		testQueryBuilderUtilsContent(t, rendered)
 	})
 }
 
 // testQueryBuilderUtilsContent validates the content of rendered QueryBuilder utils template.
-func testQueryBuilderUtilsContent(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+func testQueryBuilderUtilsContent(t *testing.T, rendered string) {
 	t.Helper()
 
 	// Test that generated code has valid Go syntax
