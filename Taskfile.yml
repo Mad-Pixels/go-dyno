@@ -143,7 +143,7 @@ tasks:
 
   go/tests/template:
     desc: Tests template parts statc
-    dir: "{{ .git_root }}/template/parts" 
+    dir: "{{ .git_root }}/templates/v2/parts" 
     deps:
       - go/mod/vendor 
     cmd: go test -parallel 4 -shuffle=on -v ./... 
@@ -151,7 +151,7 @@ tasks:
 
   go/tests/compile:
     desc: Tests full template fromtatter, build, vet
-    dir: "{{ .git_root }}/template/validation" 
+    dir: "{{ .git_root }}/templates/v2/validation" 
     deps:
       - go/mod/vendor 
       - _go/install/fumpt
@@ -160,7 +160,7 @@ tasks:
 
   go/tests/localstack:
     desc: Func test generated template with localstack environment
-    dir: "{{ .git_root }}/template/localstack"
+    dir: "{{ .git_root }}/templates/v2/localstack"
     deps:
       - go/mod/vendor
     cmds:
