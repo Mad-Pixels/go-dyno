@@ -138,6 +138,7 @@ tasks:
     dir: "{{ .git_root }}" 
     deps:
       - go/mod/vendor 
+      - _go/install/fumpt
     cmd: go test -parallel 4 -shuffle=on -v ./... 
     silent: true
 
