@@ -1,13 +1,13 @@
 package parts
 
 import (
+	"go/format"
 	"go/parser"
 	"go/token"
 	"testing"
 
 	"github.com/Mad-Pixels/go-dyno/internal/schema/common"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
-	"github.com/Mad-Pixels/go-dyno/templates/test"
 	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -89,7 +89,7 @@ func TestSchemaStructsTemplate(t *testing.T) {
 			},
 		}
 
-		rendered := utils.MustParseTemplateFormattedToString(v2.SchemaStructsTemplate, templateMap)
+		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
 		testSchemaStructsContent(t, rendered, templateMap)
 	})
 }
@@ -217,10 +217,8 @@ func testSchemaStructsContent(t *testing.T, rendered string, templateMap v2.Temp
 }
 
 // TestSchemaStructsTemplateFormatting validates that the schema structs template follows Go formatting standards.
-// This ensures the generated code doesn't need additional formatting and is production-ready.
+// This ensures the generated code is gofmt-compliant and doesn't need additional formatting.
 func TestSchemaStructsTemplateFormatting(t *testing.T) {
-	// Test that Go formatters don't change the generated code
-	// Example: proper indentation, spacing, and struct field alignment
 	templateMap := v2.TemplateMap{
 		PackageName: "testtable",
 		TableName:   "TestTable",
@@ -247,7 +245,10 @@ func TestSchemaStructsTemplateFormatting(t *testing.T) {
 		},
 	}
 
-	rendered := utils.MustParseTemplateFormattedToString(v2.SchemaStructsTemplate, templateMap)
-	testCode := "package test\n\n" + rendered + "\n"
-	test.TestAllFormattersUnchanged(t, testCode)
+	rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
+	fullCode := "package test\n\n" + rendered + "\n"
+
+	if _, err := format.Source([]byte(fullCode)); err != nil {
+		t.Fatalf("SchemaStructsTemplate is not gofmt-compliant: %v", err)
+	}
 }

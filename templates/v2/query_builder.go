@@ -236,7 +236,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToL
 
 {{range .AllAttributes}}
 {{if eq (ToGolangBaseType .Type) "int"}}
-// With{{ToSafeName .Name | ToUpperCamelCase}}Between creates a range condition for the "{{.Name}}" attribute.
+// With{{ToUpperCamelCase .Name}}Between creates a range condition for the "{{.Name}}" attribute.
 // This method is particularly useful for sort keys in queries where you need to find items
 // within a specific numeric range.
 //
@@ -248,16 +248,16 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToL
 //   - end: Upper bound of the range (inclusive)
 //
 // Example:
-//   query.With{{ToSafeName .Name | ToUpperCamelCase}}Between(100, 500) // {{.Name}} between 100 and 500
+//   query.With{{ToUpperCamelCase .Name}}Between(100, 500) // {{.Name}} between 100 and 500
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}Between(start, end {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}Between(start, end {{ToGolangBaseType .Type}}) *QueryBuilder {
     qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").Between(expression.Value(start), expression.Value(end))
     qb.UsedKeys["{{.Name}}"] = true
     return qb
 }
 
-// With{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan creates a "greater than" condition for the "{{.Name}}" attribute.
+// With{{ToUpperCamelCase .Name}}GreaterThan creates a "greater than" condition for the "{{.Name}}" attribute.
 // This method is useful for sort key queries where you need items after a specific value.
 //
 // DynamoDB condition: {{.Name}} > value
@@ -267,16 +267,16 @@ func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}Between(start
 //   - value: The threshold value (exclusive lower bound)
 //
 // Example:
-//   query.With{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(1000) // {{.Name}} > 1000
+//   query.With{{ToUpperCamelCase .Name}}GreaterThan(1000) // {{.Name}} > 1000
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}GreaterThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
     qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").GreaterThan(expression.Value(value))
     qb.UsedKeys["{{.Name}}"] = true
     return qb
 }
 
-// With{{ToSafeName .Name | ToUpperCamelCase}}LessThan creates a "less than" condition for the "{{.Name}}" attribute.
+// With{{ToUpperCamelCase .Name}}LessThan creates a "less than" condition for the "{{.Name}}" attribute.
 // This method is useful for sort key queries where you need items before a specific value.
 //
 // DynamoDB condition: {{.Name}} < value
@@ -286,10 +286,10 @@ func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(v
 //   - value: The threshold value (exclusive upper bound)
 //
 // Example:
-//   query.With{{ToSafeName .Name | ToUpperCamelCase}}LessThan(500) // {{.Name}} < 500
+//   query.With{{ToUpperCamelCase .Name}}LessThan(500) // {{.Name}} < 500
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}LessThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}LessThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
     qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").LessThan(expression.Value(value))
     qb.UsedKeys["{{.Name}}"] = true
     return qb

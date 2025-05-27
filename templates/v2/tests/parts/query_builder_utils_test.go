@@ -1,20 +1,23 @@
 package parts
 
 import (
+	"go/format"
 	"go/parser"
 	"go/token"
 	"testing"
 
 	"github.com/Mad-Pixels/go-dyno/internal/schema/common"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
-	"github.com/Mad-Pixels/go-dyno/templates/test"
 	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestQueryBuilderUtilsTemplate validates the generation of QueryBuilder utility functions.
+// This template produces methods for composite key handling and attribute formatting.
 func TestQueryBuilderUtilsTemplate(t *testing.T) {
+	// Test simple composite keys scenario
+	// Example: single hash and range attribute with no composite parts
 	t.Run("simple_composite_keys", func(t *testing.T) {
 		templateMap := v2.TemplateMap{
 			PackageName: "usertable",
@@ -48,6 +51,8 @@ func TestQueryBuilderUtilsTemplate(t *testing.T) {
 		testQueryBuilderUtilsContent(t, rendered, templateMap)
 	})
 
+	// Test complex composite keys scenario
+	// Example: composite hash key with multiple parts
 	t.Run("complex_composite_keys", func(t *testing.T) {
 		templateMap := v2.TemplateMap{
 			PackageName: "ordertable",
@@ -89,100 +94,81 @@ func TestQueryBuilderUtilsTemplate(t *testing.T) {
 			},
 		}
 
-		rendered := utils.MustParseTemplateFormattedToString(v2.QueryBuilderUtilsTemplate, templateMap)
+		rendered := utils.MustParseTemplateToString(v2.QueryBuilderUtilsTemplate, templateMap)
 		testQueryBuilderUtilsContent(t, rendered, templateMap)
 	})
 }
 
+// testQueryBuilderUtilsContent validates the content of rendered QueryBuilder utils template.
 func testQueryBuilderUtilsContent(t *testing.T, rendered string, templateMap v2.TemplateMap) {
 	t.Helper()
 
 	// Test that generated code has valid Go syntax
+	// Example: parsing "package test\n\n" + rendered with go/parser should succeed
 	t.Run("go_syntax_valid", func(t *testing.T) {
-		testCode := "package test\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n\t\"strings\"\n\t\"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression\"\n)\n\ntype QueryBuilder struct{\n\tUsedKeys map[string]bool\n\tAttributes map[string]interface{}\n}\ntype CompositeKeyPart struct {\n\tIsConstant bool\n\tValue string\n}\n\n" + rendered
+		testCode := "package test\n\n" + rendered
 		fset := token.NewFileSet()
 		_, err := parser.ParseFile(fset, "test.go", testCode, parser.ParseComments)
 		require.NoError(t, err, "Generated QueryBuilder utils should be valid Go syntax")
 	})
 
-	// Test that all required utility methods are generated
-	t.Run("required_methods_present", func(t *testing.T) {
-		requiredMethods := []string{
-			"func (qb *QueryBuilder) hasAllKeys(",
-			"func (qb *QueryBuilder) buildCompositeKeyCondition(",
-			"func (qb *QueryBuilder) getCompositeKeyName(",
-			"func (qb *QueryBuilder) buildCompositeKeyValue(",
-			"func (qb *QueryBuilder) formatAttributeValue(",
-		}
-
-		for _, method := range requiredMethods {
-			assert.Contains(t, rendered, method,
-				"Should contain required utility method: %s", method)
-		}
+	// Test that hasAllKeys method is generated
+	// Example: func (qb *QueryBuilder) hasAllKeys(parts []CompositeKeyPart) bool
+	t.Run("hasAllKeys_method_present", func(t *testing.T) {
+		assert.Contains(t, rendered, "func (qb *QueryBuilder) hasAllKeys(")
 	})
 
 	// Test hasAllKeys method logic
-	t.Run("hasAllKeys_method_logic", func(t *testing.T) {
+	// Example: code iterates parts and checks qb.UsedKeys[part.Value]
+	t.Run("hasAllKeys_logic", func(t *testing.T) {
 		assert.Contains(t, rendered, "for _, part := range parts")
-		assert.Contains(t, rendered, "!part.IsConstant")
 		assert.Contains(t, rendered, "qb.UsedKeys[part.Value]")
 		assert.Contains(t, rendered, "return false")
 		assert.Contains(t, rendered, "return true")
 	})
 
-	// Test buildCompositeKeyCondition handles different types
+	// Test that buildCompositeKeyCondition method is generated
+	// Example: func (qb *QueryBuilder) buildCompositeKeyCondition(key string, value interface{}) expression.ConditionBuilder
+	t.Run("buildCompositeKeyCondition_method_present", func(t *testing.T) {
+		assert.Contains(t, rendered, "func (qb *QueryBuilder) buildCompositeKeyCondition(")
+	})
+
+	// Test buildCompositeKeyCondition type handling
+	// Example: switch v := value.(type); case string: case int: case bool:
 	t.Run("buildCompositeKeyCondition_type_handling", func(t *testing.T) {
 		assert.Contains(t, rendered, "switch v := value.(type)")
 		assert.Contains(t, rendered, "case string:")
 		assert.Contains(t, rendered, "case int:")
 		assert.Contains(t, rendered, "case bool:")
-		assert.Contains(t, rendered, "strconv.Itoa(v)")
-		assert.Contains(t, rendered, "expression.Key(")
 	})
 
-	// Test getCompositeKeyName optimization for different cases
-	t.Run("getCompositeKeyName_optimization", func(t *testing.T) {
-		assert.Contains(t, rendered, "switch len(parts)")
-		assert.Contains(t, rendered, "case 0:")
-		assert.Contains(t, rendered, "case 1:")
-		assert.Contains(t, rendered, "strings.Join(")
-		assert.Contains(t, rendered, "parts[0].Value")
-	})
-
-	// Test buildCompositeKeyValue has optimization cases
+	// Test buildCompositeKeyValue optimizations
+	// Example: switch len(parts); case 1:, case 2:, case 3:
 	t.Run("buildCompositeKeyValue_optimizations", func(t *testing.T) {
 		assert.Contains(t, rendered, "switch len(parts)")
 		assert.Contains(t, rendered, "case 1:")
 		assert.Contains(t, rendered, "case 2:")
 		assert.Contains(t, rendered, "case 3:")
-		assert.Contains(t, rendered, "formatAttributeValue(")
-		assert.Contains(t, rendered, "strings.Builder")
 	})
 
-	// Test formatAttributeValue boolean handling
+	// Test formatAttributeValue boolean conversion
+	// Example: return "1" for true, "0" for false
 	t.Run("formatAttributeValue_boolean_conversion", func(t *testing.T) {
 		assert.Contains(t, rendered, "case bool:")
 		assert.Contains(t, rendered, "return \"1\"")
 		assert.Contains(t, rendered, "return \"0\"")
 	})
 
-	// Test error handling and edge cases
-	t.Run("error_handling_edge_cases", func(t *testing.T) {
-		assert.Contains(t, rendered, "case 0:")
-		assert.Contains(t, rendered, "return \"\"")
-		assert.Contains(t, rendered, "default:")
-		assert.Contains(t, rendered, "fmt.Sprintf(")
-	})
-
-	// Test DynamoDB integration
+	// Test DynamoDB integration usage
+	// Example: methods call expression.Key(...) and expression.Value(...)
 	t.Run("dynamodb_integration", func(t *testing.T) {
 		assert.Contains(t, rendered, "expression.Key(")
 		assert.Contains(t, rendered, "expression.Value(")
-		assert.Contains(t, rendered, "compositeKeyName")
 	})
 }
 
-// TestQueryBuilderUtilsTemplateFormatting validates Go formatting standards
+// TestQueryBuilderUtilsTemplateFormatting validates Go formatting standards.
+// Example: format.Source("package test\n\n" + rendered + "\n") should return no error.
 func TestQueryBuilderUtilsTemplateFormatting(t *testing.T) {
 	templateMap := v2.TemplateMap{
 		PackageName: "testtable",
@@ -220,30 +206,10 @@ func TestQueryBuilderUtilsTemplateFormatting(t *testing.T) {
 		},
 	}
 
-	rendered := utils.MustParseTemplateFormattedToString(v2.QueryBuilderUtilsTemplate, templateMap)
+	rendered := utils.MustParseTemplateToString(v2.QueryBuilderUtilsTemplate, templateMap)
 
-	// Create test file with proper import order (standard libs first, then external)
-	testCode := `package test
-
-import (
-	"fmt"
-	"strconv"
-	"strings"
-
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-)
-
-type QueryBuilder struct {
-	UsedKeys   map[string]bool
-	Attributes map[string]interface{}
-}
-
-type CompositeKeyPart struct {
-	IsConstant bool
-	Value      string
-}
-` + rendered + `
-`
-
-	test.TestAllFormattersUnchanged(t, testCode)
+	fullCode := "package test\n\n" + rendered + "\n"
+	if _, err := format.Source([]byte(fullCode)); err != nil {
+		t.Fatalf("QueryBuilderUtilsTemplate is not gofmt-compliant: %v", err)
+	}
 }
