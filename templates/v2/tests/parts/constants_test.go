@@ -97,7 +97,7 @@ func TestConstantsTemplate(t *testing.T) {
 				},
 			},
 		}
-		rendered := utils.MustParseTemplateFormattedToString(v2.ConstantsTemplate, templateMap)
+		rendered := utils.MustParseTemplateToString(v2.ConstantsTemplate, templateMap)
 		testConstantsContent(t, rendered, templateMap)
 	})
 }
