@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -20,6 +21,9 @@ type ExecResult struct {
 // This validates that the code is already properly formatted according to Go standards.
 // Example: TestAllFormattersUnchanged(t, "package main\n\nfunc main() {}\n")
 func TestAllFormattersUnchanged(t *testing.T, originalCode string) {
+	if !strings.HasSuffix(originalCode, "\n") {
+		originalCode += "\n"
+	}
 	testGoFormatterUnchanged(t, "goimports_unchanged", originalCode, execGoImports)
 	testGoFormatterUnchanged(t, "gofumpt_unchanged", originalCode, execGoFumpt)
 	testGoFormatterUnchanged(t, "go_fmt_unchanged", originalCode, execGoFmt)
@@ -45,13 +49,10 @@ func execGoFmt(t *testing.T, filePath string) (string, error) {
 
 func execGoImports(t *testing.T, filePath string) (string, error) {
 	t.Helper()
-
 	if !checkBinaryExists("goimports") {
 		t.Skip("goimports not found in PATH - install with: go install golang.org/x/tools/cmd/goimports@latest")
-		return "", nil
 	}
-
-	result := execCommand(t, "goimports", filePath)
+	result := execCommand(t, "goimports", "-w", filePath)
 	if result.Error != nil {
 		t.Logf("goimports failed: %v", result.Error)
 		if result.Stderr != "" {
@@ -59,18 +60,19 @@ func execGoImports(t *testing.T, filePath string) (string, error) {
 		}
 		return "", fmt.Errorf("goimports failed: %v", result.Error)
 	}
-	return result.Output, nil
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read goimports output: %v", err)
+	}
+	return string(content), nil
 }
 
 func execGoFumpt(t *testing.T, filePath string) (string, error) {
 	t.Helper()
-
 	if !checkBinaryExists("gofumpt") {
 		t.Skip("gofumpt not found in PATH - install with: go install mvdan.cc/gofumpt@latest")
-		return "", nil
 	}
-
-	result := execCommand(t, "gofumpt", filePath)
+	result := execCommand(t, "gofumpt", "-w", filePath)
 	if result.Error != nil {
 		t.Logf("gofumpt failed: %v", result.Error)
 		if result.Stderr != "" {
@@ -78,7 +80,11 @@ func execGoFumpt(t *testing.T, filePath string) (string, error) {
 		}
 		return "", fmt.Errorf("gofumpt failed: %v", result.Error)
 	}
-	return result.Output, nil
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read gofumpt output: %v", err)
+	}
+	return string(content), nil
 }
 
 func execCommand(t *testing.T, name string, args ...string) ExecResult {
