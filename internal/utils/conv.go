@@ -195,7 +195,7 @@ func toCamelCase(s string) string {
 		capNext = true
 	)
 
-	for _, r := range strings.ToLower(s) {
+	for _, r := range s {
 		switch {
 		case r == '_' || r == '-' || r == '#':
 			capNext = true

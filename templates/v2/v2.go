@@ -8,9 +8,9 @@ package v2
 
 import "github.com/Mad-Pixels/go-dyno/internal/schema/common"
 
-// TemplateMapV2 defines the full set of metadata used to generate DynamoDB-related code.
+// TemplateMap defines the full set of metadata used to generate DynamoDB-related code.
 // It acts as the main input structure for the Go code template engine.
-type TemplateMapV2 struct {
+type TemplateMap struct {
 	// PackageName is the Go package name to use in the generated file.
 	PackageName string
 

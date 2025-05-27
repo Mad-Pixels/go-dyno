@@ -14,7 +14,7 @@ func getFlagCfgValue(ctx *cli.Context) string {
 }
 
 func getFlagDestValue(ctx *cli.Context) string {
-	return ctx.String(flagDest)
+	return ctx.String(flagDst)
 }
 
 func flags() []cli.Flag {
@@ -31,13 +31,13 @@ func flags() []cli.Flag {
 			Required: true,
 		},
 		&cli.StringFlag{
-			Name:  flagDest,
+			Name:  flagDst,
 			Usage: "Set destination filepath.",
 			Aliases: []string{
 				"d",
 			},
 			EnvVars: []string{
-				fmt.Sprintf("%s_%s", godyno.EnvPrefix, strings.ToUpper(flagDest)),
+				fmt.Sprintf("%s_%s", godyno.EnvPrefix, strings.ToUpper(flagDst)),
 			},
 			Required: true,
 		},
