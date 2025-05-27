@@ -20,9 +20,11 @@ func LoadSchema(path string) (*DynamoSchema, error) {
 	if err := utils.ReadAndParseJSON(path, &schema.schema); err != nil {
 		return nil, err
 	}
-	for i, idx := range schema.SecondaryIndexes() {
-		schema.schema.SecondaryIndexes[i].HashKeyParts = parseCompositeKeys(idx.HashKey, schema.AllAttributes())
-		schema.schema.SecondaryIndexes[i].RangeKeyParts = parseCompositeKeys(idx.RangeKey, schema.AllAttributes())
+	for i := range schema.schema.SecondaryIndexes {
+		idx := &schema.schema.SecondaryIndexes[i]
+
+		idx.HashKeyParts = parseCompositeKeys(idx.HashKey, schema.AllAttributes())
+		idx.RangeKeyParts = parseCompositeKeys(idx.RangeKey, schema.AllAttributes())
 	}
 
 	return &schema, nil
@@ -48,18 +50,25 @@ func parseCompositeKeys(key string, attrs []common.Attribute) []common.Composite
 		return nil
 	}
 
+	if !strings.Contains(key, "#") {
+		return nil
+	}
+
 	var (
 		parts  = strings.Split(key, "#")
 		result []common.CompositeKeyPart
 	)
 
 	for _, part := range parts {
-		if isAttribute(part, attrs) {
+		isAttr := isAttribute(part, attrs)
+
+		if isAttr {
 			result = append(result, common.CompositeKeyPart{IsConstant: false, Value: part})
-			continue
+		} else {
+			result = append(result, common.CompositeKeyPart{IsConstant: true, Value: part})
 		}
-		result = append(result, common.CompositeKeyPart{IsConstant: true, Value: part})
 	}
+
 	return result
 }
 

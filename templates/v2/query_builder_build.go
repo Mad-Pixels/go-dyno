@@ -1,6 +1,5 @@
 package v2
 
-// QueryBuilderBuildTemplate ...
 const QueryBuilderBuildTemplate = `
 func (qb *QueryBuilder) Build() (string, expression.KeyConditionBuilder, *expression.ConditionBuilder, map[string]types.AttributeValue, error) {
     var filterCond *expression.ConditionBuilder
@@ -8,79 +7,32 @@ func (qb *QueryBuilder) Build() (string, expression.KeyConditionBuilder, *expres
     sortedIndexes := make([]SecondaryIndex, len(TableSchema.SecondaryIndexes))
     copy(sortedIndexes, TableSchema.SecondaryIndexes)
     
-sort.Slice(sortedIndexes, func(i, j int) bool {
-    if qb.PreferredSortKey != "" {
-        iMatches := sortedIndexes[i].RangeKey == qb.PreferredSortKey
-        jMatches := sortedIndexes[j].RangeKey == qb.PreferredSortKey
+    sort.Slice(sortedIndexes, func(i, j int) bool {
+        if qb.PreferredSortKey != "" {
+            iMatches := sortedIndexes[i].RangeKey == qb.PreferredSortKey
+            jMatches := sortedIndexes[j].RangeKey == qb.PreferredSortKey
+            
+            if iMatches && !jMatches {
+                return true
+            }
+            if !iMatches && jMatches {
+                return false
+            }
+        }
         
-        if iMatches && !jMatches {
-            return true
-        }
-        if !iMatches && jMatches {
-            return false
-        }
-    }
-    
-    iParts := 0
-    if sortedIndexes[i].HashKeyParts != nil {
-        iParts += len(sortedIndexes[i].HashKeyParts)
-    }
-    if sortedIndexes[i].RangeKeyParts != nil {
-        iParts += len(sortedIndexes[i].RangeKeyParts)
-    }
-    
-    jParts := 0
-    if sortedIndexes[j].HashKeyParts != nil {
-        jParts += len(sortedIndexes[j].HashKeyParts)
-    }
-    if sortedIndexes[j].RangeKeyParts != nil {
-        jParts += len(sortedIndexes[j].RangeKeyParts)
-    }
-    
-    return iParts > jParts
-})
+        iParts := qb.calculateIndexParts(sortedIndexes[i])
+        jParts := qb.calculateIndexParts(sortedIndexes[j])
+        
+        return iParts > jParts
+    })
 
     for _, idx := range sortedIndexes {
-        var hashKeyCondition, rangeKeyCondition *expression.KeyConditionBuilder
-        var hashKeyMatch, rangeKeyMatch bool
-
-        if idx.HashKeyParts != nil {
-            if qb.hasAllKeys(idx.HashKeyParts) {
-                cond := qb.buildCompositeKeyCondition(idx.HashKeyParts)
-                hashKeyCondition = &cond
-                hashKeyMatch = true
-            }
-        } else if idx.HashKey != "" && qb.UsedKeys[idx.HashKey] {
-            cond := expression.Key(idx.HashKey).Equal(expression.Value(qb.Attributes[idx.HashKey]))
-            hashKeyCondition = &cond
-            hashKeyMatch = true
-        }
-
+        hashKeyCondition, hashKeyMatch := qb.buildHashKeyCondition(idx)
         if !hashKeyMatch {
-            continue // Этот индекс не подходит
+            continue
         }
 
-if idx.RangeKeyParts != nil {
-    if qb.hasAllKeys(idx.RangeKeyParts) {
-        cond := qb.buildCompositeKeyCondition(idx.RangeKeyParts)
-        rangeKeyCondition = &cond
-        rangeKeyMatch = true
-    }
-} else if idx.RangeKey != "" {
-    if qb.UsedKeys[idx.RangeKey] {
-        if cond, exists := qb.KeyConditions[idx.RangeKey]; exists {
-            rangeKeyCondition = &cond
-            rangeKeyMatch = true
-        } else {
-            rangeKeyMatch = true
-        }
-    } else {
-        rangeKeyMatch = true
-    }
-} else {
-    rangeKeyMatch = true
-}
-
+        rangeKeyCondition, rangeKeyMatch := qb.buildRangeKeyCondition(idx)
         if !rangeKeyMatch {
             continue
         }
@@ -90,46 +42,7 @@ if idx.RangeKeyParts != nil {
             keyCondition = keyCondition.And(*rangeKeyCondition)
         }
 
-        for attrName, value := range qb.Attributes {
-            isPartOfHashKey := false
-            isPartOfRangeKey := false
-            
-            if idx.HashKeyParts != nil {
-                for _, part := range idx.HashKeyParts {
-                    if !part.IsConstant && part.Value == attrName {
-                        isPartOfHashKey = true
-                        break
-                    }
-                }
-            } else if attrName == idx.HashKey {
-                isPartOfHashKey = true
-            }
-            
-            if idx.RangeKeyParts != nil {
-                for _, part := range idx.RangeKeyParts {
-                    if !part.IsConstant && part.Value == attrName {
-                        isPartOfRangeKey = true
-                        break
-                    }
-                }
-            } else if attrName == idx.RangeKey {
-                isPartOfRangeKey = true
-            }
-            
-            // Если атрибут не является частью ключа, добавляем его в фильтр
-            if !isPartOfHashKey && !isPartOfRangeKey {
-                cond := expression.Name(attrName).Equal(expression.Value(value))
-                qb.FilterConditions = append(qb.FilterConditions, cond)
-            }
-        }
-
-        if len(qb.FilterConditions) > 0 {
-            combinedFilter := qb.FilterConditions[0]
-            for _, cond := range qb.FilterConditions[1:] {
-                combinedFilter = combinedFilter.And(cond)
-            }
-            filterCond = &combinedFilter
-        }
+        filterCond = qb.buildFilterCondition(idx)
 
         return idx.Name, keyCondition, filterCond, qb.ExclusiveStartKey, nil
     }
@@ -138,24 +51,24 @@ if idx.RangeKeyParts != nil {
         indexName := ""
         keyCondition := expression.Key(TableSchema.HashKey).Equal(expression.Value(qb.Attributes[TableSchema.HashKey]))
 
-if TableSchema.RangeKey != "" && qb.UsedKeys[TableSchema.RangeKey] {
-    if cond, exists := qb.KeyConditions[TableSchema.RangeKey]; exists {
-        keyCondition = keyCondition.And(cond)
-    } else {
-        keyCondition = keyCondition.And(expression.Key(TableSchema.RangeKey).Equal(expression.Value(qb.Attributes[TableSchema.RangeKey])))
-    }
-}
-
-        for attrName, value := range qb.Attributes {
-            if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
-                cond := expression.Name(attrName).Equal(expression.Value(value))
-                qb.FilterConditions = append(qb.FilterConditions, cond)
+        if TableSchema.RangeKey != "" && qb.UsedKeys[TableSchema.RangeKey] {
+            if cond, exists := qb.KeyConditions[TableSchema.RangeKey]; exists {
+                keyCondition = keyCondition.And(cond)
+            } else {
+                keyCondition = keyCondition.And(expression.Key(TableSchema.RangeKey).Equal(expression.Value(qb.Attributes[TableSchema.RangeKey])))
             }
         }
 
-        if len(qb.FilterConditions) > 0 {
-            combinedFilter := qb.FilterConditions[0]
-            for _, cond := range qb.FilterConditions[1:] {
+        var filterConditions []expression.ConditionBuilder
+        for attrName, value := range qb.Attributes {
+            if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
+                filterConditions = append(filterConditions, expression.Name(attrName).Equal(expression.Value(value)))
+            }
+        }
+
+        if len(filterConditions) > 0 {
+            combinedFilter := filterConditions[0]
+            for _, cond := range filterConditions[1:] {
                 combinedFilter = combinedFilter.And(cond)
             }
             filterCond = &combinedFilter
@@ -165,6 +78,97 @@ if TableSchema.RangeKey != "" && qb.UsedKeys[TableSchema.RangeKey] {
     }
 
     return "", expression.KeyConditionBuilder{}, nil, nil, fmt.Errorf("no suitable index found for the provided keys")
+}
+
+func (qb *QueryBuilder) calculateIndexParts(idx SecondaryIndex) int {
+    parts := 0
+    if idx.HashKeyParts != nil {
+        parts += len(idx.HashKeyParts)
+    }
+    if idx.RangeKeyParts != nil {
+        parts += len(idx.RangeKeyParts)
+    }
+    return parts
+}
+
+func (qb *QueryBuilder) buildHashKeyCondition(idx SecondaryIndex) (*expression.KeyConditionBuilder, bool) {
+    if idx.HashKeyParts != nil {
+        if qb.hasAllKeys(idx.HashKeyParts) {
+            cond := qb.buildCompositeKeyCondition(idx.HashKeyParts)
+            return &cond, true
+        }
+    } else if idx.HashKey != "" && qb.UsedKeys[idx.HashKey] {
+        cond := expression.Key(idx.HashKey).Equal(expression.Value(qb.Attributes[idx.HashKey]))
+        return &cond, true
+    }
+    return nil, false
+}
+
+func (qb *QueryBuilder) buildRangeKeyCondition(idx SecondaryIndex) (*expression.KeyConditionBuilder, bool) {
+    if idx.RangeKeyParts != nil {
+        if qb.hasAllKeys(idx.RangeKeyParts) {
+            cond := qb.buildCompositeKeyCondition(idx.RangeKeyParts)
+            return &cond, true
+        }
+    } else if idx.RangeKey != "" {
+        if qb.UsedKeys[idx.RangeKey] {
+            if cond, exists := qb.KeyConditions[idx.RangeKey]; exists {
+                return &cond, true
+            } else {
+                return nil, true
+            }
+        } else {
+            return nil, true
+        }
+    } else {
+        return nil, true
+    }
+    return nil, false
+}
+
+func (qb *QueryBuilder) buildFilterCondition(idx SecondaryIndex) *expression.ConditionBuilder {
+    var filterConditions []expression.ConditionBuilder
+
+    for attrName, value := range qb.Attributes {
+        if qb.isPartOfIndexKey(attrName, idx) {
+            continue
+        }
+        filterConditions = append(filterConditions, expression.Name(attrName).Equal(expression.Value(value)))
+    }
+
+    if len(filterConditions) == 0 {
+        return nil
+    }
+
+    combinedFilter := filterConditions[0]
+    for _, cond := range filterConditions[1:] {
+        combinedFilter = combinedFilter.And(cond)
+    }
+    return &combinedFilter
+}
+
+func (qb *QueryBuilder) isPartOfIndexKey(attrName string, idx SecondaryIndex) bool {
+    if idx.HashKeyParts != nil {
+        for _, part := range idx.HashKeyParts {
+            if !part.IsConstant && part.Value == attrName {
+                return true
+            }
+        }
+    } else if attrName == idx.HashKey {
+        return true
+    }
+    
+    if idx.RangeKeyParts != nil {
+        for _, part := range idx.RangeKeyParts {
+            if !part.IsConstant && part.Value == attrName {
+                return true
+            }
+        }
+    } else if attrName == idx.RangeKey {
+        return true
+    }
+    
+    return false
 }
 
 func (qb *QueryBuilder) BuildQuery() (*dynamodb.QueryInput, error) {

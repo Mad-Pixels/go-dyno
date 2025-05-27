@@ -125,7 +125,21 @@ var TableSchema = DynamoSchema{
    	{
    		Name:           "{{.Name}}", // Index for querying by {{.HashKey}}{{if .RangeKey}} and {{.RangeKey}}{{end}}
    		HashKey:        "{{.HashKey}}",
+   		{{- if .HashKeyParts}}
+   		HashKeyParts: []CompositeKeyPart{
+   			{{- range .HashKeyParts}}
+   			{IsConstant: {{.IsConstant}}, Value: "{{.Value}}"}, // {{if .IsConstant}}constant{{else}}attribute{{end}}: {{.Value}}
+   			{{- end}}
+   		},
+   		{{- end}}
    		RangeKey:       "{{.RangeKey}}",
+   		{{- if .RangeKeyParts}}
+   		RangeKeyParts: []CompositeKeyPart{
+   			{{- range .RangeKeyParts}}
+   			{IsConstant: {{.IsConstant}}, Value: "{{.Value}}"}, // {{if .IsConstant}}constant{{else}}attribute{{end}}: {{.Value}}
+   			{{- end}}
+   		},
+   		{{- end}}
    		ProjectionType: "{{.ProjectionType}}",
    		{{- if .NonKeyAttributes}}
    		// Additional attributes projected into this index

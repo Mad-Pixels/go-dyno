@@ -1,6 +1,5 @@
 package v2
 
-// QueryBuilderTemplate ...
 const QueryBuilderTemplate = `type QueryBuilder struct {
     IndexName           string
     KeyConditions       map[string]expression.KeyConditionBuilder
@@ -23,38 +22,48 @@ func NewQueryBuilder() *QueryBuilder {
 
 {{range .AllAttributes}}
 func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .Type}}) *QueryBuilder {
-    attrName := "{{.Name}}"
-    qb.Attributes[attrName] = {{ToSafeName .Name | ToLowerCamelCase}}
-    qb.UsedKeys[attrName] = true
+    qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
+    qb.UsedKeys["{{.Name}}"] = true
     return qb
 }
 {{end}}
 
 {{range .SecondaryIndexes}}
 {{if gt (len .HashKeyParts) 0}}
-{{ $methodParams := "" }}
-{{ range $index, $part := .HashKeyParts }}
-    {{ if not $part.IsConstant }}
-        {{ $paramName := (ToSafeName $part.Value | ToLowerCamelCase) }}
-        {{ $paramType := (ToGolangAttrType $part.Value $.AllAttributes) }}
-        {{ if eq $methodParams "" }}
-            {{ $methodParams = printf "%s %s" $paramName $paramType }}
-        {{ else }}
-            {{ $methodParams = printf "%s, %s %s" $methodParams $paramName $paramType }}
-        {{ end }}
-    {{ end }}
-{{ end }}
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{ $methodParams }}) *QueryBuilder {
-    {{ range $index, $part := .HashKeyParts }}
-    {{ if not $part.IsConstant }}
-    {
-        attrName := "{{ $part.Value }}"
-        qb.Attributes[attrName] = {{ $part.Value | ToLowerCamelCase }}
-        qb.UsedKeys[attrName] = true
-        qb.KeyConditions[attrName] = expression.Key(attrName).Equal(expression.Value({{ $part.Value | ToLowerCamelCase }}))
-    }
-    {{ end }}
-    {{ end }}
+{{- $hasNonConstant := false -}}
+{{- range .HashKeyParts -}}{{- if not .IsConstant -}}{{- $hasNonConstant = true -}}{{- end -}}{{- end -}}
+{{- if $hasNonConstant}}
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{range $i, $part := .HashKeyParts}}{{if not $part.IsConstant}}{{if $i}}, {{end}}{{$part.Value | ToLowerCamelCase}} {{ToGolangAttrType $part.Value $.AllAttributes}}{{end}}{{end}}) *QueryBuilder {
+    // Сохраняем отдельные значения для построения композитного ключа
+    {{range .HashKeyParts}}{{if not .IsConstant}}
+    qb.Attributes["{{.Value}}"] = {{.Value | ToLowerCamelCase}}
+    qb.UsedKeys["{{.Value}}"] = true
+    {{end}}{{end}}
+    
+    // Строим композитный ключ
+    compositeValue := qb.buildCompositeKeyValue([]CompositeKeyPart{
+        {{range .HashKeyParts}}
+        {{if .IsConstant}}
+        {IsConstant: true, Value: "{{.Value}}"},
+        {{else}}
+        {IsConstant: false, Value: "{{.Value}}"},
+        {{end}}
+        {{end}}
+    })
+    
+    // Устанавливаем композитное значение и условие
+    qb.Attributes["{{.HashKey}}"] = compositeValue
+    qb.UsedKeys["{{.HashKey}}"] = true
+    qb.KeyConditions["{{.HashKey}}"] = expression.Key("{{.HashKey}}").Equal(expression.Value(compositeValue))
+    
+    return qb
+}
+{{end}}
+{{else if .HashKey}}
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{.HashKey | ToLowerCamelCase}} {{ToGolangAttrType .HashKey $.AllAttributes}}) *QueryBuilder {
+    qb.Attributes["{{.HashKey}}"] = {{.HashKey | ToLowerCamelCase}}
+    qb.UsedKeys["{{.HashKey}}"] = true
+    qb.KeyConditions["{{.HashKey}}"] = expression.Key("{{.HashKey}}").Equal(expression.Value({{.HashKey | ToLowerCamelCase}}))
     return qb
 }
 {{end}}
@@ -67,29 +76,22 @@ func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
 
 {{range .SecondaryIndexes}}
 {{if gt (len .RangeKeyParts) 0}}
-{{ $methodParams := "" }}
-{{ range $index, $part := .RangeKeyParts }}
-    {{ if not $part.IsConstant }}
-        {{ $paramName := (ToSafeName $part.Value | ToLowerCamelCase) }}
-        {{ $paramType := (ToGolangAttrType $part.Value $.AllAttributes) }}
-        {{ if eq $methodParams "" }}
-            {{ $methodParams = printf "%s %s" $paramName $paramType }}
-        {{ else }}
-            {{ $methodParams = printf "%s, %s %s" $methodParams $paramName $paramType }}
-        {{ end }}
-    {{ end }}
-{{ end }}
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{ $methodParams }}) *QueryBuilder {
-    {{ range .RangeKeyParts }}
-    {{ if not .IsConstant }}
-    {
-        attrName := "{{ .Value }}"
-        qb.Attributes[attrName] = {{ .Value | ToLowerCamelCase }}
-        qb.UsedKeys[attrName] = true
-        qb.KeyConditions[attrName] = expression.Key(attrName).Equal(expression.Value({{ .Value | ToLowerCamelCase }}))
-    }
-    {{ end }}
-    {{ end }}
+{{- $hasNonConstant := false -}}
+{{- range .RangeKeyParts -}}{{- if not .IsConstant -}}{{- $hasNonConstant = true -}}{{- end -}}{{- end -}}
+{{- if $hasNonConstant}}
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{range $i, $part := .RangeKeyParts}}{{if not $part.IsConstant}}{{if $i}}, {{end}}{{$part.Value | ToLowerCamelCase}} {{ToGolangAttrType $part.Value $.AllAttributes}}{{end}}{{end}}) *QueryBuilder {
+    {{range .RangeKeyParts}}{{if not .IsConstant}}
+    qb.Attributes["{{.Value}}"] = {{.Value | ToLowerCamelCase}}
+    qb.UsedKeys["{{.Value}}"] = true
+    {{end}}{{end}}
+    return qb
+}
+{{end}}
+{{else if .RangeKey}}
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToLowerCamelCase}} {{ToGolangAttrType .RangeKey $.AllAttributes}}) *QueryBuilder {
+    qb.Attributes["{{.RangeKey}}"] = {{.RangeKey | ToLowerCamelCase}}
+    qb.UsedKeys["{{.RangeKey}}"] = true
+    qb.KeyConditions["{{.RangeKey}}"] = expression.Key("{{.RangeKey}}").Equal(expression.Value({{.RangeKey | ToLowerCamelCase}}))
     return qb
 }
 {{end}}
@@ -98,23 +100,20 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{ $methodParams 
 {{range .AllAttributes}}
 {{if eq (ToGolangBaseType .Type) "int"}}
 func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}Between(start, end {{ToGolangBaseType .Type}}) *QueryBuilder {
-    attrName := "{{.Name}}"
-    qb.KeyConditions[attrName] = expression.Key(attrName).Between(expression.Value(start), expression.Value(end))
-    qb.UsedKeys[attrName] = true
+    qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").Between(expression.Value(start), expression.Value(end))
+    qb.UsedKeys["{{.Name}}"] = true
     return qb
 }
 
 func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
-    attrName := "{{.Name}}"
-    qb.KeyConditions[attrName] = expression.Key(attrName).GreaterThan(expression.Value(value))
-    qb.UsedKeys[attrName] = true
+    qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").GreaterThan(expression.Value(value))
+    qb.UsedKeys["{{.Name}}"] = true
     return qb
 }
 
 func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}LessThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
-    attrName := "{{.Name}}"
-    qb.KeyConditions[attrName] = expression.Key(attrName).LessThan(expression.Value(value))
-    qb.UsedKeys[attrName] = true
+    qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").LessThan(expression.Value(value))
+    qb.UsedKeys["{{.Name}}"] = true
     return qb
 }
 {{end}}
