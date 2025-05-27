@@ -39,7 +39,7 @@ func TestSchemaStructsTemplate(t *testing.T) {
 			SecondaryIndexes: []common.SecondaryIndex{},
 		}
 
-		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
+		rendered := utils.MustParseTemplateFormattedToString(v2.SchemaStructsTemplate, templateMap)
 		testSchemaStructsContent(t, rendered, templateMap)
 	})
 
@@ -89,7 +89,7 @@ func TestSchemaStructsTemplate(t *testing.T) {
 			},
 		}
 
-		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
+		rendered := utils.MustParseTemplateFormattedToString(v2.SchemaStructsTemplate, templateMap)
 		testSchemaStructsContent(t, rendered, templateMap)
 	})
 }
