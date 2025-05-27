@@ -26,7 +26,7 @@ jobs:
           command: go/tests/app
           
   template-tests:
-    name: TemlTests
+    name: TemplateTests
     runs-on: ubuntu-latest
     steps:
       - name: Run static template parts tests
@@ -35,7 +35,7 @@ jobs:
           command: go/tests/template
 
   compile-tests:
-    name: compile-tests
+    name: CompileTests
     runs-on: ubuntu-latest
     steps:
       - name: Run template compile tests
