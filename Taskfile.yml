@@ -144,8 +144,6 @@ tasks:
   _localstack/go/generate:
     desc: Generate Go code from all schema examples.
     dir: "{{.git_root}}"
-    deps:
-      - go/mod/vendor 
     cmds:
       - rm -rf tests/localstack/generated 
       - mkdir -p tests/localstack/generated 
@@ -163,6 +161,39 @@ tasks:
     dir: "{{.git_root}}/tests/localstack"
     cmd: go mod tidy
     silent: true 
+    internal: true
+
+  _localstack/go/prepare:
+    desc: Prepare integration tests for localstack.
+    cmds:
+      - task: _localstack/go/tidy
+      - task: _localstack/go/generate
+    silent: true
+    internal: true
+
+  _localstack/run:
+    desc: Run localstack environment.
+    deps:
+      - _localstack/install
+    cmds:
+      - |
+        if [ -z "$LOCALSTACK_AUTH_TOKEN" ]; then
+          echo "Error: LOCALSTACK_AUTH_TOKEN is not set. Please set this environment variable before running LocalStack."
+          exit 1
+        fi
+        if ! curl -s http://localhost:4566/_localstack/health >/dev/null 2>&1; then
+          echo "Starting LocalStack..."
+          "{{.localstack_py_env}}/bin/localstack start -d"
+        else
+          echo "LocalStack already running"
+        fi
+      - task: _terraform/apply
+        vars:
+          DIR: "{{.git_root}}/tests/localstack/env"
+          TF_VARS: |
+            -var="use_localstack=true"
+      - task: _localstack/go/prepare
+    silent: true
     internal: true
 
   # =================================================
@@ -209,7 +240,7 @@ tasks:
     cmd: terraform fmt -recursive --diff --write=true
     silent: true
 
-  localstack/apply-only:
+  localstack/ci-apply-only:
     desc: Apply terraform to existing LocalStack (for CI).
     deps:
       - _terraform/install
@@ -220,35 +251,19 @@ tasks:
         TF_VARS: -var="use_localstack=true"
     silent: true
 
-  localstack/run:
-    desc: Run localstack environment.
+  localstack/ci-tests:
+    desc: Run CI/CD integration testing.
+    dir: "{{.git_root}}/tests/localstack"
     deps:
-      - _localstack/install
+      - _localstack/go/prepare
     cmds:
-      - |
-        if [ -z "$LOCALSTACK_AUTH_TOKEN" ]; then
-          echo "Error: LOCALSTACK_AUTH_TOKEN is not set. Please set this environment variable before running LocalStack."
-          exit 1
-        fi
-        if ! curl -s http://localhost:4566/_localstack/health >/dev/null 2>&1; then
-          echo "Starting LocalStack..."
-          "{{.localstack_py_env}}/bin/localstack start -d"
-        else
-          echo "LocalStack already running"
-        fi
-      - task: _terraform/apply
-        vars:
-          DIR: "{{.git_root}}/tests/localstack/env"
-          TF_VARS: |
-            -var="use_localstack=true"
+      - echo "Hello"
     silent: true
 
   localstack/tests:
-    desc: Run integration tests.
+    desc: Run integration testing.
     deps:
-      - _localstack/go/tidy
-      - _localstack/go/generate
-      - localstack/run
+      - _localstack/run
     cmds:
       - echo "Hello" 
     silent: true
