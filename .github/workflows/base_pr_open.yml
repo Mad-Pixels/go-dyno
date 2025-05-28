@@ -20,7 +20,7 @@ jobs:
   localstack-tests:
     name: (Base) Pr Tests 
     uses: ./.github/workflows/.localstack.yml
-    with:
+    secrets:
       localstack: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
 
   pr-check:
