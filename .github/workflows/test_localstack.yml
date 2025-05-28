@@ -1,0 +1,48 @@
+name: LocalStack
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-tests:
+    name: LocalStack Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache: true
+      
+      - name: Start LocalStack
+        run: |
+          docker run -d \
+            --name localstack \
+            -p 4566:4566 \
+            -e LOCALSTACK_AUTH_TOKEN=${{ secrets.LOCALSTACK_AUTH_TOKEN }} \
+            localstack/localstack:latest
+      
+      - name: Wait for LocalStack
+        run: |
+          timeout 60 bash -c 'until curl -s http://localhost:4566/_localstack/health; do sleep 2; done'
+
+      - name: Apply
+        uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
+        with:
+          command: terraform/apply
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop localstack || true
+          docker rm localstack || true
