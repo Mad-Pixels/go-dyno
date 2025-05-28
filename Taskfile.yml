@@ -141,6 +141,30 @@ tasks:
     silent: true
     internal: true
 
+  _localstack/go/generate:
+    desc: Generate Go code from all schema examples.
+    dir: "{{.git_root}}"
+    deps:
+      - go/mod/vendor 
+    cmds:
+      - rm -rf tests/localstack/generated 
+      - mkdir -p tests/localstack/generated 
+      - |
+        for schema in examples/*.json; do 
+          go run ./cmd/dyno gen \
+            -c "${schema}" \
+            -d "tests/localstack/generated"
+        done
+    silent: true
+    internal: true
+
+  _localstack/go/tidy:
+    desc: Generate go.sum file.
+    dir: "{{.git_root}}/tests/localstack"
+    cmd: go mod tidy
+    silent: true 
+    internal: true
+
   # =================================================
   # ----------------------PUBLIC--------------------#
   # =================================================
@@ -216,6 +240,15 @@ tasks:
           DIR: "{{.git_root}}/tests/localstack/env"
           TF_VARS: |
             -var="use_localstack=true"
+
+  localstack/test:
+    desc: Run integration tests.
+    deps:
+      - _localstack/go/tidy
+      - _localstack/go/generate
+      - localstack/run
+    cmds:
+      - echo "Hello" 
 
   localstack/stop:
     desc: Stop localstack container.
