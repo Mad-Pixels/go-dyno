@@ -59,7 +59,7 @@ jobs:
       - name: Tests
         uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
         with:
-          command: localstack/ci-tests
+          command: go/tests/ci-localstack
       
       - name: Cleanup
         if: always()
