@@ -16,6 +16,16 @@ jobs:
         with:
           command: go/run/lint
 
+  terraform:
+    name: Terraform 
+    runs-on: ubuntu-latest
+    steps:
+      - name: TfFmt
+        uses: "Mad-Pixels/github-workflows/.github/actions/terraform-fmt@main"
+        with:
+          tf_dir: "./tests/localstack/env"
+          tf_version: "1.6.1"
+
   app-tests:
     name: App
     runs-on: ubuntu-latest

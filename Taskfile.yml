@@ -177,6 +177,14 @@ tasks:
       - "{{.go_root}}/bin/golangci-lint run"
     silent: true
 
+  terraform/fmt/fix:
+    desc: Run 'terraform fix fmt'.
+    dir: "{{.git_root}}/terraform"
+    deps:
+      - _terraform/install
+    cmd: terraform fmt -recursive --diff --write=true
+    silent: true
+
   localstack/run:
     desc: Run localstack environment.
     deps:
