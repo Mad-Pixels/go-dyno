@@ -194,6 +194,19 @@ tasks:
           TF_VARS: |
             -var="use_localstack=true"
 
+  localstack/stop:
+    desc: Stop localstack container.
+    cmds:
+      - terraform -chdir="{{.git_root}}/tests/localstack/env" destroy -auto-approve
+      - "{{.localstack_py_env}}/bin/localstack stop"
+
+  localstack/remove:
+    desc: Remove localstack env.
+    deps:
+      - localstack/stop
+    cmds:
+      - rm -rf {{.localstack_py_env}}
+
   # =================================================
   # -----------------------TEST---------------------#
   # =================================================
