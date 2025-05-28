@@ -39,7 +39,7 @@ jobs:
       - name: Apply
         uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
         with:
-          command: terraform/apply
+          command: localstack/apply-only
       
       - name: Cleanup
         if: always()

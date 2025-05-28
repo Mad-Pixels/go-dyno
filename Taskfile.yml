@@ -113,6 +113,24 @@ tasks:
     silent: true
     internal: true
 
+  _terraform/apply:
+    desc: Apply terraform to localstack
+    dir: "{{.DIR}}"
+    deps:
+      - _terraform/install
+    cmds:
+      - |
+        cat << EOF > backend.tf
+        terraform {
+          backend "local" {}
+        }
+        EOF
+
+        terraform init -reconfigure
+        terraform apply -input=false -auto-approve {{.TF_VARS}}
+    silent: true
+    internal: true
+
   _localstack/install:
     desc: Install "localstack".
     cmds:
@@ -159,23 +177,6 @@ tasks:
       - "{{.go_root}}/bin/golangci-lint run"
     silent: true
 
-  terraform/apply:
-    desc: Apply terraform to localstack
-    dir: "{{.DIR}}"
-    deps:
-      - _terraform/install
-    cmds:
-      - |
-        cat << EOF > backend.tf
-        terraform {
-          backend "local" {}
-        }
-        EOF
-
-        terraform init -reconfigure
-        terraform apply -input=false -auto-approve {{.TF_VARS}}
-    silent: true
-
   terraform/fmt/fix:
     desc: Run 'terraform fix fmt'.
     dir: "{{.git_root}}/tests/localstack/env"
@@ -183,6 +184,16 @@ tasks:
       - _terraform/install
     cmd: terraform fmt -recursive --diff --write=true
     silent: true
+
+  localstack/apply-only:
+    desc: Apply terraform to existing LocalStack (for CI).
+    deps:
+      - _terraform/install
+    cmds:
+    - task: terraform/apply
+      vars:
+        DIR: "{{.git_root}}/tests/localstack/env"
+        TF_VARS: -var="use_localstack=true"
 
   localstack/run:
     desc: Run localstack environment.
@@ -200,7 +211,7 @@ tasks:
         else
           echo "LocalStack already running"
         fi
-      - task: terraform/apply
+      - task: _terraform/apply
         vars:
           DIR: "{{.git_root}}/tests/localstack/env"
           TF_VARS: |
