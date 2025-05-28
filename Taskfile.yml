@@ -133,6 +133,10 @@ tasks:
       - "{{.go_root}}/bin/golangci-lint run"
     silent: true
 
+  # =================================================
+  # -----------------------TEST---------------------#
+  # =================================================
+
   go/tests/app:
     desc: Tests app with basic cli checks 
     dir: "{{ .git_root }}/internal" 
@@ -143,7 +147,7 @@ tasks:
 
   go/tests/template:
     desc: Tests template parts statc
-    dir: "{{ .git_root }}/templates/v2/tests/parts" 
+    dir: "{{ .git_root }}/tests/parts" 
     deps:
       - go/mod/vendor 
     cmd: go test -parallel 4 -shuffle=on -v ./... 
@@ -151,7 +155,7 @@ tasks:
 
   go/tests/compile:
     desc: Tests full template fromtatter, build, vet
-    dir: "{{ .git_root }}/templates/v2/tests/validation" 
+    dir: "{{ .git_root }}/tests/validation" 
     deps:
       - go/mod/vendor 
       - _go/install/fumpt
@@ -160,7 +164,7 @@ tasks:
 
   go/tests/localstack:
     desc: Func test generated template with localstack environment
-    dir: "{{ .git_root }}/templates/v2/tests/localstack"
+    dir: "{{ .git_root }}/tests/localstack"
     deps:
       - go/mod/vendor
     cmds:
