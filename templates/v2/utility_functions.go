@@ -218,7 +218,7 @@ func ConvertMapToAttributeValues(input map[string]interface{}) (map[string]types
             }
         case bool:
             if v {
-                result[key] = &types.AttributeValueMemberN{Value: "1"} // Для совместимости с вашим BoolToInt
+                result[key] = &types.AttributeValueMemberN{Value: "1"}
             } else {
                 result[key] = &types.AttributeValueMemberN{Value: "0"}
             }
