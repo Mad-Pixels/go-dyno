@@ -190,7 +190,7 @@ tasks:
     deps:
       - _terraform/install
     cmds:
-    - task: terraform/apply
+    - task: _terraform/apply
       vars:
         DIR: "{{.git_root}}/tests/localstack/env"
         TF_VARS: -var="use_localstack=true"

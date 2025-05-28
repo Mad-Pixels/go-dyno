@@ -23,7 +23,22 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-localstack
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
       
+      - name: Load LocalStack from cache or pull
+        run: |
+          docker pull localstack/localstack:latest || true
+
       - name: Start LocalStack
         run: |
           docker run -d \
