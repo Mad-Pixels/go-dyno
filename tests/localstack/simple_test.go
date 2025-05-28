@@ -35,10 +35,7 @@ import (
 //
 //	go test -v ./tests/localstack/ -run TestSimpleSchema
 func TestSimpleSchema(t *testing.T) {
-	// Connect to LocalStack DynamoDB instance
-	cfg := DefaultLocalStackConfig()
-	client := ConnectToLocalStack(t, cfg)
-
+	client := ConnectToLocalStack(t, DefaultLocalStackConfig())
 	ctx, cancel := TestContext(5 * time.Minute)
 	defer cancel()
 
@@ -46,7 +43,6 @@ func TestSimpleSchema(t *testing.T) {
 	t.Logf("Table: %s", simple.TableName)
 	t.Logf("Hash Key: %s, Range Key: %s", simple.TableSchema.HashKey, simple.TableSchema.RangeKey)
 
-	// Group tests by functionality for better organization and parallel execution
 	t.Run("Utility_Functions", func(t *testing.T) {
 		t.Parallel()
 		testSimpleBoolToInt(t)
@@ -161,7 +157,6 @@ func testSimpleIntToBool(t *testing.T) {
 //	int         → N             → "age" (common attribute)
 func testSimplePutItem(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("create_and_marshal_item", func(t *testing.T) {
-		// Create test item matching simple.json schema structure
 		item := simple.SchemaItem{
 			Id:      "test-id-123", // hash key: string
 			Created: 1640995200,    // range key: unix timestamp
@@ -169,25 +164,20 @@ func testSimplePutItem(t *testing.T, client *dynamodb.Client, ctx context.Contex
 			Age:     25,            // common attribute: number
 		}
 
-		// Marshal to DynamoDB AttributeValue format
 		av, err := simple.PutItem(item)
 		require.NoError(t, err, "PutItem marshaling should succeed")
 		require.NotEmpty(t, av, "AttributeValues should not be empty")
 
-		// Validate required DynamoDB attributes are present
 		assert.Contains(t, av, "id", "Must contain hash key 'id'")
 		assert.Contains(t, av, "created", "Must contain range key 'created'")
 		assert.Contains(t, av, "name", "Must contain common attribute 'name'")
 		assert.Contains(t, av, "age", "Must contain common attribute 'age'")
 
-		// Validate AttributeValue types match schema
 		assert.Equal(t, "test-id-123", av["id"].(*types.AttributeValueMemberS).Value, "ID should be string type")
-
 		t.Logf("✅ Successfully created and marshaled item with ID: %s", item.Id)
 	})
 
 	t.Run("put_item_to_dynamodb", func(t *testing.T) {
-		// Create unique test item to avoid conflicts
 		item := simple.SchemaItem{
 			Id:      "test-put-456",
 			Created: 1640995300,
@@ -195,22 +185,17 @@ func testSimplePutItem(t *testing.T, client *dynamodb.Client, ctx context.Contex
 			Age:     30,
 		}
 
-		// Marshal item for DynamoDB
 		av, err := simple.PutItem(item)
 		require.NoError(t, err, "Item marshaling should succeed")
 
-		// Execute PutItem operation against LocalStack
 		input := &dynamodb.PutItemInput{
 			TableName: aws.String(simple.TableName),
 			Item:      av,
 		}
-
 		_, err = client.PutItem(ctx, input)
 		require.NoError(t, err, "DynamoDB PutItem operation should succeed")
-
 		t.Logf("✅ Successfully wrote item to DynamoDB table: %s", simple.TableName)
 
-		// Optional: Verify item was stored by reading it back
 		getInput := &dynamodb.GetItemInput{
 			TableName: aws.String(simple.TableName),
 			Key: map[string]types.AttributeValue{
@@ -218,11 +203,9 @@ func testSimplePutItem(t *testing.T, client *dynamodb.Client, ctx context.Contex
 				"created": &types.AttributeValueMemberN{Value: "1640995300"},
 			},
 		}
-
 		result, err := client.GetItem(ctx, getInput)
 		require.NoError(t, err, "GetItem verification should succeed")
 		assert.NotEmpty(t, result.Item, "Stored item should be retrievable")
-
 		t.Logf("✅ Verified item persistence in DynamoDB")
 	})
 }
@@ -242,44 +225,31 @@ func testSimplePutItem(t *testing.T, client *dynamodb.Client, ctx context.Contex
 //	// Use batchItems with DynamoDB BatchWriteItem API
 func testSimpleBatchPutItems(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("batch_put_multiple_items", func(t *testing.T) {
-		// Create multiple test items for batch operation
 		items := []simple.SchemaItem{
 			{Id: "batch-1", Created: 1640995400, Name: "Batch Item 1", Age: 20},
 			{Id: "batch-2", Created: 1640995500, Name: "Batch Item 2", Age: 25},
 			{Id: "batch-3", Created: 1640995600, Name: "Batch Item 3", Age: 30},
 		}
 
-		// Convert items to batch format
 		batchItems, err := simple.BatchPutItems(items)
 		require.NoError(t, err, "BatchPutItems should succeed")
 		require.Len(t, batchItems, 3, "Should return AttributeValues for all 3 items")
 
-		// Validate each item in batch
 		for i, batchItem := range batchItems {
 			assert.Contains(t, batchItem, "id", "Batch item %d should have id", i)
 			assert.Contains(t, batchItem, "created", "Batch item %d should have created", i)
 			assert.Contains(t, batchItem, "name", "Batch item %d should have name", i)
 			assert.Contains(t, batchItem, "age", "Batch item %d should have age", i)
 		}
-
 		t.Logf("✅ Successfully prepared %d items for batch operation", len(batchItems))
-
-		// Note: In real implementation, you would use these with:
-		// dynamodb.BatchWriteItemInput{
-		//     RequestItems: map[string][]types.WriteRequest{
-		//         simple.TableName: {...}
-		//     }
-		// }
 	})
 
 	t.Run("batch_put_empty_slice", func(t *testing.T) {
-		// Test edge case: empty slice
 		emptyItems := []simple.SchemaItem{}
 		batchItems, err := simple.BatchPutItems(emptyItems)
 
 		require.NoError(t, err, "BatchPutItems should handle empty slice")
 		assert.Empty(t, batchItems, "Should return empty slice for empty input")
-
 		t.Logf("✅ BatchPutItems correctly handles empty input")
 	})
 }
@@ -317,7 +287,6 @@ func testSimpleQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 	t.Run("fluent_api_methods", func(t *testing.T) {
 		qb := simple.NewQueryBuilder()
 
-		// Test fluent method chaining - each method should return QueryBuilder
 		qb2 := qb.WithId("test-id")
 		require.NotNil(t, qb2, "WithId should return QueryBuilder for chaining")
 		assert.IsType(t, qb, qb2, "WithId should return same type")
@@ -337,14 +306,12 @@ func testSimpleQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 	t.Run("sorting_and_pagination", func(t *testing.T) {
 		qb := simple.NewQueryBuilder()
 
-		// Test sorting methods
 		qbDesc := qb.OrderByDesc()
 		require.NotNil(t, qbDesc, "OrderByDesc should return QueryBuilder")
 
 		qbAsc := qb.OrderByAsc()
 		require.NotNil(t, qbAsc, "OrderByAsc should return QueryBuilder")
 
-		// Test pagination
 		qbLimit := qb.Limit(50)
 		require.NotNil(t, qbLimit, "Limit should return QueryBuilder")
 
@@ -361,7 +328,6 @@ func testSimpleQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 //  3. Order of operations independence
 func testSimpleQueryBuilderChaining(t *testing.T) {
 	t.Run("complex_method_chaining", func(t *testing.T) {
-		// Test complex chaining scenario
 		qb := simple.NewQueryBuilder().
 			WithId("chain-test").
 			WithCreated(1640995200).
@@ -371,12 +337,10 @@ func testSimpleQueryBuilderChaining(t *testing.T) {
 			Limit(25)
 
 		require.NotNil(t, qb, "Complex chaining should work")
-
 		t.Logf("✅ Complex method chaining works correctly")
 	})
 
 	t.Run("method_order_independence", func(t *testing.T) {
-		// Different chaining orders should all work
 		qb1 := simple.NewQueryBuilder().WithId("test1").OrderByDesc().WithAge(25)
 		qb2 := simple.NewQueryBuilder().OrderByDesc().WithAge(25).WithId("test1")
 		qb3 := simple.NewQueryBuilder().WithAge(25).WithId("test1").OrderByDesc()
@@ -399,7 +363,6 @@ func testSimpleQueryBuilderChaining(t *testing.T) {
 //   - Optional: FilterExpression for non-key attributes
 func testSimpleQueryBuilderExecution(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("build_query_input", func(t *testing.T) {
-		// Setup: Insert test data for querying
 		testItem := simple.SchemaItem{
 			Id:      "query-test-123",
 			Created: 1640995700,
@@ -416,14 +379,11 @@ func testSimpleQueryBuilderExecution(t *testing.T, client *dynamodb.Client, ctx 
 		})
 		require.NoError(t, err, "Test data setup should succeed")
 
-		// Test: Build query for hash key lookup
 		qb := simple.NewQueryBuilder().WithId("query-test-123")
-
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "BuildQuery should succeed")
 		require.NotNil(t, queryInput, "QueryInput should not be nil")
 
-		// Validate QueryInput structure
 		assert.Equal(t, simple.TableName, *queryInput.TableName, "TableName should match schema")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "KeyConditionExpression should be set")
 		assert.NotEmpty(t, queryInput.ExpressionAttributeNames, "ExpressionAttributeNames should be populated")
@@ -435,7 +395,6 @@ func testSimpleQueryBuilderExecution(t *testing.T, client *dynamodb.Client, ctx 
 	})
 
 	t.Run("build_query_with_filters", func(t *testing.T) {
-		// Test query with additional filter conditions
 		qb := simple.NewQueryBuilder().
 			WithId("filter-test").
 			WithName("Test Name").
@@ -444,21 +403,9 @@ func testSimpleQueryBuilderExecution(t *testing.T, client *dynamodb.Client, ctx 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "BuildQuery with filters should succeed")
 
-		// When non-key attributes are used, they should appear in FilterExpression
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-		// Note: FilterExpression validation depends on implementation details
-
 		t.Logf("✅ QueryInput with filters built successfully")
 	})
-
-	// TODO: Add Execute method test when implementation is ready
-	// t.Run("execute_query_end_to_end", func(t *testing.T) {
-	//     qb := simple.NewQueryBuilder().WithId("query-test-123")
-	//     items, err := qb.Execute(ctx, client)
-	//     require.NoError(t, err, "Query execution should succeed")
-	//     assert.Len(t, items, 1, "Should return the test item")
-	//     assert.Equal(t, "query-test-123", items[0].Id, "Returned item should match query")
-	// })
 }
 
 // ==================== Schema Constants Tests ====================
@@ -481,7 +428,6 @@ func testSimpleSchemaConstants(t *testing.T) {
 	})
 
 	t.Run("column_constants", func(t *testing.T) {
-		// Validate all column constants match schema attribute names
 		columnTests := map[string]string{
 			"ColumnId":      "id",
 			"ColumnCreated": "created",
@@ -515,7 +461,6 @@ func testSimpleAttributeNames(t *testing.T) {
 		attrs := simple.AttributeNames
 		require.NotEmpty(t, attrs, "AttributeNames should not be empty")
 
-		// Validate all expected attributes are present
 		expectedAttrs := []string{"id", "created", "name", "age"}
 		assert.Len(t, attrs, len(expectedAttrs), "AttributeNames should contain all schema attributes")
 
@@ -523,13 +468,11 @@ func testSimpleAttributeNames(t *testing.T) {
 			assert.Contains(t, attrs, expected, "AttributeNames should contain '%s'", expected)
 		}
 
-		// Ensure no duplicates
 		attrSet := make(map[string]bool)
 		for _, attr := range attrs {
 			assert.False(t, attrSet[attr], "AttributeNames should not contain duplicate: %s", attr)
 			attrSet[attr] = true
 		}
-
 		t.Logf("✅ AttributeNames array contains %d attributes: %v", len(attrs), attrs)
 	})
 }
@@ -545,17 +488,14 @@ func testSimpleTableSchema(t *testing.T) {
 	t.Run("table_schema_structure", func(t *testing.T) {
 		schema := simple.TableSchema
 
-		// Validate basic schema properties
 		assert.Equal(t, "table-simple", schema.TableName, "Schema TableName should match table name")
 		assert.Equal(t, "id", schema.HashKey, "Hash key should be 'id'")
 		assert.Equal(t, "created", schema.RangeKey, "Range key should be 'created'")
 
-		// Validate attribute collections
 		assert.Len(t, schema.Attributes, 2, "Should have 2 primary attributes")
 		assert.Len(t, schema.CommonAttributes, 2, "Should have 2 common attributes")
 		assert.Len(t, schema.SecondaryIndexes, 0, "Simple schema should have no secondary indexes")
 
-		// Validate specific attributes
 		primaryAttrs := []string{"id", "created"}
 		commonAttrs := []string{"name", "age"}
 
@@ -596,7 +536,6 @@ func testSimpleCreateKey(t *testing.T) {
 		require.NoError(t, err, "CreateKey should succeed with valid inputs")
 		require.NotEmpty(t, key, "Created key should not be empty")
 
-		// Validate key structure
 		assert.Contains(t, key, "id", "Key should contain hash key 'id'")
 		assert.Contains(t, key, "created", "Key should contain range key 'created'")
 
@@ -606,12 +545,9 @@ func testSimpleCreateKey(t *testing.T) {
 	t.Run("create_key_hash_only", func(t *testing.T) {
 		hashKeyValue := "hash-only-test"
 
-		// Test with nil range key (if supported)
 		key, err := simple.CreateKey(hashKeyValue, nil)
 		require.NoError(t, err, "CreateKey should handle nil range key")
-
 		assert.Contains(t, key, "id", "Key should contain hash key 'id'")
-
 		t.Logf("✅ CreateKey handles hash-only keys correctly")
 	})
 }
@@ -625,7 +561,6 @@ func testSimpleCreateKey(t *testing.T) {
 //   - Key-based updates
 func testSimpleCreateKeyFromItem(t *testing.T) {
 	t.Run("extract_key_from_complete_item", func(t *testing.T) {
-		// Create complete item
 		item := simple.SchemaItem{
 			Id:      "extract-test-456",
 			Created: 1640995900,
@@ -633,47 +568,15 @@ func testSimpleCreateKeyFromItem(t *testing.T) {
 			Age:     40,
 		}
 
-		// Extract key attributes only
 		key, err := simple.CreateKeyFromItem(item)
 		require.NoError(t, err, "CreateKeyFromItem should succeed")
 		require.NotEmpty(t, key, "Extracted key should not be empty")
 
-		// Validate extracted key contains only key attributes
 		assert.Contains(t, key, "id", "Extracted key should contain hash key 'id'")
 		assert.Contains(t, key, "created", "Extracted key should contain range key 'created'")
-
-		// Validate non-key attributes are excluded
 		assert.NotContains(t, key, "name", "Extracted key should not contain non-key attribute 'name'")
 		assert.NotContains(t, key, "age", "Extracted key should not contain non-key attribute 'age'")
 
 		t.Logf("✅ CreateKeyFromItem correctly extracts only key attributes")
 	})
-}
-
-// ==================== Test Helpers ====================
-
-// These helper functions could be added for test utility:
-
-// createTestItem generates a SchemaItem with unique values for testing
-func createTestItem(suffix string) simple.SchemaItem {
-	return simple.SchemaItem{
-		Id:      "test-" + suffix,
-		Created: 1640995200 + int(time.Now().Unix()%1000), // Unique timestamp
-		Name:    "Test Item " + suffix,
-		Age:     25,
-	}
-}
-
-// insertTestItem is a helper that creates and inserts a test item
-func insertTestItem(t *testing.T, client *dynamodb.Client, ctx context.Context, item simple.SchemaItem) {
-	t.Helper()
-
-	av, err := simple.PutItem(item)
-	require.NoError(t, err)
-
-	_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(simple.TableName),
-		Item:      av,
-	})
-	require.NoError(t, err)
 }

@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 
 vars:
   git_root:
@@ -299,7 +299,9 @@ tasks:
     dir: "{{ .git_root }}/tests/localstack/" 
     deps:
       - _localstack/run
-    cmd: go test -parallel 4 -shuffle=on -v ./... 
+    cmds:
+      - defer: { task: localstack/stop }
+      - go test -parallel 4 -shuffle=on -v ./... 
     silent: true
   
   go/tests/ci-localstack:
