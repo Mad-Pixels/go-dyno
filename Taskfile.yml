@@ -195,7 +195,12 @@ tasks:
           echo "Error: LOCALSTACK_AUTH_TOKEN is not set. Please set this environment variable before running LocalStack."
           exit 1
         fi
-      - "{{.localstack_py_env}}/bin/localstack start -d"
+        if ! curl -s http://localhost:4566/_localstack/health >/dev/null 2>&1; then
+          echo "Starting LocalStack..."
+          "{{.localstack_py_env}}/bin/localstack start -d"
+        else
+          echo "LocalStack already running"
+        fi
       - task: _terraform/apply
         vars:
           DIR: "{{.git_root}}/tests/localstack/env"
