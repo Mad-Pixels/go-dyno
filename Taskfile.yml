@@ -163,14 +163,6 @@ tasks:
     silent: true 
     internal: true
 
-  _localstack/go/prepare:
-    desc: Prepare integration tests for localstack.
-    cmds:
-      - task: _localstack/go/tidy
-      - task: _localstack/go/generate
-    silent: true
-    internal: true
-
   _localstack/run:
     desc: Run localstack environment.
     deps:
@@ -181,9 +173,9 @@ tasks:
           echo "Error: LOCALSTACK_AUTH_TOKEN is not set. Please set this environment variable before running LocalStack."
           exit 1
         fi
-        if ! curl -s http://localhost:4566/_localstack/health >/dev/null 2>&1; then
+        if ! curl -s https://localhost.localstack.cloud:4566 >/dev/null 2>&1; then
           echo "Starting LocalStack..."
-          "{{.localstack_py_env}}/bin/localstack start -d"
+          {{.localstack_py_env}}/bin/localstack start -d
         else
           echo "LocalStack already running"
         fi
@@ -192,7 +184,7 @@ tasks:
           DIR: "{{.git_root}}/tests/localstack/env"
           TF_VARS: |
             -var="use_localstack=true"
-      - task: _localstack/go/prepare
+      - task: localstack/go/prepare
     silent: true
     internal: true
 
@@ -251,21 +243,11 @@ tasks:
         TF_VARS: -var="use_localstack=true"
     silent: true
 
-  localstack/ci-tests:
-    desc: Run CI/CD integration testing.
-    dir: "{{.git_root}}/tests/localstack"
-    deps:
-      - _localstack/go/prepare
+  localstack/go/prepare:
+    desc: Prepare integration tests for localstack (for Test or Dev).
     cmds:
-      - echo "Hello"
-    silent: true
-
-  localstack/tests:
-    desc: Run integration testing.
-    deps:
-      - _localstack/run
-    cmds:
-      - echo "Hello" 
+      - task: _localstack/go/generate
+      - task: _localstack/go/tidy
     silent: true
 
   localstack/stop:
@@ -313,24 +295,21 @@ tasks:
     silent: true
 
   go/tests/localstack:
-    desc: Func test generated template with localstack environment.
-    dir: "{{ .git_root }}/tests/localstack"
+    desc: Run local localstack integration tests.
+    dir: "{{ .git_root }}/tests/localstack/" 
     deps:
-      - go/mod/vendor
-    cmds:
-      - |
-        echo "Hello"
+      - _localstack/run
+    cmd: go test -parallel 4 -shuffle=on -v ./... 
+    silent: true
   
-  go/tests/all:
-    desc: Run all tests.
-    dir: "{{ .git_root }}"
+  go/tests/ci-localstack:
+    desc: Run CI/CD localstack integration tests.
+    dir: "{{.git_root}}/tests/localstack"
     deps:
-      - go/mod/vendor
-      - _go/install/fumpt
-    cmds:
-      - |
-        go test -parallel 4 -shuffle=on -v ./...
-
+      - localstack/go/prepare
+    cmd: go test -parallel 4 -shuffle=on -v ./... 
+    silent: true
+  
   # =================================================
   # ----------------------BUILD---------------------#
   # =================================================

@@ -1,5 +1,5 @@
 {
-  "table_name": "test-blog-posts",
+  "table_name": "blog-posts",
   "hash_key": "user_id",
   "range_key": "post_id",
   "attributes": [
