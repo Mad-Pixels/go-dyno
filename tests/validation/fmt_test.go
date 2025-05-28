@@ -25,9 +25,12 @@ func TestGeneratedCodeFormatting(t *testing.T) {
 	require.NotEmpty(t, schemaFiles, "No JSON files found in %s", EXAMPLES)
 
 	for _, schemaFile := range schemaFiles {
+		schemaFile := schemaFile
 		schemaName := strings.TrimSuffix(filepath.Base(schemaFile), ".json")
 
 		t.Run(schemaName, func(t *testing.T) {
+			t.Parallel()
+
 			dynamoSchema, err := schema.LoadSchema(schemaFile)
 			require.NoError(t, err, "Failed to load schema: %s", schemaFile)
 
