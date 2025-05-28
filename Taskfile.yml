@@ -218,6 +218,7 @@ tasks:
       vars:
         DIR: "{{.git_root}}/tests/localstack/env"
         TF_VARS: -var="use_localstack=true"
+    silent: true
 
   localstack/run:
     desc: Run localstack environment.
@@ -240,8 +241,9 @@ tasks:
           DIR: "{{.git_root}}/tests/localstack/env"
           TF_VARS: |
             -var="use_localstack=true"
+    silent: true
 
-  localstack/test:
+  localstack/tests:
     desc: Run integration tests.
     deps:
       - _localstack/go/tidy
@@ -249,12 +251,14 @@ tasks:
       - localstack/run
     cmds:
       - echo "Hello" 
+    silent: true
 
   localstack/stop:
     desc: Stop localstack container.
     cmds:
       - terraform -chdir="{{.git_root}}/tests/localstack/env" destroy -auto-approve
       - "{{.localstack_py_env}}/bin/localstack stop"
+    silent: true
 
   localstack/remove:
     desc: Remove localstack env.
@@ -262,6 +266,7 @@ tasks:
       - localstack/stop
     cmds:
       - rm -rf {{.localstack_py_env}}
+    silent: true
 
   # =================================================
   # -----------------------TEST---------------------#
