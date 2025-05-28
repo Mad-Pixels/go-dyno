@@ -21,10 +21,9 @@ import (
 //
 // This ensures generated code is syntactically correct and all dependencies resolve properly.
 func TestGeneratedCodeCompilation(t *testing.T) {
-	templatesDir := filepath.Join(".", ".tmpl")
-	schemaFiles, err := filepath.Glob(filepath.Join(templatesDir, "*.json"))
+	schemaFiles, err := filepath.Glob(filepath.Join(EXAMPLES, "*.json"))
 	require.NoError(t, err, "Failed to read template files")
-	require.NotEmpty(t, schemaFiles, "No JSON files found in %s", templatesDir)
+	require.NotEmpty(t, schemaFiles, "No JSON files found in %s", EXAMPLES)
 
 	for _, schemaFile := range schemaFiles {
 		schemaName := strings.TrimSuffix(filepath.Base(schemaFile), ".json")
