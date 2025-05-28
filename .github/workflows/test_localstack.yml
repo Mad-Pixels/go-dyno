@@ -54,12 +54,12 @@ jobs:
       - name: Apply
         uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
         with:
-          command: localstack/apply-only
+          command: localstack/ci-apply-only
 
       - name: Tests
         uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
         with:
-          command: localstack/tests
+          command: localstack/ci-tests
       
       - name: Cleanup
         if: always()
