@@ -179,7 +179,7 @@ tasks:
 
   terraform/fmt/fix:
     desc: Run 'terraform fix fmt'.
-    dir: "{{.git_root}}/terraform"
+    dir: "{{.git_root}}/tests/localstack/env"
     deps:
       - _terraform/install
     cmd: terraform fmt -recursive --diff --write=true
