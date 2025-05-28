@@ -16,10 +16,16 @@ jobs:
       platforms: '["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"]'
       upload_artifacts: true 
       version: ${{ format('pr-{0}', github.head_ref) }}
-    
+
+  localstack-tests:
+    name: (Base) Pr Tests 
+    uses: ./.github/workflows/.localstack.yml
+    with:
+      localstack: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
+
   pr-check:
     name: (Base) PR Check
-    needs: build-binaries
+    needs: [build-binaries, localstack-tests]
     runs-on: ubuntu-latest
     steps:
       - name: All checks passed

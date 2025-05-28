@@ -1,13 +1,10 @@
-name: LocalStack
+name: LocalStack 
 
 on:
-  push:
-    branches-ignore:
-      - main
-
-concurrency:
-  group: integration-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    secrets:
+      localstack: 
+        required: true
 
 jobs:
   integration-tests:
@@ -44,7 +41,7 @@ jobs:
           docker run -d \
             --name localstack \
             -p 4566:4566 \
-            -e LOCALSTACK_AUTH_TOKEN=${{ secrets.LOCALSTACK_AUTH_TOKEN }} \
+            -e LOCALSTACK_AUTH_TOKEN=${{ secrets.localstack }} \
             localstack/localstack:latest
       
       - name: Wait for LocalStack
