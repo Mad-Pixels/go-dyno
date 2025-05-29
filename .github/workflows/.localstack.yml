@@ -1,0 +1,65 @@
+name: LocalStack 
+
+on:
+  workflow_call:
+    secrets:
+      localstack: 
+        required: true
+
+jobs:
+  integration-tests:
+    name: LocalStack Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-localstack
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Load LocalStack from cache or pull
+        run: |
+          docker pull localstack/localstack:latest || true
+
+      - name: Start LocalStack
+        run: |
+          docker run -d \
+            --name localstack \
+            -p 4566:4566 \
+            -e LOCALSTACK_AUTH_TOKEN=${{ secrets.localstack }} \
+            localstack/localstack:latest
+      
+      - name: Wait for LocalStack
+        run: |
+          timeout 60 bash -c 'until curl -s http://localhost:4566/_localstack/health; do sleep 2; done'
+
+      - name: Apply
+        uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
+        with:
+          command: localstack/ci-apply-only
+
+      - name: Tests
+        uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
+        with:
+          command: go/tests/ci-localstack
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop localstack || true
+          docker rm localstack || true

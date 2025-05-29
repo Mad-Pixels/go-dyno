@@ -11,24 +11,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestGeneratedCodeFormatting validates that complete DynamoDB code generation produces properly formatted Go code.
+// TestGeneratedCodeCompilation validates that complete DynamoDB code generation produces compilable Go code.
 //
 // Test process:
 //  1. Reads JSON schema files from .tmpl/ directory
 //  2. Generates complete Go code using DynamoDB templates
-//  3. Runs formatting validation (go fmt, goimports, gofumpt)
+//  3. Creates temporary module with proper dependencies
+//  4. Runs "go build" to ensure compilation succeeds
 //
-// This ensures generated code is production-ready and passes all standard Go formatting tools.
-func TestGeneratedCodeFormatting(t *testing.T) {
-	templatesDir := filepath.Join(".", ".tmpl")
-	schemaFiles, err := filepath.Glob(filepath.Join(templatesDir, "*.json"))
+// This ensures generated code is syntactically correct and all dependencies resolve properly.
+func TestGeneratedCodeCompilation(t *testing.T) {
+	schemaFiles, err := filepath.Glob(filepath.Join(EXAMPLES, "*.json"))
 	require.NoError(t, err, "Failed to read template files")
-	require.NotEmpty(t, schemaFiles, "No JSON files found in %s", templatesDir)
+	require.NotEmpty(t, schemaFiles, "No JSON files found in %s", EXAMPLES)
 
 	for _, schemaFile := range schemaFiles {
+		schemaFile := schemaFile
 		schemaName := strings.TrimSuffix(filepath.Base(schemaFile), ".json")
 
 		t.Run(schemaName, func(t *testing.T) {
+			t.Parallel()
+
 			dynamoSchema, err := schema.LoadSchema(schemaFile)
 			require.NoError(t, err, "Failed to load schema: %s", schemaFile)
 
@@ -45,7 +48,8 @@ func TestGeneratedCodeFormatting(t *testing.T) {
 
 			generatedCode := utils.MustParseTemplateFormattedToString(v2.CodeTemplate, templateMap)
 			require.NotEmpty(t, generatedCode, "Generated code is empty")
-			AllFormattersUnchanged(t, generatedCode)
+
+			CodeCompiles(t, generatedCode, dynamoSchema.PackageName())
 		})
 	}
 }

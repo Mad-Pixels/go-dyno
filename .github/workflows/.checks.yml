@@ -16,15 +16,43 @@ jobs:
         with:
           command: go/run/lint
 
-  tests:
-    name: GoTest
+  terraform:
+    name: Terraform 
+    runs-on: ubuntu-latest
+    steps:
+      - name: TfFmt
+        uses: "Mad-Pixels/github-workflows/.github/actions/terraform-fmt@main"
+        with:
+          tf_dir: "./tests/localstack/env"
+          tf_version: "1.6.1"
+
+  app-tests:
+    name: App
     runs-on: ubuntu-latest
     steps:
       - name: Run Go Tests
         uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
         with:
-          command: go/run/tests
-  
+          command: go/tests/app
+          
+  template-tests:
+    name: Template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run static template parts tests
+        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        with:
+          command: go/tests/template
+
+  compile-tests:
+    name: Compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run template compile tests
+        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        with:
+          command: go/tests/compile
+
   leaks:
     name: GitLeaks
     runs-on: ubuntu-latest

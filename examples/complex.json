@@ -1,5 +1,5 @@
 {
-  "table_name": "test-blog-posts",
+  "table_name": "blog-posts",
   "hash_key": "user_id",
   "range_key": "post_id",
   "attributes": [
@@ -8,7 +8,6 @@
     { "name": "created_at", "type": "N" },
     { "name": "likes", "type": "N" },
     { "name": "is_published", "type": "N" },
-    { "name": "is_featured", "type": "B" },
     { "name": "category#is_published", "type": "S" },
     { "name": "tag#is_published", "type": "S" }
   ],
@@ -18,7 +17,8 @@
     { "name": "category", "type": "S" },
     { "name": "tag", "type": "S" },
     { "name": "views", "type": "N" },
-    { "name": "is_premium", "type": "B" }
+    { "name": "is_premium", "type": "B" },
+    { "name": "is_featured", "type": "B" }
   ],
   "secondary_indexes": [
     {

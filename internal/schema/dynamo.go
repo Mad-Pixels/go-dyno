@@ -44,7 +44,7 @@ type DynamoSchema struct {
 //
 //	input: "user_activity" → output: "UserActivity"
 func (ds DynamoSchema) TableName() string {
-	return utils.ToUpperCamelCase(ds.schema.TableName)
+	return ds.schema.TableName
 }
 
 // HashKey returns the name of the table's partition (hash) key.

@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 
 vars:
   git_root:
@@ -11,6 +11,10 @@ vars:
   go_imports: latest
   go_fumpt: latest
   go_lint: v2.1.2
+
+  terraform: 1.9.5
+
+  localstack_py_env: "{{.HOME}}/.pyenv_localstack"
 
   base_name: godyno
   bin_dir: "{{.git_root}}/bin/"
@@ -97,6 +101,93 @@ tasks:
     silent: true
     internal: true
 
+  _terraform/install:
+    desc: Install 'terraform'.
+    cmds:
+      - curl -sL https://releases.hashicorp.com/terraform/{{.terraform}}/terraform_{{.terraform}}_{{OS}}_{{ARCH}}.zip -o /tmp/terraform.zip
+      - sudo unzip -o /tmp/terraform.zip -d /usr/local/bin/
+      - sudo chmod a+x /usr/local/bin/terraform
+      - terraform version
+    sources:
+      - /usr/local/bin/terraform
+    silent: true
+    internal: true
+
+  _terraform/apply:
+    desc: Apply terraform to localstack
+    dir: "{{.DIR}}"
+    deps:
+      - _terraform/install
+    cmds:
+      - |
+        cat << EOF > backend.tf
+        terraform {
+          backend "local" {}
+        }
+        EOF
+
+        terraform init -reconfigure
+        terraform apply -input=false -auto-approve {{.TF_VARS}}
+    silent: true
+    internal: true
+
+  _localstack/install:
+    desc: Install "localstack".
+    cmds:
+      - python3 -m venv {{.localstack_py_env}}
+      - "{{.localstack_py_env}}/bin/python3 -m pip install localstack"
+    sources:
+      - "{{.localstack_py_env}}/bin/localstack"
+    silent: true
+    internal: true
+
+  _localstack/go/generate:
+    desc: Generate Go code from all schema examples.
+    dir: "{{.git_root}}"
+    cmds:
+      - rm -rf tests/localstack/generated 
+      - mkdir -p tests/localstack/generated 
+      - |
+        for schema in examples/*.json; do 
+          go run ./cmd/dyno gen \
+            -c "${schema}" \
+            -d "tests/localstack/generated"
+        done
+    silent: true
+    internal: true
+
+  _localstack/go/tidy:
+    desc: Generate go.sum file.
+    dir: "{{.git_root}}/tests/localstack"
+    cmd: go mod tidy
+    silent: true 
+    internal: true
+
+  _localstack/run:
+    desc: Run localstack environment.
+    deps:
+      - _localstack/install
+    cmds:
+      - |
+        if [ -z "$LOCALSTACK_AUTH_TOKEN" ]; then
+          echo "Error: LOCALSTACK_AUTH_TOKEN is not set. Please set this environment variable before running LocalStack."
+          exit 1
+        fi
+        if ! curl -s https://localhost.localstack.cloud:4566 >/dev/null 2>&1; then
+          echo "Starting LocalStack..."
+          {{.localstack_py_env}}/bin/localstack start -d
+        else
+          echo "LocalStack already running"
+        fi
+      - task: _terraform/apply
+        vars:
+          DIR: "{{.git_root}}/tests/localstack/env"
+          TF_VARS: |
+            -var="use_localstack=true"
+      - task: localstack/go/prepare
+    silent: true
+    internal: true
+
   # =================================================
   # ----------------------PUBLIC--------------------#
   # =================================================
@@ -133,21 +224,100 @@ tasks:
       - "{{.go_root}}/bin/golangci-lint run"
     silent: true
 
-  go/run/tests:
-    desc: Tests 
-    dir: "{{ .git_root }}" 
+  terraform/fmt/fix:
+    desc: Run 'terraform fix fmt'.
+    dir: "{{.git_root}}/tests/localstack/env"
+    deps:
+      - _terraform/install
+    cmd: terraform fmt -recursive --diff --write=true
+    silent: true
+
+  localstack/ci-apply-only:
+    desc: Apply terraform to existing LocalStack (for CI).
+    deps:
+      - _terraform/install
+    cmds:
+    - task: _terraform/apply
+      vars:
+        DIR: "{{.git_root}}/tests/localstack/env"
+        TF_VARS: -var="use_localstack=true"
+    silent: true
+
+  localstack/go/prepare:
+    desc: Prepare integration tests for localstack (for Test or Dev).
+    cmds:
+      - task: _localstack/go/generate
+      - task: _localstack/go/tidy
+    silent: true
+
+  localstack/stop:
+    desc: Stop localstack container.
+    cmds:
+      - terraform -chdir="{{.git_root}}/tests/localstack/env" destroy -auto-approve
+      - "{{.localstack_py_env}}/bin/localstack stop"
+    silent: true
+
+  localstack/remove:
+    desc: Remove localstack env.
+    deps:
+      - localstack/stop
+    cmds:
+      - rm -rf {{.localstack_py_env}}
+    silent: true
+
+  # =================================================
+  # -----------------------TEST---------------------#
+  # =================================================
+
+  go/tests/app:
+    desc: Tests app with basic cli checks.
+    dir: "{{ .git_root }}/internal" 
+    deps:
+      - go/mod/vendor 
+    cmd: go test -parallel 4 -shuffle=on -v ./... 
+    silent: true
+
+  go/tests/template:
+    desc: Tests template parts statc.
+    dir: "{{ .git_root }}/tests/parts" 
+    deps:
+      - go/mod/vendor 
+    cmd: go test -parallel 4 -shuffle=on -v ./... 
+    silent: true
+
+  go/tests/compile:
+    desc: Tests full template fromtatter, build, vet.
+    dir: "{{ .git_root }}/tests/validation" 
     deps:
       - go/mod/vendor 
       - _go/install/fumpt
     cmd: go test -parallel 4 -shuffle=on -v ./... 
     silent: true
 
+  go/tests/localstack:
+    desc: Run local localstack integration tests.
+    dir: "{{ .git_root }}/tests/localstack/" 
+    deps:
+      - _localstack/run
+    cmds:
+      - defer: { task: localstack/stop }
+      - go test -parallel 4 -shuffle=on -v ./... 
+    silent: true
+  
+  go/tests/ci-localstack:
+    desc: Run CI/CD localstack integration tests.
+    dir: "{{.git_root}}/tests/localstack"
+    deps:
+      - localstack/go/prepare
+    cmd: go test -parallel 4 -shuffle=on -v ./... 
+    silent: true
+  
   # =================================================
   # ----------------------BUILD---------------------#
   # =================================================
 
   go/build/darwin_amd64:
-    desc: Build for macOS Intel (darwin/amd64)
+    desc: Build for macOS Intel (darwin/amd64).
     cmds:
       - task: _go/dyno/build
         vars:
@@ -155,7 +325,7 @@ tasks:
           GOARCH: amd64 
 
   go/build/darwin_arm64:
-    desc: Build for macOS Apple Silicon (darwin/arm64)
+    desc: Build for macOS Apple Silicon (darwin/arm64).
     cmds: 
       - task: _go/dyno/build
         vars: 
@@ -163,7 +333,7 @@ tasks:
           GOARCH: arm64 
   
   go/build/linux_amd64:
-    desc: Build for Linux x86_64 (linux/amd64)
+    desc: Build for Linux x86_64 (linux/amd64).
     cmds: 
       - task: _go/dyno/build
         vars:
@@ -171,7 +341,7 @@ tasks:
           GOARCH: amd64
 
   go/build/linux_386:
-    desc: Build for linux 32-bit (linux/386)
+    desc: Build for linux 32-bit (linux/386).
     cmds:
       - task: _go/dyno/build
         vars: 
@@ -179,7 +349,7 @@ tasks:
           GOARCH: "386"
 
   go/build/linux_arm:
-    desc: Build for Linux ARM 32-bit (linux/arm)
+    desc: Build for Linux ARM 32-bit (linux/arm).
     cmds:
       - task: _go/dyno/build
         vars: 
@@ -188,7 +358,7 @@ tasks:
           GOARM: "7"
 
   go/build/linux_arm64:
-    desc: Build for Linux ARM 6640bit (linux/arm64)
+    desc: Build for Linux ARM 6640bit (linux/arm64).
     cmds: 
       - task: _go/dyno/build
         vars:

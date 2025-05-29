@@ -16,6 +16,9 @@ import (
 	"testing"
 )
 
+// EXAMPLES define a path to JSON-schemas examples which will use for tests.
+const EXAMPLES = "../../examples"
+
 // ExecResult contains the result of executing a command with stdout, stderr and error information.
 type ExecResult struct {
 	Output string

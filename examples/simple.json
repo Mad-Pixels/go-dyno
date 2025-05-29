@@ -1,5 +1,5 @@
 {
-  "table_name": "test-table-simple", 
+  "table_name": "table-simple", 
   "hash_key": "id",
   "range_key": "created",
   "attributes": [

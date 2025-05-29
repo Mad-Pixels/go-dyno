@@ -10,6 +10,8 @@
 
 # Test binary, built with `go test -c`
 *.test
+tests/localstack/generated/
+tests/localstack/go.sum
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
@@ -34,3 +36,13 @@ go.work.sum
 .env
 
 .DS_Store
+
+# terraform
+.terraform.tfstate.lock.info
+terraform.tfstate.backup
+terraform.tfstate
+tfplan
+.terraform.lock.hcl
+.terraform/
+backend.tf
+backend_aws.hcl
