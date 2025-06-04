@@ -53,7 +53,7 @@ func CodeCompiles(t *testing.T, code, packageName string) {
 
 	goFileName := fmt.Sprintf("%s.go", packageName)
 	goFilePath := filepath.Join(tempDir, goFileName)
-	if err := os.WriteFile(goFilePath, []byte(code), 0644); err != nil {
+	if err := os.WriteFile(goFilePath, []byte(code), 0o644); err != nil {
 		t.Fatalf("Failed to write Go file: %v", err)
 	}
 	tidyResult := execGoModTidy(t, tempDir)
@@ -181,7 +181,7 @@ func createTempGoFile(t *testing.T, content string) string {
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test.go")
 
-	err := os.WriteFile(testFile, []byte(content), 0644)
+	err := os.WriteFile(testFile, []byte(content), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -210,7 +210,7 @@ require (
 `
 
 	goModContent := fmt.Sprintf(goModTemplate, goVersion)
-	return os.WriteFile(filepath.Join(dir, "go.mod"), []byte(goModContent), 0644)
+	return os.WriteFile(filepath.Join(dir, "go.mod"), []byte(goModContent), 0o644)
 }
 
 func getCurrentGoVersion() (string, error) {
