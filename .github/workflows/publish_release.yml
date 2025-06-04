@@ -284,5 +284,5 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/json" \
-            https://api.github.com/repos/Mad-Pixels/go-dyno-docs/actions/workflows/update-docs.yml/dispatches \
+            https://api.github.com/repos/Mad-Pixels/go-dyno-docs/actions/workflows/update_docs.yml/dispatches \
             -d "{\"ref\":\"main\", \"inputs\": {\"version\": \"${TAG_VERSION}\"}}"

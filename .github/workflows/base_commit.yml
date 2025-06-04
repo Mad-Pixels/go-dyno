@@ -24,21 +24,3 @@ jobs:
       - name: All checks passed
         run: |
           echo "✅ All Commit checks completed successfully!"
-
-  update-docs:
-    name: Update docs
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger
-        run: |
-          TAG_VERSION=v0.0.2
-          curl -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            https://api.github.com/repos/Mad-Pixels/go-dyno-docs/actions/workflows/update-docs.yml/dispatches \
-            -d "{\"ref\":\"main\", \"inputs\": {\"version\": \"${TAG_VERSION}\"}}"
-
-
-            
-
