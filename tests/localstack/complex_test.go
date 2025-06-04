@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	complex "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/blog_posts"
+	complex "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/blogposts"
 )
 
 // TestComplexSchema runs comprehensive integration tests for the complex.json schema.
