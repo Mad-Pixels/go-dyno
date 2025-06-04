@@ -12,7 +12,7 @@ concurrency:
 jobs:
   check-main-branch:
     name: Verify tag from main branch
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -271,3 +271,18 @@ jobs:
             ./artifacts/**/*
           draft: false
           prerelease: false
+
+  update-docs:
+    name: Update docs
+    needs: [publish-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/Mad-Pixels/go-dyno-docs/actions/workflows/update-docs.yml/dispatches \
+            -d "{\"ref\":\"main\", \"inputs\": {\"version\": \"${TAG_VERSION}\"}}"
