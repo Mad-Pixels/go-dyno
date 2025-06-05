@@ -100,7 +100,7 @@ func ToSafeName(s string) string {
 //
 //	ToGolangBaseType("S")       → "string"
 //	ToGolangBaseType("N")       → "int"
-//	ToGolangBaseType("B")       → "bool"
+//	ToGolangBaseType("BOOL")    → "bool"
 //	ToGolangBaseType("SS")      → "[]string"
 //	ToGolangBaseType("NS")      → "[]int"
 //	ToGolangBaseType("UNKNOWN") → "any"
@@ -110,7 +110,7 @@ func ToGolangBaseType(dynamoType string) string {
 		return "string"
 	case "N":
 		return "int"
-	case "B":
+	case "BOOL":
 		return "bool"
 	case "SS":
 		return "[]string"
@@ -125,19 +125,19 @@ func ToGolangBaseType(dynamoType string) string {
 //
 // Examples:
 //
-//	ToGolangZeroType("S")  → `""`
-//	ToGolangZeroType("N")  → "0"
-//	ToGolangZeroType("B")  → "false"
-//	ToGolangZeroType("SS") → "nil"
-//	ToGolangZeroType("NS") → "nil"
-//	ToGolangZeroType("X")  → "nil"
+//	ToGolangZeroType("S")    → `""`
+//	ToGolangZeroType("N")    → "0"
+//	ToGolangZeroType("BOOL") → "false"
+//	ToGolangZeroType("SS")   → "nil"
+//	ToGolangZeroType("NS")   → "nil"
+//	ToGolangZeroType("X")    → "nil"
 func ToGolangZeroType(dynamoType string) string {
 	switch dynamoType {
 	case "S":
 		return `""`
 	case "N":
 		return "0"
-	case "B":
+	case "BOOL":
 		return "false"
 	case "SS", "NS":
 		return "nil"
@@ -154,13 +154,15 @@ func ToGolangZeroType(dynamoType string) string {
 //	attrs := []common.Attribute{
 //	  {Name: "id", Type: "S"},
 //	  {Name: "count", Type: "N"},
+//	  {Name: "is_active", Type: "BOOL"},
 //	  {Name: "tags", Type: "SS"},
 //	  {Name: "scores", Type: "NS"},
 //	}
-//	ToGolangAttrType("count", attrs)   → "int"
-//	ToGolangAttrType("tags", attrs)    → "[]string"
-//	ToGolangAttrType("scores", attrs)  → "[]int"
-//	ToGolangAttrType("missing", attrs) → "any"
+//	ToGolangAttrType("count", attrs)     → "int"
+//	ToGolangAttrType("is_active", attrs) → "bool"
+//	ToGolangAttrType("tags", attrs)      → "[]string"
+//	ToGolangAttrType("scores", attrs)    → "[]int"
+//	ToGolangAttrType("missing", attrs)   → "any"
 func ToGolangAttrType(attrName string, attributes []common.Attribute) string {
 	for _, attr := range attributes {
 		if attr.Name == attrName {

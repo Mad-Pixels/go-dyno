@@ -5,30 +5,25 @@
   "attributes": [
     { "name": "user_id", "type": "S" },
     { "name": "profile_type", "type": "S" },
-    { "name": "created_at", "type": "N" },
-    { "name": "email", "type": "S" },
-    { "name": "is_active", "type": "N" }
+    { "name": "is_active", "type": "N" },
+    { "name": "created_at", "type": "N" }
   ],
   "common_attributes": [
     { "name": "display_name", "type": "S" },
+    { "name": "email", "type": "S" },
     { "name": "tags", "type": "SS" },
     { "name": "interests", "type": "SS" },
     { "name": "skill_levels", "type": "NS" },
     { "name": "scores", "type": "NS" },
-    { "name": "is_premium", "type": "B" },
+    { "name": "is_premium", "type": "BOOL" },
     { "name": "updated_at", "type": "N" }
   ],
   "secondary_indexes": [
     {
-      "name": "ActiveProfilesIndex",
+      "name": "ActiveUsersIndex",
       "hash_key": "is_active",
       "range_key": "created_at",
       "projection_type": "ALL"
-    },
-    {
-      "name": "EmailIndex",
-      "hash_key": "email",
-      "projection_type": "KEYS_ONLY"
     }
   ]
 }

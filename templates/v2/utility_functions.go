@@ -23,17 +23,6 @@ func PutItem(item SchemaItem) (map[string]types.AttributeValue, error) {
     return attributeValues, nil
 }
 
-func BoolToInt(b bool) int {
-    if b {
-        return 1
-    }
-    return 0
-}
-
-func IntToBool(i int) bool {
-    return i != 0
-}
-
 // ExtractFromDynamoDBStreamEvent DynamoDB Stream to SchemaItem
 func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*SchemaItem, error) {
     if dbEvent.Change.NewImage == nil {
@@ -50,7 +39,7 @@ func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Schema
         if n, err := strconv.Atoi(val.Number()); err == nil {
             item.{{ToSafeName .Name | ToUpperCamelCase}} = n
         }
-        {{else if eq .Type "B"}}
+        {{else if eq .Type "BOOL"}}
         item.{{ToSafeName .Name | ToUpperCamelCase}} = val.Boolean()
         {{else if eq .Type "SS"}}
         if ss := val.StringSet(); ss != nil {
@@ -66,6 +55,9 @@ func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Schema
             }
             item.{{ToSafeName .Name | ToUpperCamelCase}} = numbers
         }
+        {{else}}
+        // Unsupported type: {{.Type}} for attribute {{.Name}}
+        _ = val // Mark as used to avoid compilation error
         {{end}}
     }
     {{end}}
@@ -241,11 +233,7 @@ func ConvertMapToAttributeValues(input map[string]interface{}) (map[string]types
                 result[key] = &types.AttributeValueMemberN{Value: fmt.Sprintf("%g", v)}
             }
         case bool:
-            if v {
-                result[key] = &types.AttributeValueMemberN{Value: "1"}
-            } else {
-                result[key] = &types.AttributeValueMemberN{Value: "0"}
-            }
+            result[key] = &types.AttributeValueMemberBOOL{Value: v}
         case nil:
             result[key] = &types.AttributeValueMemberNULL{Value: true}
         case map[string]interface{}:

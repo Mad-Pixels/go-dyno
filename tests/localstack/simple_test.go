@@ -43,12 +43,6 @@ func TestSimpleSchema(t *testing.T) {
 	t.Logf("Table: %s", simple.TableName)
 	t.Logf("Hash Key: %s, Range Key: %s", simple.TableSchema.HashKey, simple.TableSchema.RangeKey)
 
-	t.Run("Utility_Functions", func(t *testing.T) {
-		t.Parallel()
-		testSimpleBoolToInt(t)
-		testSimpleIntToBool(t)
-	})
-
 	t.Run("CRUD_Operations", func(t *testing.T) {
 		testSimplePutItem(t, client, ctx)
 		testSimpleBatchPutItems(t, client, ctx)
@@ -71,69 +65,6 @@ func TestSimpleSchema(t *testing.T) {
 		testSimpleCreateKey(t)
 		testSimpleCreateKeyFromItem(t)
 	})
-}
-
-// ==================== Utility Functions Tests ====================
-
-// testSimpleBoolToInt validates the BoolToInt utility function.
-// This function converts Go boolean values to DynamoDB-compatible integers.
-//
-// DynamoDB Boolean Mapping:
-//   - true  → 1 (used in composite keys and numeric fields)
-//   - false → 0 (standard falsy value)
-//
-// Example Generated Code:
-//
-//	func BoolToInt(b bool) int {
-//	    if b { return 1 }
-//	    return 0
-//	}
-func testSimpleBoolToInt(t *testing.T) {
-	t.Run("true_converts_to_1", func(t *testing.T) {
-		result := simple.BoolToInt(true)
-		assert.Equal(t, 1, result, "BoolToInt(true) must return 1 for DynamoDB compatibility")
-	})
-
-	t.Run("false_converts_to_0", func(t *testing.T) {
-		result := simple.BoolToInt(false)
-		assert.Equal(t, 0, result, "BoolToInt(false) must return 0 as standard falsy value")
-	})
-
-	t.Logf("✅ BoolToInt utility function works correctly")
-}
-
-// testSimpleIntToBool validates the IntToBool utility function.
-// This function converts DynamoDB numeric values back to Go boolean types.
-//
-// Conversion Rules:
-//   - 0 → false (zero value is falsy)
-//   - 1 → true  (standard truthy value)
-//   - Any non-zero → true (following Go's truthiness rules)
-//
-// Example Usage in Generated Code:
-//
-//	isActive := IntToBool(item.IsActiveNumeric)
-//	if IntToBool(compositeKeyPart) { /* handle active state */ }
-func testSimpleIntToBool(t *testing.T) {
-	t.Run("1_converts_to_true", func(t *testing.T) {
-		result := simple.IntToBool(1)
-		assert.True(t, result, "IntToBool(1) must return true as standard truthy value")
-	})
-
-	t.Run("0_converts_to_false", func(t *testing.T) {
-		result := simple.IntToBool(0)
-		assert.False(t, result, "IntToBool(0) must return false as zero value")
-	})
-
-	t.Run("non_zero_converts_to_true", func(t *testing.T) {
-		testCases := []int{42, -1, 100, 999}
-		for _, value := range testCases {
-			result := simple.IntToBool(value)
-			assert.True(t, result, "IntToBool(%d) must return true for any non-zero value", value)
-		}
-	})
-
-	t.Logf("✅ IntToBool utility function handles all conversion cases correctly")
 }
 
 // ==================== CRUD Operations Tests ====================

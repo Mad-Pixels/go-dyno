@@ -110,7 +110,7 @@ func TestToGolangBaseType(t *testing.T) {
 	}{
 		{"S", "string"},
 		{"N", "int"},
-		{"B", "bool"},
+		{"BOOL", "bool"},
 		{"SS", "[]string"},
 		{"NS", "[]int"},
 		{"UNKNOWN", "any"},
@@ -130,7 +130,7 @@ func TestToGolangZeroType(t *testing.T) {
 	}{
 		{"S", `""`},
 		{"N", "0"},
-		{"B", "false"},
+		{"BOOL", "false"},
 		{"SS", "nil"},
 		{"NS", "nil"},
 		{"UNKNOWN", "nil"},
@@ -147,7 +147,7 @@ func TestToGolangAttrType(t *testing.T) {
 	attrs := []common.Attribute{
 		{Name: "id", Type: "S"},
 		{Name: "count", Type: "N"},
-		{Name: "is_active", Type: "B"},
+		{Name: "is_active", Type: "BOOL"},
 		{Name: "tags", Type: "SS"},
 		{Name: "scores", Type: "NS"},
 	}
