@@ -230,11 +230,10 @@ func TestQueryBuilderTemplate_WithSubtypes(t *testing.T) {
 			{Name: "created_at", Type: "N", Subtype: common.SubtypeInt64},
 			{Name: "count", Type: "N", Subtype: common.SubtypeUint32},
 			{Name: "score", Type: "N", Subtype: common.SubtypeFloat32},
-		},
-		CommonAttributes: []common.Attribute{
 			{Name: "price", Type: "N", Subtype: common.SubtypeBigInt},
 			{Name: "flag", Type: "B", Subtype: common.SubtypeBool},
 		},
+		CommonAttributes: []common.Attribute{},
 		AllAttributes: []common.Attribute{
 			{Name: "user_id", Type: "N", Subtype: common.SubtypeUint64},
 			{Name: "created_at", Type: "N", Subtype: common.SubtypeInt64},
