@@ -14,92 +14,156 @@ import (
 )
 
 // TestSchemaStructsTemplate validates the generation of DynamoDB schema structures and item types.
-// This template generates Go structs that represent DynamoDB table items and schema metadata.
+// This template generates Go structures that represent DynamoDB table items and schema metadata
+// with full support for AttributeSubtype system.
 func TestSchemaStructsTemplate(t *testing.T) {
-	// Test with simple table - only hash key and basic attributes
-	// Example: user table with id (hash key) and email
-	t.Run("simple_table", func(t *testing.T) {
+	// Test with simple table - basic structure without subtypes
+	t.Run("simple_table_default_types", func(t *testing.T) {
 		templateMap := v2.TemplateMap{
 			PackageName: "usertable",
 			TableName:   "UserTable",
 			HashKey:     "user_id",
-			RangeKey:    "",
+			RangeKey:    "created_at",
 			Attributes: []common.Attribute{
 				{Name: "user_id", Type: "S"},
-				{Name: "email", Type: "S"},
+				{Name: "created_at", Type: "N"},
+				{Name: "is_active", Type: "B"},
 			},
 			CommonAttributes: []common.Attribute{
-				{Name: "created_at", Type: "N"},
+				{Name: "updated_at", Type: "N"},
 			},
 			AllAttributes: []common.Attribute{
 				{Name: "user_id", Type: "S"},
-				{Name: "email", Type: "S"},
 				{Name: "created_at", Type: "N"},
+				{Name: "is_active", Type: "B"},
+				{Name: "updated_at", Type: "N"},
 			},
 			SecondaryIndexes: []common.SecondaryIndex{},
 		}
 
 		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
-		testSchemaStructsContent(t, rendered, templateMap)
+		testBasicStructure(t, rendered, templateMap)
+		testDefaultGoTypes(t, rendered, templateMap)
 	})
 
-	// Test with complex table - hash + range keys, GSI with composite keys
-	// Example: order table with composite keys and secondary indexes
-	t.Run("complex_table", func(t *testing.T) {
+	// Test with complex table using explicit subtypes
+	t.Run("complex_table_with_subtypes", func(t *testing.T) {
 		templateMap := v2.TemplateMap{
 			PackageName: "ordertable",
 			TableName:   "OrderTable",
 			HashKey:     "order_id",
 			RangeKey:    "created_at",
 			Attributes: []common.Attribute{
-				{Name: "order_id", Type: "S"},
-				{Name: "created_at", Type: "N"},
-				{Name: "status", Type: "S"},
+				{Name: "order_id", Type: "S", Subtype: common.SubtypeString},
+				{Name: "created_at", Type: "N", Subtype: common.SubtypeInt64},
+				{Name: "user_id", Type: "N", Subtype: common.SubtypeUint64},
+				{Name: "status_code", Type: "N", Subtype: common.SubtypeUint8},
+				{Name: "is_paid", Type: "B", Subtype: common.SubtypeBool},
 			},
 			CommonAttributes: []common.Attribute{
-				{Name: "updated_at", Type: "N"},
+				{Name: "price_cents", Type: "N", Subtype: common.SubtypeBigInt},
+				{Name: "discount_rate", Type: "N", Subtype: common.SubtypeFloat32},
+				{Name: "request_id", Type: "S", Subtype: common.SubtypeUUID},
+				{Name: "created_time", Type: "S", Subtype: common.SubtypeTime},
 			},
 			AllAttributes: []common.Attribute{
-				{Name: "order_id", Type: "S"},
-				{Name: "created_at", Type: "N"},
-				{Name: "status", Type: "S"},
-				{Name: "updated_at", Type: "N"},
+				{Name: "order_id", Type: "S", Subtype: common.SubtypeString},
+				{Name: "created_at", Type: "N", Subtype: common.SubtypeInt64},
+				{Name: "user_id", Type: "N", Subtype: common.SubtypeUint64},
+				{Name: "status_code", Type: "N", Subtype: common.SubtypeUint8},
+				{Name: "is_paid", Type: "B", Subtype: common.SubtypeBool},
+				{Name: "price_cents", Type: "N", Subtype: common.SubtypeBigInt},
+				{Name: "discount_rate", Type: "N", Subtype: common.SubtypeFloat32},
+				{Name: "request_id", Type: "S", Subtype: common.SubtypeUUID},
+				{Name: "created_time", Type: "S", Subtype: common.SubtypeTime},
 			},
 			SecondaryIndexes: []common.SecondaryIndex{
 				{
-					Name:           "StatusIndex",
-					HashKey:        "status",
+					Name:           "UserOrdersIndex",
+					HashKey:        "user_id",
 					RangeKey:       "created_at",
 					ProjectionType: "ALL",
-				},
-				{
-					Name:             "UserStatusIndex",
-					HashKey:          "user#status",
-					RangeKey:         "created_at",
-					ProjectionType:   "INCLUDE",
-					NonKeyAttributes: []string{"order_total", "shipping_address"},
-					HashKeyParts: []common.CompositeKeyPart{
-						{IsConstant: false, Value: "user_id"},
-						{IsConstant: false, Value: "status"},
-					},
-					RangeKeyParts: []common.CompositeKeyPart{
-						{IsConstant: false, Value: "created_at"},
-					},
 				},
 			},
 		}
 
 		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
-		testSchemaStructsContent(t, rendered, templateMap)
+		testBasicStructure(t, rendered, templateMap)
+		testSubtypeGoTypes(t, rendered, templateMap)
+		testSecondaryIndexes(t, rendered, templateMap)
+	})
+
+	// Test with mixed subtypes and defaults
+	t.Run("mixed_subtypes_and_defaults", func(t *testing.T) {
+		templateMap := v2.TemplateMap{
+			PackageName: "mixedtable",
+			TableName:   "MixedTable",
+			HashKey:     "id",
+			RangeKey:    "",
+			Attributes: []common.Attribute{
+				{Name: "id", Type: "S"},
+				{Name: "count", Type: "N", Subtype: common.SubtypeInt},
+				{Name: "score", Type: "N"},
+				{Name: "enabled", Type: "B", Subtype: common.SubtypeBool},
+			},
+			CommonAttributes: []common.Attribute{
+				{Name: "timestamp", Type: "N", Subtype: common.SubtypeUint64},
+				{Name: "metadata", Type: "S"},
+			},
+			AllAttributes: []common.Attribute{
+				{Name: "id", Type: "S"},
+				{Name: "count", Type: "N", Subtype: common.SubtypeInt},
+				{Name: "score", Type: "N"},
+				{Name: "enabled", Type: "B", Subtype: common.SubtypeBool},
+				{Name: "timestamp", Type: "N", Subtype: common.SubtypeUint64},
+				{Name: "metadata", Type: "S"},
+			},
+			SecondaryIndexes: []common.SecondaryIndex{},
+		}
+
+		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
+		testBasicStructure(t, rendered, templateMap)
+		testMixedTypes(t, rendered, templateMap)
+	})
+
+	// Test edge cases with uncommon subtypes
+	t.Run("edge_case_subtypes", func(t *testing.T) {
+		templateMap := v2.TemplateMap{
+			PackageName: "edgetable",
+			TableName:   "EdgeTable",
+			HashKey:     "id",
+			RangeKey:    "",
+			Attributes: []common.Attribute{
+				{Name: "id", Type: "S", Subtype: common.SubtypeUUID},
+				{Name: "data", Type: "BS", Subtype: common.SubtypeBytes},
+				{Name: "created_at", Type: "S", Subtype: common.SubtypeTime},
+			},
+			CommonAttributes: []common.Attribute{
+				{Name: "balance", Type: "N", Subtype: common.SubtypeDecimal},
+				{Name: "tiny_num", Type: "N", Subtype: common.SubtypeInt8},
+				{Name: "huge_num", Type: "N", Subtype: common.SubtypeBigInt},
+			},
+			AllAttributes: []common.Attribute{
+				{Name: "id", Type: "S", Subtype: common.SubtypeUUID},
+				{Name: "data", Type: "BS", Subtype: common.SubtypeBytes},
+				{Name: "created_at", Type: "S", Subtype: common.SubtypeTime},
+				{Name: "balance", Type: "N", Subtype: common.SubtypeDecimal},
+				{Name: "tiny_num", Type: "N", Subtype: common.SubtypeInt8},
+				{Name: "huge_num", Type: "N", Subtype: common.SubtypeBigInt},
+			},
+			SecondaryIndexes: []common.SecondaryIndex{},
+		}
+
+		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
+		testBasicStructure(t, rendered, templateMap)
+		testEdgeCaseTypes(t, rendered, templateMap)
 	})
 }
 
-// testSchemaStructsContent validates the content of rendered schema structs template
-func testSchemaStructsContent(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+// testBasicStructure validates the basic structure of generated schema structs
+func testBasicStructure(t *testing.T, rendered string, templateMap v2.TemplateMap) {
 	t.Helper()
 
-	// Test that generated code has valid Go syntax
-	// Example: should parse without errors when combined with package declaration
 	t.Run("go_syntax_valid", func(t *testing.T) {
 		testCode := "package test\n\n" + rendered
 		fset := token.NewFileSet()
@@ -107,8 +171,6 @@ func testSchemaStructsContent(t *testing.T, rendered string, templateMap v2.Temp
 		require.NoError(t, err, "Generated schema structs should be valid Go syntax")
 	})
 
-	// Test that all required struct types are generated
-	// Example: DynamoSchema, Attribute, SecondaryIndex, SchemaItem, CompositeKeyPart
 	t.Run("required_structs_present", func(t *testing.T) {
 		requiredStructs := []string{
 			"type DynamoSchema struct",
@@ -124,8 +186,6 @@ func testSchemaStructsContent(t *testing.T, rendered string, templateMap v2.Temp
 		}
 	})
 
-	// Test that SchemaItem struct contains all table attributes as fields
-	// Example: UserId string `dynamodbav:"user_id"`, Email string `dynamodbav:"email"`
 	t.Run("schema_item_has_all_attributes", func(t *testing.T) {
 		for _, attr := range templateMap.AllAttributes {
 			expectedField := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
@@ -138,8 +198,6 @@ func testSchemaStructsContent(t *testing.T, rendered string, templateMap v2.Temp
 		}
 	})
 
-	// Test that TableSchema variable is properly initialized with template values
-	// Example: TableName: "UserTable", HashKey: "user_id", RangeKey: "created_at"
 	t.Run("table_schema_properly_initialized", func(t *testing.T) {
 		assert.Contains(t, rendered, "var TableSchema = DynamoSchema{",
 			"Should declare TableSchema variable")
@@ -153,30 +211,144 @@ func testSchemaStructsContent(t *testing.T, rendered string, templateMap v2.Temp
 		assert.Contains(t, rendered, "RangeKey:  \""+templateMap.RangeKey+"\"",
 			"TableSchema should have correct range key")
 	})
+}
 
-	// Test that all table attributes are included in TableSchema.Attributes array
-	// Example: {Name: "user_id", Type: "S"}, {Name: "email", Type: "S"}
-	t.Run("table_schema_attributes_complete", func(t *testing.T) {
-		for _, attr := range templateMap.Attributes {
-			expectedAttr := "{Name: \"" + attr.Name + "\", Type: \"" + attr.Type + "\"}"
-			assert.Contains(t, rendered, expectedAttr,
-				"TableSchema.Attributes should contain: %s", expectedAttr)
+// testDefaultGoTypes validates default Go type mappings (without explicit subtypes)
+func testDefaultGoTypes(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+	t.Helper()
+
+	t.Run("default_go_types_for_dynamodb_types", func(t *testing.T) {
+		defaultTypeMapping := map[string]string{
+			"S": "string",
+			"N": "float64",
+			"B": "bool",
+		}
+
+		for _, attr := range templateMap.AllAttributes {
+			// Only test attributes without explicit subtypes
+			if attr.Subtype == common.SubtypeDefault {
+				expectedType, exists := defaultTypeMapping[attr.Type]
+				if exists {
+					fieldName := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
+					expectedField := fieldName + " " + expectedType
+
+					assert.Contains(t, rendered, expectedField,
+						"Field %s should have default Go type %s for DynamoDB type %s",
+						fieldName, expectedType, attr.Type)
+				}
+			}
+		}
+	})
+}
+
+// testSubtypeGoTypes validates Go types with explicit subtypes
+func testSubtypeGoTypes(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+	t.Helper()
+
+	t.Run("explicit_subtype_go_types", func(t *testing.T) {
+		for _, attr := range templateMap.AllAttributes {
+			if attr.Subtype != common.SubtypeDefault {
+				fieldName := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
+				expectedType := attr.GoType()
+				expectedField := fieldName + " " + expectedType
+
+				assert.Contains(t, rendered, expectedField,
+					"Field %s should have subtype Go type %s (subtype: %s, DynamoDB type: %s)",
+					fieldName, expectedType, attr.Subtype.String(), attr.Type)
+			}
 		}
 	})
 
-	// Test that all common attributes are included in TableSchema.CommonAttributes array
-	// Example: {Name: "created_at", Type: "N"}, {Name: "updated_at", Type: "N"}
-	t.Run("table_schema_common_attributes_complete", func(t *testing.T) {
-		for _, attr := range templateMap.CommonAttributes {
-			expectedAttr := "{Name: \"" + attr.Name + "\", Type: \"" + attr.Type + "\"}"
-			assert.Contains(t, rendered, expectedAttr,
-				"TableSchema.CommonAttributes should contain: %s", expectedAttr)
+	t.Run("specific_subtype_validations", func(t *testing.T) {
+		subtypeTests := map[string]string{
+			"OrderId":      "string",    // SubtypeString
+			"CreatedAt":    "int64",     // SubtypeInt64
+			"UserId":       "uint64",    // SubtypeUint64
+			"StatusCode":   "uint8",     // SubtypeUint8
+			"IsPaid":       "bool",      // SubtypeBool
+			"PriceCents":   "*big.Int",  // SubtypeBigInt
+			"DiscountRate": "float32",   // SubtypeFloat32
+			"RequestId":    "uuid.UUID", // SubtypeUUID
+			"CreatedTime":  "time.Time", // SubtypeTime
+		}
+
+		for fieldName, expectedType := range subtypeTests {
+			expectedField := fieldName + " " + expectedType
+			assert.Contains(t, rendered, expectedField,
+				"Should contain field declaration: %s", expectedField)
+		}
+	})
+}
+
+// testMixedTypes validates mixing of default and explicit subtypes
+func testMixedTypes(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+	t.Helper()
+
+	t.Run("mixed_default_and_explicit_types", func(t *testing.T) {
+		expectedFields := map[string]string{
+			"Id":        "string",  // default S -> string
+			"Count":     "int",     // explicit SubtypeInt
+			"Score":     "float64", // default N -> float64
+			"Enabled":   "bool",    // explicit SubtypeBool
+			"Timestamp": "uint64",  // explicit SubtypeUint64
+			"Metadata":  "string",  // default S -> string
+		}
+
+		for fieldName, expectedType := range expectedFields {
+			expectedField := fieldName + " " + expectedType
+			assert.Contains(t, rendered, expectedField,
+				"Mixed types: should contain field declaration: %s", expectedField)
+		}
+	})
+}
+
+// testEdgeCaseTypes validates uncommon but valid subtypes
+func testEdgeCaseTypes(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+	t.Helper()
+
+	t.Run("edge_case_subtype_mappings", func(t *testing.T) {
+		edgeCaseFields := map[string]string{
+			"Id":        "uuid.UUID",        // SubtypeUUID
+			"Data":      "[]byte",           // SubtypeBytes
+			"CreatedAt": "time.Time",        // SubtypeTime
+			"Balance":   "*decimal.Decimal", // SubtypeDecimal
+			"TinyNum":   "int8",             // SubtypeInt8
+			"HugeNum":   "*big.Int",         // SubtypeBigInt
+		}
+
+		for fieldName, expectedType := range edgeCaseFields {
+			expectedField := fieldName + " " + expectedType
+			assert.Contains(t, rendered, expectedField,
+				"Edge case: should contain field declaration: %s", expectedField)
 		}
 	})
 
-	// Test that all secondary indexes are properly defined in TableSchema.SecondaryIndexes
-	// Example: Name: "StatusIndex", HashKey: "status", RangeKey: "created_at"
-	t.Run("table_schema_secondary_indexes_complete", func(t *testing.T) {
+	t.Run("special_type_comments", func(t *testing.T) {
+		// Validate that comments reflect the correct types
+		commentTests := []struct {
+			field   string
+			comment string
+		}{
+			{"Id", "uuid.UUID"},
+			{"Data", "[]byte"},
+			{"CreatedAt", "time.Time"},
+			{"Balance", "*decimal.Decimal"},
+			{"HugeNum", "*big.Int"},
+		}
+
+		for _, test := range commentTests {
+			expectedComment := "// DynamoDB type: " + findAttributeType(templateMap.AllAttributes, test.field) + " -> Go type: " + test.comment
+			assert.Contains(t, rendered, expectedComment,
+				"Should contain correct type comment for %s", test.field)
+		}
+	})
+}
+
+// testSecondaryIndexes validates secondary index generation
+func testSecondaryIndexes(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+	t.Helper()
+
+	t.Run("secondary_indexes_structure", func(t *testing.T) {
 		for _, idx := range templateMap.SecondaryIndexes {
 			assert.Contains(t, rendered, "Name:           \""+idx.Name+"\"",
 				"TableSchema.SecondaryIndexes should contain index: %s", idx.Name)
@@ -193,31 +365,9 @@ func testSchemaStructsContent(t *testing.T, rendered string, templateMap v2.Temp
 				"Index %s should have correct projection type", idx.Name)
 		}
 	})
-
-	// Test that Go field types match DynamoDB attribute types correctly
-	// Example: "S" -> string, "N" -> int, "B" -> bool
-	t.Run("correct_go_types_for_dynamodb_types", func(t *testing.T) {
-		typeMapping := map[string]string{
-			"S": "string",
-			"N": "int",
-			"B": "bool",
-		}
-
-		for _, attr := range templateMap.AllAttributes {
-			expectedType, exists := typeMapping[attr.Type]
-			if exists {
-				fieldName := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
-				expectedField := fieldName + " " + expectedType
-				assert.Contains(t, rendered, expectedField,
-					"Field %s should have Go type %s for DynamoDB type %s",
-					fieldName, expectedType, attr.Type)
-			}
-		}
-	})
 }
 
-// TestSchemaStructsTemplateFormatting validates that the schema structs template follows Go formatting standards.
-// This ensures the generated code is gofmt-compliant and doesn't need additional formatting.
+// TestSchemaStructsTemplateFormatting validates that the schema structs template follows Go formatting standards
 func TestSchemaStructsTemplateFormatting(t *testing.T) {
 	templateMap := v2.TemplateMap{
 		PackageName: "testtable",
@@ -227,14 +377,18 @@ func TestSchemaStructsTemplateFormatting(t *testing.T) {
 		Attributes: []common.Attribute{
 			{Name: "id", Type: "S"},
 			{Name: "sort_key", Type: "S"},
+			{Name: "count", Type: "N", Subtype: common.SubtypeUint32},
 		},
 		CommonAttributes: []common.Attribute{
-			{Name: "created_at", Type: "N"},
+			{Name: "created_at", Type: "N", Subtype: common.SubtypeInt64},
+			{Name: "price", Type: "N", Subtype: common.SubtypeBigInt},
 		},
 		AllAttributes: []common.Attribute{
 			{Name: "id", Type: "S"},
 			{Name: "sort_key", Type: "S"},
-			{Name: "created_at", Type: "N"},
+			{Name: "count", Type: "N", Subtype: common.SubtypeUint32},
+			{Name: "created_at", Type: "N", Subtype: common.SubtypeInt64},
+			{Name: "price", Type: "N", Subtype: common.SubtypeBigInt},
 		},
 		SecondaryIndexes: []common.SecondaryIndex{
 			{
@@ -248,7 +402,106 @@ func TestSchemaStructsTemplateFormatting(t *testing.T) {
 	rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
 	fullCode := "package test\n\n" + rendered + "\n"
 
-	if _, err := format.Source([]byte(fullCode)); err != nil {
-		t.Fatalf("SchemaStructsTemplate is not gofmt-compliant: %v", err)
+	_, err := format.Source([]byte(fullCode))
+	assert.NoError(t, err, "SchemaStructsTemplate should be gofmt-compliant")
+}
+
+// TestAttributeSubtypeIntegration validates that AttributeSubtype system works end-to-end
+func TestAttributeSubtypeIntegration(t *testing.T) {
+	t.Run("comprehensive_subtype_integration", func(t *testing.T) {
+		// Test all supported subtypes in one template
+		allSubtypes := []common.Attribute{
+			// String subtypes
+			{Name: "name", Type: "S", Subtype: common.SubtypeString},
+			{Name: "uuid_field", Type: "S", Subtype: common.SubtypeUUID},
+			{Name: "time_field", Type: "S", Subtype: common.SubtypeTime},
+
+			// Signed integer subtypes
+			{Name: "tiny_int", Type: "N", Subtype: common.SubtypeInt8},
+			{Name: "small_int", Type: "N", Subtype: common.SubtypeInt16},
+			{Name: "medium_int", Type: "N", Subtype: common.SubtypeInt32},
+			{Name: "big_int_std", Type: "N", Subtype: common.SubtypeInt64},
+			{Name: "default_int", Type: "N", Subtype: common.SubtypeInt},
+
+			// Unsigned integer subtypes
+			{Name: "tiny_uint", Type: "N", Subtype: common.SubtypeUint8},
+			{Name: "small_uint", Type: "N", Subtype: common.SubtypeUint16},
+			{Name: "medium_uint", Type: "N", Subtype: common.SubtypeUint32},
+			{Name: "big_uint", Type: "N", Subtype: common.SubtypeUint64},
+			{Name: "default_uint", Type: "N", Subtype: common.SubtypeUint},
+
+			// Floating point subtypes
+			{Name: "float_32", Type: "N", Subtype: common.SubtypeFloat32},
+			{Name: "float_64", Type: "N", Subtype: common.SubtypeFloat64},
+
+			// Arbitrary precision subtypes
+			{Name: "big_integer", Type: "N", Subtype: common.SubtypeBigInt},
+			{Name: "decimal_num", Type: "N", Subtype: common.SubtypeDecimal},
+
+			// Boolean subtypes
+			{Name: "flag", Type: "B", Subtype: common.SubtypeBool},
+
+			// Binary subtypes
+			{Name: "binary_data", Type: "BS", Subtype: common.SubtypeBytes},
+		}
+
+		templateMap := v2.TemplateMap{
+			PackageName:      "comprehensive",
+			TableName:        "ComprehensiveTable",
+			HashKey:          "name",
+			RangeKey:         "",
+			Attributes:       allSubtypes[:10],
+			CommonAttributes: allSubtypes[10:],
+			AllAttributes:    allSubtypes,
+			SecondaryIndexes: []common.SecondaryIndex{},
+		}
+
+		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
+
+		// Validate that all subtypes are correctly mapped
+		expectedMappings := map[string]string{
+			"Name":        "string",
+			"UuidField":   "uuid.UUID",
+			"TimeField":   "time.Time",
+			"TinyInt":     "int8",
+			"SmallInt":    "int16",
+			"MediumInt":   "int32",
+			"BigIntStd":   "int64",
+			"DefaultInt":  "int",
+			"TinyUint":    "uint8",
+			"SmallUint":   "uint16",
+			"MediumUint":  "uint32",
+			"BigUint":     "uint64",
+			"DefaultUint": "uint",
+			"Float32":     "float32",
+			"Float64":     "float64",
+			"BigInteger":  "*big.Int",
+			"DecimalNum":  "*decimal.Decimal",
+			"Flag":        "bool",
+			"BinaryData":  "[]byte",
+		}
+
+		for fieldName, expectedType := range expectedMappings {
+			expectedField := fieldName + " " + expectedType
+			assert.Contains(t, rendered, expectedField,
+				"Comprehensive test: should contain field %s with type %s", fieldName, expectedType)
+		}
+
+		// Validate syntax is still correct with all types
+		testCode := "package test\n\n" + rendered
+		fset := token.NewFileSet()
+		_, err := parser.ParseFile(fset, "test.go", testCode, parser.ParseComments)
+		require.NoError(t, err, "Comprehensive subtype test should generate valid Go syntax")
+	})
+}
+
+// Helper function to find attribute type by field name
+func findAttributeType(attrs []common.Attribute, fieldName string) string {
+	targetName := utils.ToLowerCamelCase(fieldName)
+	for _, attr := range attrs {
+		if utils.ToLowerCamelCase(utils.ToSafeName(attr.Name)) == targetName {
+			return attr.Type
+		}
 	}
+	return "UNKNOWN"
 }

@@ -94,46 +94,30 @@ func ToSafeName(s string) string {
 	}
 }
 
-// ToGolangBaseType maps a DynamoDB type to the corresponding Go base type.
+// ToGolangBaseType maps a DynamoDB attribute to the corresponding Go base type.
+// Uses the attribute's subtype if specified, otherwise uses default mapping.
 //
 // Examples:
 //
-//	ToGolangBaseType("S")       → "string"
-//	ToGolangBaseType("N")       → "int"
-//	ToGolangBaseType("B")       → "bool"
-//	ToGolangBaseType("UNKNOWN") → "any"
-func ToGolangBaseType(dynamoType string) string {
-	switch dynamoType {
-	case "S":
-		return "string"
-	case "N":
-		return "int"
-	case "B":
-		return "bool"
-	default:
-		return "any"
-	}
+//	attr := Attribute{Type: "S"}
+//	ToGolangBaseType(attr) → "string"
+//
+//	attr := Attribute{Type: "N", Subtype: SubtypeInt}
+//	ToGolangBaseType(attr) → "int"
+func ToGolangBaseType(attr common.Attribute) string {
+	return attr.GoType()
 }
 
-// ToGolangZeroType returns the zero value as a string literal for a DynamoDB type.
+// ToGolangZeroType returns the zero value as a string literal for a DynamoDB attribute.
+// Delegates to the attribute's ZeroValue() method for consistency.
 //
 // Examples:
 //
-//	ToGolangZeroType("S") → `""`
-//	ToGolangZeroType("N") → "0"
-//	ToGolangZeroType("B") → "false"
-//	ToGolangZeroType("X") → "nil"
-func ToGolangZeroType(dynamoType string) string {
-	switch dynamoType {
-	case "S":
-		return `""`
-	case "N":
-		return "0"
-	case "B":
-		return "false"
-	default:
-		return "nil"
-	}
+//	attr := Attribute{Type: "S"}                           → `""`
+//	attr := Attribute{Type: "N", Subtype: SubtypeInt}      → "0"
+//	attr := Attribute{Type: "N", Subtype: SubtypeBigInt}   → "big.NewInt(0)"
+func ToGolangZeroType(attr common.Attribute) string {
+	return attr.ZeroValue()
 }
 
 // ToGolangAttrType looks up a specific attribute in the provided list and
@@ -150,7 +134,7 @@ func ToGolangZeroType(dynamoType string) string {
 func ToGolangAttrType(attrName string, attributes []common.Attribute) string {
 	for _, attr := range attributes {
 		if attr.Name == attrName {
-			return ToGolangBaseType(attr.Type)
+			return attr.GoType()
 		}
 	}
 	return "any"

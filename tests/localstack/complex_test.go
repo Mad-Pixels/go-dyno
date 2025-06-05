@@ -882,8 +882,10 @@ func testComplexCreateKeyFromItem(t *testing.T) {
 		assert.Contains(t, key, "post_id", "Extracted key should contain range key 'post_id'")
 
 		// Validate non-key attributes are excluded
-		nonKeyAttrs := []string{"created_at", "likes", "is_published", "title", "content",
-			"category", "tag", "views", "is_premium", "is_featured"}
+		nonKeyAttrs := []string{
+			"created_at", "likes", "is_published", "title", "content",
+			"category", "tag", "views", "is_premium", "is_featured",
+		}
 		for _, attr := range nonKeyAttrs {
 			assert.NotContains(t, key, attr, "Extracted key should not contain non-key attribute '%s'", attr)
 		}
@@ -986,8 +988,8 @@ func testComplexSortingAndPagination(t *testing.T, client *dynamodb.Client, ctx 
 			testItems[i] = complex.SchemaItem{
 				UserId:              "sort-user",
 				PostId:              "sort-post-" + string(rune('A'+i)),
-				CreatedAt:           int(baseTime + int64(i*100)),
-				Likes:               10 + i*5,
+				CreatedAt:           float64(baseTime + int64(i*100)),
+				Likes:               float64(10 + i*5),
 				IsPublished:         1,
 				CategoryIsPublished: "tech#1",
 				TagIsPublished:      "golang#1",
@@ -995,7 +997,7 @@ func testComplexSortingAndPagination(t *testing.T, client *dynamodb.Client, ctx 
 				Content:             "Testing sorting",
 				Category:            "tech",
 				Tag:                 "golang",
-				Views:               100 + i*50,
+				Views:               float64(100 + i*50),
 				IsPremium:           i%2 == 0,
 				IsFeatured:          i%3 == 0,
 			}
@@ -1085,8 +1087,8 @@ func createComplexTestItem(suffix string, createdAt int64, likes int, views int)
 	return complex.SchemaItem{
 		UserId:              "test-user",
 		PostId:              "test-post-" + suffix,
-		CreatedAt:           int(createdAt),
-		Likes:               likes,
+		CreatedAt:           float64(createdAt),
+		Likes:               float64(likes),
 		IsPublished:         1,
 		CategoryIsPublished: "tech#1",
 		TagIsPublished:      "golang#1",
@@ -1094,7 +1096,7 @@ func createComplexTestItem(suffix string, createdAt int64, likes int, views int)
 		Content:             "Test content for " + suffix,
 		Category:            "tech",
 		Tag:                 "golang",
-		Views:               views,
+		Views:               float64(views),
 		IsPremium:           false,
 		IsFeatured:          false,
 	}

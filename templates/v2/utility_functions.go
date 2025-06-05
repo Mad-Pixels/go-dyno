@@ -45,13 +45,105 @@ func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Schema
     {{range .AllAttributes}}
     if val, ok := dbEvent.Change.NewImage["{{.Name}}"]; ok {
         {{if eq .Type "S"}}
+        {{$goType := ToGolangBaseType .}}
+        {{if eq $goType "string"}}
         item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
+        {{else if eq $goType "time.Time"}}
+        if t, err := time.Parse(time.RFC3339, val.String()); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = t
+        }
+        {{else if eq $goType "uuid.UUID"}}
+        if u, err := uuid.Parse(val.String()); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = u
+        }
+        {{else}}
+        item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
+        {{end}}
         {{else if eq .Type "N"}}
+        {{$goType := ToGolangBaseType .}}
+        {{if eq $goType "int"}}
         if n, err := strconv.Atoi(val.Number()); err == nil {
             item.{{ToSafeName .Name | ToUpperCamelCase}} = n
         }
+        {{else if eq $goType "int8"}}
+        if n, err := strconv.ParseInt(val.Number(), 10, 8); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = int8(n)
+        }
+        {{else if eq $goType "int16"}}
+        if n, err := strconv.ParseInt(val.Number(), 10, 16); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = int16(n)
+        }
+        {{else if eq $goType "int32"}}
+        if n, err := strconv.ParseInt(val.Number(), 10, 32); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = int32(n)
+        }
+        {{else if eq $goType "int64"}}
+        if n, err := strconv.ParseInt(val.Number(), 10, 64); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = n
+        }
+        {{else if eq $goType "uint"}}
+        if n, err := strconv.ParseUint(val.Number(), 10, 0); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = uint(n)
+        }
+        {{else if eq $goType "uint8"}}
+        if n, err := strconv.ParseUint(val.Number(), 10, 8); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = uint8(n)
+        }
+        {{else if eq $goType "uint16"}}
+        if n, err := strconv.ParseUint(val.Number(), 10, 16); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = uint16(n)
+        }
+        {{else if eq $goType "uint32"}}
+        if n, err := strconv.ParseUint(val.Number(), 10, 32); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = uint32(n)
+        }
+        {{else if eq $goType "uint64"}}
+        if n, err := strconv.ParseUint(val.Number(), 10, 64); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = n
+        }
+        {{else if eq $goType "float32"}}
+        if f, err := strconv.ParseFloat(val.Number(), 32); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = float32(f)
+        }
+        {{else if eq $goType "float64"}}
+        if f, err := strconv.ParseFloat(val.Number(), 64); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = f
+        }
+        {{else if eq $goType "*big.Int"}}
+        if bigInt, ok := new(big.Int).SetString(val.Number(), 10); ok {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = bigInt
+        }
+        {{else if eq $goType "*decimal.Decimal"}}
+        if dec, err := decimal.NewFromString(val.Number()); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = &dec
+        }
+        {{else}}
+        // Default fallback to float64 for unknown numeric types
+        if f, err := strconv.ParseFloat(val.Number(), 64); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = f
+        }
+        {{end}}
         {{else if eq .Type "B"}}
         item.{{ToSafeName .Name | ToUpperCamelCase}} = val.Boolean()
+        {{else if eq .Type "BS"}}
+        {{$goType := ToGolangBaseType .}}
+        {{if eq $goType "[]byte"}}
+        if data, err := base64.StdEncoding.DecodeString(val.String()); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = data
+        }
+        {{else}}
+        item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
+        {{end}}
+        {{else if or (eq .Type "SS") (eq .Type "NS") (eq .Type "L") (eq .Type "M")}}
+        // Complex types (String Set, Number Set, List, Map) - store as JSON string
+        if jsonData, err := json.Marshal(val); err == nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = string(jsonData)
+        }
+        {{else if eq .Type "NULL"}}
+        // NULL type - leave field as zero value
+        {{else}}
+        // Unknown type - store as string representation
+        item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
         {{end}}
     }
     {{end}}

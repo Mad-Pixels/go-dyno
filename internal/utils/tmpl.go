@@ -77,10 +77,15 @@ func MustParseTemplateFormatted(b *bytes.Buffer, tmpl string, vars any) {
 //
 // Example:
 //
-//	tmpl := "Field: {{ .Field }}, Type: {{ ToGolangBaseType .Type }}"
-//	output := utils.MustParseTemplateToString(tmpl, map[string]string{
-//		"Field": "age",
-//		"Type":  "N",
+//	tmpl := "Field: {{ .Field }}, Type: {{ ToGolangBaseType . }}"
+//	attr := common.Attribute{
+//		Name: "age",
+//		Type: "N",
+//		Subtype: common.SubtypeInt,
+//	}
+//	output := utils.MustParseTemplateToString(tmpl, map[string]interface{}{
+//		"Field": attr.Name,
+//		"Type":  attr,
 //	})
 //	fmt.Println(output)
 //
@@ -146,7 +151,6 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 		os.Exit(1)
 	}
 
-	// Apply formatting if requested
 	if shouldFormat {
 		formatted, err := format.Source(b.Bytes(), format.Options{})
 		if err != nil {
