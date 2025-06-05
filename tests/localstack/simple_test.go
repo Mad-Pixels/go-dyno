@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	simple "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/table_simple"
+	simple "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/tablesimple"
 )
 
 // TestSimpleSchema runs comprehensive integration tests for the simple.json schema.
