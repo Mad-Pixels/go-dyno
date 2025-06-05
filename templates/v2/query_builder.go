@@ -94,10 +94,10 @@ func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName
 // This method adds FilterExpression condition to DynamoDB Query operation.
 //
 // DynamoDB filter attribute: "{{.Name}}" (type: {{.Type}})
-// Go parameter type: {{ToGolangBaseType .Type}}
+// Go parameter type: {{ToGolangBaseType .}}
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) Filter{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .}}) *QueryBuilder {
+func (qb *QueryBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .}}) *QueryBuilder {
     qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
     qb.UsedKeys["{{.Name}}"] = true
     return qb
