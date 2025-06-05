@@ -92,6 +92,11 @@ func testUtilityFunctionsContent(t *testing.T, rendered string) {
 		funcs := []string{
 			"func BatchPutItems(",
 			"func PutItem(",
+			"func DeleteItem(",
+			"func DeleteItemFromItem(",
+			"func DeleteItemWithCondition(",
+			"func BatchDeleteItems(",
+			"func BatchDeleteItemsFromItems(",
 			"func ExtractFromDynamoDBStreamEvent(",
 			"func IsFieldModified(",
 			"func GetBoolFieldChanged(",
@@ -135,6 +140,20 @@ func testUtilityFunctionsContent(t *testing.T, rendered string) {
 	// Test that bool values are properly handled with BOOL type
 	t.Run("bool_type_handling", func(t *testing.T) {
 		assert.Contains(t, rendered, "types.AttributeValueMemberBOOL{Value: v}", "Should use BOOL type for bool values")
+	})
+
+	// Test DeleteItem functions
+	t.Run("delete_functions", func(t *testing.T) {
+		assert.Contains(t, rendered, "dynamodb.DeleteItemInput", "Should contain DeleteItemInput")
+		assert.Contains(t, rendered, "dynamodb.BatchWriteItemInput", "Should contain BatchWriteItemInput for batch deletes")
+		assert.Contains(t, rendered, "types.WriteRequest", "Should use WriteRequest for batch operations")
+		assert.Contains(t, rendered, "DeleteRequest", "Should use DeleteRequest for delete operations")
+	})
+
+	// Test batch operation limits
+	t.Run("batch_limits", func(t *testing.T) {
+		assert.Contains(t, rendered, "maximum 25 items", "Should enforce DynamoDB batch limits")
+		assert.Contains(t, rendered, "len(keys) > 25", "Should check batch size limit")
 	})
 }
 
