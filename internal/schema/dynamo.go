@@ -80,9 +80,10 @@ func (ds DynamoSchema) PackageName() string {
 //
 // Example:
 //
-//	input: "user-activity" → output: "user_activity"
+//	input: "user-activity" → output: "useractivity"
+//	input: "user_activity" → output: "useractivity"
 func (ds DynamoSchema) Directory() string {
-	return utils.ToSafeName(ds.schema.TableName)
+	return utils.ToLowerInlineCase(ds.schema.TableName)
 }
 
 // Filename returns the generated Go filename for the table schema,
@@ -90,9 +91,10 @@ func (ds DynamoSchema) Directory() string {
 //
 // Example:
 //
-//	input: "user-activity" → output: "user_activity.go"
+//	input: "user-activity" → output: "useractivity.go"
+//	input: "user_activity" → output: "useractivity.go"
 func (ds DynamoSchema) Filename() string {
-	return utils.ToSafeName(ds.schema.TableName) + ".go"
+	return utils.ToLowerInlineCase(ds.schema.TableName) + ".go"
 }
 
 // Attributes returns the core attributes defined for the DynamoDB table schema.

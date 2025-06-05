@@ -74,14 +74,43 @@ func TestQueryBuilderTemplate(t *testing.T) {
 		assert.Contains(t, rendered, "func NewQueryBuilder() *QueryBuilder", "Should contain NewQueryBuilder constructor")
 	})
 
-	// Test that With<Attribute> methods are generated for all attributes
-	// Example: WithUserId, WithCreatedAt, WithStatus, WithUpdatedAt
-	t.Run("fluent_methods_present", func(t *testing.T) {
-		for _, attr := range templateMap.AllAttributes {
+	// Test that With<Attribute> methods are generated for key attributes only
+	// Example: WithUserId, WithCreatedAt, WithStatus (hash/range keys)
+	t.Run("key_condition_methods_present", func(t *testing.T) {
+		for _, attr := range templateMap.Attributes {
 			name := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
 			expected := "With" + name + "("
 			assert.Contains(t, rendered, expected,
-				"Should contain fluent method: %s", expected)
+				"Should contain key condition method: %s", expected)
+		}
+	})
+
+	// Test that Filter<Attribute> methods are generated for non-key attributes only
+	// Example: FilterTitle, FilterContent, FilterViews (filter expressions)
+	t.Run("filter_expression_methods_present", func(t *testing.T) {
+		for _, attr := range templateMap.CommonAttributes {
+			name := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
+			expected := "Filter" + name + "("
+			assert.Contains(t, rendered, expected,
+				"Should contain filter expression method: %s", expected)
+		}
+	})
+
+	// Test that key and filter methods are not mixed
+	// Example: key attributes should not have Filter methods, common attributes should not have With methods
+	t.Run("no_mixed_method_types", func(t *testing.T) {
+		for _, attr := range templateMap.Attributes {
+			name := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
+			unexpected := "Filter" + name + "("
+			assert.NotContains(t, rendered, unexpected,
+				"Key attribute should not have filter method: %s", unexpected)
+		}
+
+		for _, attr := range templateMap.CommonAttributes {
+			name := utils.ToUpperCamelCase(utils.ToSafeName(attr.Name))
+			unexpected := "With" + name + "("
+			assert.NotContains(t, rendered, unexpected,
+				"Common attribute should not have key method: %s", unexpected)
 		}
 	})
 
