@@ -331,13 +331,13 @@ func testComplexQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.
 			{"WithCreatedAt", func() *complex.QueryBuilder { return qb.WithCreatedAt(123) }},
 			{"WithLikes", func() *complex.QueryBuilder { return qb.WithLikes(10) }},
 			{"WithIsPublished", func() *complex.QueryBuilder { return qb.WithIsPublished(1) }},
-			{"WithTitle", func() *complex.QueryBuilder { return qb.WithTitle("test") }},
-			{"WithContent", func() *complex.QueryBuilder { return qb.WithContent("test") }},
-			{"WithCategory", func() *complex.QueryBuilder { return qb.WithCategory("test") }},
-			{"WithTag", func() *complex.QueryBuilder { return qb.WithTag("test") }},
-			{"WithViews", func() *complex.QueryBuilder { return qb.WithViews(100) }},
-			{"WithIsPremium", func() *complex.QueryBuilder { return qb.WithIsPremium(true) }},
-			{"WithIsFeatured", func() *complex.QueryBuilder { return qb.WithIsFeatured(false) }},
+			{"WithTitle", func() *complex.QueryBuilder { return qb.FilterTitle("test") }},
+			{"WithContent", func() *complex.QueryBuilder { return qb.FilterContent("test") }},
+			{"WithCategory", func() *complex.QueryBuilder { return qb.FilterCategory("test") }},
+			{"WithTag", func() *complex.QueryBuilder { return qb.FilterTag("test") }},
+			{"WithViews", func() *complex.QueryBuilder { return qb.FilterViews(100) }},
+			{"WithIsPremium", func() *complex.QueryBuilder { return qb.FilterIsPremium(true) }},
+			{"WithIsFeatured", func() *complex.QueryBuilder { return qb.FilterIsFeatured(false) }},
 		}
 		for _, method := range methods {
 			result := method.call()
@@ -380,9 +380,9 @@ func testComplexQueryBuilderChaining(t *testing.T) {
 			WithPostId("complex-post").
 			WithCreatedAtGreaterThan(1640995000).
 			WithLikesLessThan(100).
-			WithCategory("tech").
-			WithTag("golang").
-			WithIsPremium(true).
+			FilterCategory("tech").
+			FilterTag("golang").
+			FilterIsPremium(true).
 			OrderByDesc().
 			Limit(25)
 
@@ -391,7 +391,7 @@ func testComplexQueryBuilderChaining(t *testing.T) {
 		qb2 := complex.NewQueryBuilder().
 			WithUserId("user").
 			WithIsPublished(1).
-			WithCategory("tech").
+			FilterCategory("tech").
 			OrderByAsc().
 			Limit(50)
 
@@ -427,9 +427,9 @@ func testComplexQueryBuilderExecution(t *testing.T, client *dynamodb.Client, ctx
 	t.Run("build_query_with_multiple_filters", func(t *testing.T) {
 		qb := complex.NewQueryBuilder().
 			WithUserId("filter-user").
-			WithCategory("tech").
-			WithTag("golang").
-			WithIsPremium(true).
+			FilterCategory("tech").
+			FilterTag("golang").
+			FilterIsPremium(true).
 			WithViewsGreaterThan(100)
 
 		queryInput, err := qb.BuildQuery()
@@ -640,11 +640,11 @@ func testComplexCompositeKeyIndexes(t *testing.T, client *dynamodb.Client, ctx c
 		}{
 			{
 				"category_published_query",
-				complex.NewQueryBuilder().WithCategory("tech").WithIsPublished(1),
+				complex.NewQueryBuilder().FilterCategory("tech").WithIsPublished(1),
 			},
 			{
 				"tag_published_query",
-				complex.NewQueryBuilder().WithTag("golang").WithIsPublished(1),
+				complex.NewQueryBuilder().FilterTag("golang").WithIsPublished(1),
 			},
 		}
 		for _, test := range compositeTests {
@@ -882,8 +882,10 @@ func testComplexCreateKeyFromItem(t *testing.T) {
 		assert.Contains(t, key, "post_id", "Extracted key should contain range key 'post_id'")
 
 		// Validate non-key attributes are excluded
-		nonKeyAttrs := []string{"created_at", "likes", "is_published", "title", "content",
-			"category", "tag", "views", "is_premium", "is_featured"}
+		nonKeyAttrs := []string{
+			"created_at", "likes", "is_published", "title", "content",
+			"category", "tag", "views", "is_premium", "is_featured",
+		}
 		for _, attr := range nonKeyAttrs {
 			assert.NotContains(t, key, attr, "Extracted key should not contain non-key attribute '%s'", attr)
 		}
@@ -944,23 +946,23 @@ func testComplexFilterConditions(t *testing.T, client *dynamodb.Client, ctx cont
 				"multiple_attribute_filters",
 				complex.NewQueryBuilder().
 					WithUserId("filter-user").
-					WithCategory("tech").
-					WithTag("golang").
-					WithIsPremium(false),
+					FilterCategory("tech").
+					FilterTag("golang").
+					FilterIsPremium(false),
 			},
 			{
 				"numeric_and_boolean_filters",
 				complex.NewQueryBuilder().
 					WithUserId("filter-user").
 					WithViewsGreaterThan(150).
-					WithIsFeatured(true),
+					FilterIsFeatured(true),
 			},
 			{
 				"range_and_equality_filters",
 				complex.NewQueryBuilder().
 					WithUserId("filter-user").
 					WithCreatedAtBetween(1640995050, 1640995150).
-					WithCategory("tech"),
+					FilterCategory("tech"),
 			},
 		}
 		for _, test := range filterTests {

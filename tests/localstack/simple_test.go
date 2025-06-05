@@ -294,10 +294,10 @@ func testSimpleQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 		qb3 := qb.WithCreated(1640995200)
 		require.NotNil(t, qb3, "WithCreated should return QueryBuilder for chaining")
 
-		qb4 := qb.WithName("test-name")
+		qb4 := qb.FilterName("test-name")
 		require.NotNil(t, qb4, "WithName should return QueryBuilder for chaining")
 
-		qb5 := qb.WithAge(25)
+		qb5 := qb.FilterAge(25)
 		require.NotNil(t, qb5, "WithAge should return QueryBuilder for chaining")
 
 		t.Logf("✅ All fluent API methods support proper method chaining")
@@ -331,8 +331,8 @@ func testSimpleQueryBuilderChaining(t *testing.T) {
 		qb := simple.NewQueryBuilder().
 			WithId("chain-test").
 			WithCreated(1640995200).
-			WithName("Chained Query").
-			WithAge(35).
+			FilterName("Chained Query").
+			FilterAge(35).
 			OrderByDesc().
 			Limit(25)
 
@@ -341,9 +341,9 @@ func testSimpleQueryBuilderChaining(t *testing.T) {
 	})
 
 	t.Run("method_order_independence", func(t *testing.T) {
-		qb1 := simple.NewQueryBuilder().WithId("test1").OrderByDesc().WithAge(25)
-		qb2 := simple.NewQueryBuilder().OrderByDesc().WithAge(25).WithId("test1")
-		qb3 := simple.NewQueryBuilder().WithAge(25).WithId("test1").OrderByDesc()
+		qb1 := simple.NewQueryBuilder().WithId("test1").OrderByDesc().FilterAge(25)
+		qb2 := simple.NewQueryBuilder().OrderByDesc().FilterAge(25).WithId("test1")
+		qb3 := simple.NewQueryBuilder().FilterAge(25).WithId("test1").OrderByDesc()
 
 		require.NotNil(t, qb1, "Chaining order 1 should work")
 		require.NotNil(t, qb2, "Chaining order 2 should work")
@@ -397,8 +397,8 @@ func testSimpleQueryBuilderExecution(t *testing.T, client *dynamodb.Client, ctx 
 	t.Run("build_query_with_filters", func(t *testing.T) {
 		qb := simple.NewQueryBuilder().
 			WithId("filter-test").
-			WithName("Test Name").
-			WithAge(30)
+			FilterName("Test Name").
+			FilterAge(30)
 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "BuildQuery with filters should succeed")

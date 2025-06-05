@@ -74,18 +74,30 @@ func NewQueryBuilder() *QueryBuilder {
     }
 }
 
-{{range .AllAttributes}}
-// With{{ToSafeName .Name | ToUpperCamelCase}} sets the value for the "{{.Name}}" attribute in the query.
-// This method enables filtering and key conditions based on the {{.Name}} field.
+{{range .Attributes}}
+// With{{ToSafeName .Name | ToUpperCamelCase}} sets the key condition for "{{.Name}}" attribute.
+// This method sets KeyConditionExpression for DynamoDB Query operation.
 //
-// DynamoDB attribute: "{{.Name}}" (type: {{.Type}})
+// DynamoDB key attribute: "{{.Name}}" (type: {{.Type}})
 // Go parameter type: {{ToGolangBaseType .Type}}
-//
-// Usage:
-//   query.With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}}) // Sets {{.Name}} = {{ToSafeName .Name | ToLowerCamelCase}}
 //
 // Returns the QueryBuilder for method chaining.
 func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .Type}}) *QueryBuilder {
+    qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
+    qb.UsedKeys["{{.Name}}"] = true
+    return qb
+}
+{{end}}
+
+{{range .CommonAttributes}}
+// Filter{{ToSafeName .Name | ToUpperCamelCase}} sets the filter condition for "{{.Name}}" attribute.
+// This method adds FilterExpression condition to DynamoDB Query operation.
+//
+// DynamoDB filter attribute: "{{.Name}}" (type: {{.Type}})
+// Go parameter type: {{ToGolangBaseType .Type}}
+//
+// Returns the QueryBuilder for method chaining.
+func (qb *QueryBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .Type}}) *QueryBuilder {
     qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
     qb.UsedKeys["{{.Name}}"] = true
     return qb
