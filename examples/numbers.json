@@ -1,0 +1,51 @@
+{
+  "table_name": "numbers-test",
+  "hash_key": "id",
+  "range_key": "timestamp",
+  "attributes": [
+    { "name": "id", "type": "S" },
+    { "name": "timestamp", "type": "N", "subtype": "uint64" },
+    { "name": "status_code", "type": "N", "subtype": "int" },
+    { "name": "is_active", "type": "B", "subtype": "bool" },
+    { "name": "count", "type": "N", "subtype": "uint" },
+    { "name": "created_at", "type": "S", "subtype": "time" }
+  ],
+  "common_attributes": [
+    { "name": "price_cents", "type": "N", "subtype": "big_int" },
+    { "name": "discount_rate", "type": "N", "subtype": "float32" },
+    { "name": "score", "type": "N", "subtype": "float64" },
+    { "name": "balance", "type": "N", "subtype": "decimal" },
+    { "name": "request_id", "type": "S", "subtype": "uuid" },
+    { "name": "data", "type": "BS", "subtype": "bytes" },
+    { "name": "default_number", "type": "N" },
+    { "name": "description", "type": "S" },
+    { "name": "big_number", "type": "N", "subtype": "int64" },
+    { "name": "medium_number", "type": "N", "subtype": "int32" },
+    { "name": "small_number", "type": "N", "subtype": "int16" },
+    { "name": "tiny_number", "type": "N", "subtype": "int8" },
+    { "name": "unsigned_tiny", "type": "N", "subtype": "uint8" },
+    { "name": "unsigned_small", "type": "N", "subtype": "uint16" },
+    { "name": "unsigned_medium", "type": "N", "subtype": "uint32" }
+  ],
+  "secondary_indexes": [
+    {
+      "name": "StatusIndex",
+      "hash_key": "is_active",
+      "range_key": "timestamp", 
+      "projection_type": "ALL"
+    },
+    {
+      "name": "TypeCountIndex",
+      "hash_key": "status_code",
+      "range_key": "count",
+      "projection_type": "INCLUDE",
+      "non_key_attributes": ["price_cents", "score", "description"]
+    },
+    {
+      "name": "TimeRangeIndex",
+      "hash_key": "is_active",
+      "range_key": "created_at",
+      "projection_type": "KEYS_ONLY"
+    }
+  ]
+}
