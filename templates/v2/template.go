@@ -14,5 +14,7 @@ package {{.PackageName}}
 
 ` + QueryBuilderTemplate + `
 
+` + ScanBuilderTemplate + `
+
 ` + UtilityFunctionsTemplate + `
 `
