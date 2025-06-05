@@ -52,6 +52,20 @@ func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Schema
         }
         {{else if eq .Type "B"}}
         item.{{ToSafeName .Name | ToUpperCamelCase}} = val.Boolean()
+        {{else if eq .Type "SS"}}
+        if ss := val.StringSet(); ss != nil {
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = ss
+        }
+        {{else if eq .Type "NS"}}
+        if ns := val.NumberSet(); ns != nil {
+            numbers := make([]int, 0, len(ns))
+            for _, numStr := range ns {
+                if num, err := strconv.Atoi(numStr); err == nil {
+                    numbers = append(numbers, num)
+                }
+            }
+            item.{{ToSafeName .Name | ToUpperCamelCase}} = numbers
+        }
         {{end}}
     }
     {{end}}
@@ -210,6 +224,16 @@ func ConvertMapToAttributeValues(input map[string]interface{}) (map[string]types
         switch v := value.(type) {
         case string:
             result[key] = &types.AttributeValueMemberS{Value: v}
+        case []string:
+            result[key] = &types.AttributeValueMemberSS{Value: v}
+        case []int:
+            numbers := make([]string, len(v))
+            for i, num := range v {
+                numbers[i] = fmt.Sprintf("%d", num)
+            }
+            result[key] = &types.AttributeValueMemberNS{Value: numbers}
+        case int:
+            result[key] = &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", v)}
         case float64:
             if v == float64(int64(v)) {
                 result[key] = &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", int64(v))}
