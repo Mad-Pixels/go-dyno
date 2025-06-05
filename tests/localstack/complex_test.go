@@ -50,12 +50,6 @@ func TestComplexSchema(t *testing.T) {
 	t.Logf("Hash Key: %s, Range Key: %s", complex.TableSchema.HashKey, complex.TableSchema.RangeKey)
 	t.Logf("Secondary Indexes: %d", len(complex.TableSchema.SecondaryIndexes))
 
-	t.Run("Utility_Functions", func(t *testing.T) {
-		t.Parallel()
-		testComplexBoolToInt(t)
-		testComplexIntToBool(t)
-	})
-
 	t.Run("CRUD_Operations", func(t *testing.T) {
 		testComplexPutItem(t, client, ctx)
 		testComplexBatchPutItems(t, client, ctx)
@@ -97,52 +91,6 @@ func TestComplexSchema(t *testing.T) {
 		testComplexFilterConditions(t, client, ctx)
 		testComplexSortingAndPagination(t, client, ctx)
 		testComplexTriggerHandlers(t)
-	})
-}
-
-// ==================== Utility Functions Tests ====================
-
-// testComplexBoolToInt validates the BoolToInt utility function for complex schema
-func testComplexBoolToInt(t *testing.T) {
-	t.Run("boolean_to_numeric_conversion", func(t *testing.T) {
-		testCases := []struct {
-			input    bool
-			expected int
-			desc     string
-		}{
-			{true, 1, "published posts should convert to 1"},
-			{false, 0, "unpublished posts should convert to 0"},
-		}
-
-		for _, tc := range testCases {
-			result := complex.BoolToInt(tc.input)
-			assert.Equal(t, tc.expected, result, tc.desc)
-		}
-
-		t.Logf("✅ BoolToInt utility function works correctly for complex schema")
-	})
-}
-
-// testComplexIntToBool validates the IntToBool utility function for complex schema
-func testComplexIntToBool(t *testing.T) {
-	t.Run("numeric_to_boolean_conversion", func(t *testing.T) {
-		testCases := []struct {
-			input    int
-			expected bool
-			desc     string
-		}{
-			{1, true, "published status (1) should be true"},
-			{0, false, "unpublished status (0) should be false"},
-			{2, true, "any non-zero should be true"},
-			{-1, true, "negative non-zero should be true"},
-		}
-
-		for _, tc := range testCases {
-			result := complex.IntToBool(tc.input)
-			assert.Equal(t, tc.expected, result, tc.desc)
-		}
-
-		t.Logf("✅ IntToBool utility function handles complex schema cases correctly")
 	})
 }
 

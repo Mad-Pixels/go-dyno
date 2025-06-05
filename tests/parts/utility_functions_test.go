@@ -16,7 +16,6 @@ import (
 // TestUtilityFunctionsTemplate validates the UtilityFunctionsTemplate rendering.
 // This template generates a set of helper functions for DynamoDB operations:
 // - BatchPutItems, PutItem
-// - BoolToInt, IntToBool
 // - ExtractFromDynamoDBStreamEvent with per-type branches (including SS/NS)
 // - IsFieldModified, GetBoolFieldChanged
 // - CreateKey, CreateKeyFromItem
@@ -35,7 +34,7 @@ func TestUtilityFunctionsTemplate(t *testing.T) {
 				{Name: "created_at", Type: "N"},
 				{Name: "status", Type: "S"},
 				{Name: "updated_at", Type: "N"},
-				{Name: "is_active", Type: "B"},
+				{Name: "is_active", Type: "BOOL"},
 			},
 		}
 
@@ -57,7 +56,7 @@ func TestUtilityFunctionsTemplate(t *testing.T) {
 				{Name: "skill_levels", Type: "NS"}, // Number Set
 				{Name: "interests", Type: "SS"},    // String Set
 				{Name: "scores", Type: "NS"},       // Number Set
-				{Name: "is_premium", Type: "B"},
+				{Name: "is_premium", Type: "BOOL"},
 				{Name: "created_at", Type: "N"},
 			},
 		}
@@ -93,8 +92,6 @@ func testUtilityFunctionsContent(t *testing.T, rendered string) {
 		funcs := []string{
 			"func BatchPutItems(",
 			"func PutItem(",
-			"func BoolToInt(",
-			"func IntToBool(",
 			"func ExtractFromDynamoDBStreamEvent(",
 			"func IsFieldModified(",
 			"func GetBoolFieldChanged(",
@@ -115,7 +112,7 @@ func testUtilityFunctionsContent(t *testing.T, rendered string) {
 		// Number branch
 		assert.Contains(t, rendered, "strconv.Atoi(val.Number())", "Should handle N/Number attributes")
 		// Boolean branch
-		assert.Contains(t, rendered, "val.Boolean()", "Should handle B/Boolean attributes")
+		assert.Contains(t, rendered, "val.Boolean()", "Should handle BOOL/Boolean attributes")
 	})
 
 	// Test that ConvertMapToAttributeValues covers all switch cases
@@ -133,6 +130,11 @@ func testUtilityFunctionsContent(t *testing.T, rendered string) {
 		for _, br := range branches {
 			assert.Contains(t, rendered, br, "ConvertMapToAttributeValues should cover %s", br)
 		}
+	})
+
+	// Test that bool values are properly handled with BOOL type
+	t.Run("bool_type_handling", func(t *testing.T) {
+		assert.Contains(t, rendered, "types.AttributeValueMemberBOOL{Value: v}", "Should use BOOL type for bool values")
 	})
 }
 
@@ -219,7 +221,7 @@ func TestUtilityFunctionsTemplateFormatting(t *testing.T) {
 				{Name: "created_at", Type: "N"},
 				{Name: "status", Type: "S"},
 				{Name: "updated_at", Type: "N"},
-				{Name: "is_active", Type: "B"},
+				{Name: "is_active", Type: "BOOL"},
 			},
 		}
 
@@ -241,7 +243,7 @@ func TestUtilityFunctionsTemplateFormatting(t *testing.T) {
 				{Name: "skill_levels", Type: "NS"},
 				{Name: "interests", Type: "SS"},
 				{Name: "scores", Type: "NS"},
-				{Name: "is_premium", Type: "B"},
+				{Name: "is_premium", Type: "BOOL"},
 				{Name: "created_at", Type: "N"},
 			},
 		}
@@ -264,7 +266,7 @@ func TestUtilityFunctionsTemplateFormatting(t *testing.T) {
 				{Name: "skill-levels", Type: "NS"},        // With hyphen
 				{Name: "user_interests", Type: "SS"},      // Underscore
 				{Name: "test_scores_2024", Type: "NS"},    // With numbers
-				{Name: "is_active_user", Type: "B"},       // Boolean
+				{Name: "is_active_user", Type: "BOOL"},    // Boolean
 				{Name: "created_at_timestamp", Type: "N"}, // Long name
 			},
 		}
@@ -306,7 +308,7 @@ func TestUtilityFunctionsTemplateExtractLogic(t *testing.T) {
 			{Name: "name", Type: "S"},
 			{Name: "tags", Type: "SS"},
 			{Name: "scores", Type: "NS"},
-			{Name: "is_active", Type: "B"},
+			{Name: "is_active", Type: "BOOL"},
 		},
 	}
 
@@ -315,11 +317,11 @@ func TestUtilityFunctionsTemplateExtractLogic(t *testing.T) {
 	t.Run("extract_all_type_branches", func(t *testing.T) {
 		// Check that each attribute type has proper extraction logic
 		typeChecks := map[string][]string{
-			"S":  {"val.String()", "item.Id =", "item.Name ="},
-			"N":  {"strconv.Atoi(val.Number())", "item.Created ="},
-			"B":  {"val.Boolean()", "item.IsActive ="},
-			"SS": {"val.StringSet()", "item.Tags ="},
-			"NS": {"val.NumberSet()", "item.Scores ="},
+			"S":    {"val.String()", "item.Id =", "item.Name ="},
+			"N":    {"strconv.Atoi(val.Number())", "item.Created ="},
+			"BOOL": {"val.Boolean()", "item.IsActive ="},
+			"SS":   {"val.StringSet()", "item.Tags ="},
+			"NS":   {"val.NumberSet()", "item.Scores ="},
 		}
 
 		for typeCode, checks := range typeChecks {

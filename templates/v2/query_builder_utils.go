@@ -149,9 +149,9 @@ func (qb *QueryBuilder) getCompositeKeyName(parts []CompositeKeyPart) string {
 //	parts := []CompositeKeyPart{
 //		{IsConstant: false, Value: "user_id"},   // qb.Attributes["user_id"] = "user123"
 //		{IsConstant: true,  Value: "active"},    // literal "active"
-//		{IsConstant: false, Value: "is_public"}, // qb.Attributes["is_public"] = 1
+//		{IsConstant: false, Value: "is_public"}, // qb.Attributes["is_public"] = true
 //	}
-//	// Returns: "user123#active#1"
+//	// Returns: "user123#active#true"
 func (qb *QueryBuilder) buildCompositeKeyValue(parts []CompositeKeyPart) string {
 	switch len(parts) {
 	case 0:
@@ -224,13 +224,12 @@ func (qb *QueryBuilder) buildCompositeKeyValue(parts []CompositeKeyPart) string 
 // Type conversion rules:
 // - string: Pass through unchanged
 // - int/int64: Convert to decimal string representation
-// - bool: Convert to "1" (true) or "0" (false) for DynamoDB compatibility
+// - bool: Convert to "true" or "false" for DynamoDB compatibility
 // - []string: Join with comma separator
 // - []int: Convert to strings and join with comma separator
 // - other types: Use fmt.Sprintf as fallback (slower but comprehensive)
 //
-// The bool → "1"/"0" conversion aligns with DynamoDB's numeric boolean storage pattern
-// commonly used in applications (e.g., is_public: 1 for true, 0 for false).
+// The bool → "true"/"false" conversion aligns with DynamoDB's native boolean representation.
 //
 // Parameters:
 //   - value: The Go value to format for DynamoDB storage
@@ -241,8 +240,8 @@ func (qb *QueryBuilder) buildCompositeKeyValue(parts []CompositeKeyPart) string 
 //
 //	formatAttributeValue("user123")              // → "user123"
 //	formatAttributeValue(42)                     // → "42"
-//	formatAttributeValue(true)                   // → "1"
-//	formatAttributeValue(false)                  // → "0"
+//	formatAttributeValue(true)                   // → "true"
+//	formatAttributeValue(false)                  // → "false"
 //	formatAttributeValue([]string{"a", "b"})     // → "a,b"
 //	formatAttributeValue([]int{1, 2, 3})         // → "1,2,3"
 func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
@@ -255,9 +254,9 @@ func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
 		return strconv.FormatInt(v, 10)
 	case bool:
 		if v {
-			return "1" // DynamoDB-compatible boolean: true = 1
+			return "true"
 		}
-		return "0" // DynamoDB-compatible boolean: false = 0
+		return "false"
 	case []string:
 		return strings.Join(v, ",")
 	case []int:

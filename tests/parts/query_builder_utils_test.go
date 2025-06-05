@@ -65,7 +65,7 @@ func TestQueryBuilderUtilsTemplate(t *testing.T) {
 				{Name: "user_id", Type: "S"},
 				{Name: "status", Type: "S"},
 				{Name: "level", Type: "S"},
-				{Name: "is_public", Type: "N"},
+				{Name: "is_public", Type: "BOOL"},
 			},
 			CommonAttributes: []common.Attribute{
 				{Name: "updated_at", Type: "N"},
@@ -77,7 +77,7 @@ func TestQueryBuilderUtilsTemplate(t *testing.T) {
 				{Name: "user_id", Type: "S"},
 				{Name: "status", Type: "S"},
 				{Name: "level", Type: "S"},
-				{Name: "is_public", Type: "N"},
+				{Name: "is_public", Type: "BOOL"},
 				{Name: "updated_at", Type: "N"},
 				{Name: "total_amount", Type: "N"},
 			},
@@ -151,12 +151,12 @@ func testQueryBuilderUtilsContent(t *testing.T, rendered string) {
 		assert.Contains(t, rendered, "case 3:")
 	})
 
-	// Test formatAttributeValue boolean conversion
-	// Example: return "1" for true, "0" for false
+	// Test formatAttributeValue boolean conversion - UPDATED for new behavior
+	// Example: return "true" for true, "false" for false
 	t.Run("formatAttributeValue_boolean_conversion", func(t *testing.T) {
 		assert.Contains(t, rendered, "case bool:")
-		assert.Contains(t, rendered, "return \"1\"")
-		assert.Contains(t, rendered, "return \"0\"")
+		assert.Contains(t, rendered, "return \"true\"")
+		assert.Contains(t, rendered, "return \"false\"")
 	})
 
 	// Test DynamoDB integration usage
@@ -183,7 +183,7 @@ func TestQueryBuilderUtilsTemplateFormatting(t *testing.T) {
 		},
 		CommonAttributes: []common.Attribute{
 			{Name: "created_at", Type: "N"},
-			{Name: "is_active", Type: "N"},
+			{Name: "is_active", Type: "BOOL"},
 		},
 		AllAttributes: []common.Attribute{
 			{Name: "id", Type: "S"},
@@ -191,7 +191,7 @@ func TestQueryBuilderUtilsTemplateFormatting(t *testing.T) {
 			{Name: "user_id", Type: "S"},
 			{Name: "status", Type: "S"},
 			{Name: "created_at", Type: "N"},
-			{Name: "is_active", Type: "N"},
+			{Name: "is_active", Type: "BOOL"},
 		},
 		SecondaryIndexes: []common.SecondaryIndex{
 			{
