@@ -307,6 +307,363 @@ func BatchDeleteItemsFromItems(items []SchemaItem) (*dynamodb.BatchWriteItemInpu
     return BatchDeleteItems(keys)
 }
 
+// UpdateItem creates an UpdateItemInput for DynamoDB update operation
+// Uses SET action to update specific attributes while preserving others
+//
+// Example usage:
+//   updates := map[string]interface{}{
+//       "name": "Updated Name",
+//       "age": 30,
+//       "is_active": true,
+//   }
+//   updateInput, err := UpdateItem("user123", 1640995200, updates)
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func UpdateItem(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create key for update: %v", err)
+    }
+    
+    if len(updates) == 0 {
+        return nil, fmt.Errorf("no updates provided")
+    }
+    
+    var updateExpressionParts []string
+    expressionAttributeNames := make(map[string]string)
+    expressionAttributeValues := make(map[string]types.AttributeValue)
+    
+    i := 0
+    for attrName, value := range updates {
+        nameKey := fmt.Sprintf("#attr%d", i)
+        valueKey := fmt.Sprintf(":val%d", i)
+        
+        updateExpressionParts = append(updateExpressionParts, fmt.Sprintf("%s = %s", nameKey, valueKey))
+        expressionAttributeNames[nameKey] = attrName
+        
+        av, err := attributevalue.Marshal(value)
+        if err != nil {
+            return nil, fmt.Errorf("failed to marshal update value for %s: %v", attrName, err)
+        }
+        expressionAttributeValues[valueKey] = av
+        i++
+    }
+    
+    updateExpression := "SET " + strings.Join(updateExpressionParts, ", ")
+    
+    return &dynamodb.UpdateItemInput{
+        TableName:                 aws.String(TableSchema.TableName),
+        Key:                       key,
+        UpdateExpression:          aws.String(updateExpression),
+        ExpressionAttributeNames:  expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
+    }, nil
+}
+
+// UpdateItemFromItem creates an UpdateItemInput using an existing SchemaItem
+// Updates all non-key attributes from the provided item
+//
+// Example usage:
+//   item := SchemaItem{
+//       Id: "user123", Created: 1640995200,
+//       Name: "Updated Name", Age: 30,
+//   }
+//   updateInput, err := UpdateItemFromItem(item)
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func UpdateItemFromItem(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKeyFromItem(item)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create key from item for update: %v", err)
+    }
+    
+    // Marshal the entire item to get all attributes
+    allAttributes, err := attributevalue.MarshalMap(item)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal item for update: %v", err)
+    }
+    
+    // Remove key attributes from update
+    updates := make(map[string]types.AttributeValue)
+    for attrName, attrValue := range allAttributes {
+        if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
+            updates[attrName] = attrValue
+        }
+    }
+    
+    if len(updates) == 0 {
+        return nil, fmt.Errorf("no non-key attributes to update")
+    }
+    
+    var updateExpressionParts []string
+    expressionAttributeNames := make(map[string]string)
+    
+    i := 0
+    for attrName, attrValue := range updates {
+        nameKey := fmt.Sprintf("#attr%d", i)
+        valueKey := fmt.Sprintf(":val%d", i)
+        
+        updateExpressionParts = append(updateExpressionParts, fmt.Sprintf("%s = %s", nameKey, valueKey))
+        expressionAttributeNames[nameKey] = attrName
+        updates[valueKey] = attrValue
+        delete(updates, attrName)
+        i++
+    }
+    
+    updateExpression := "SET " + strings.Join(updateExpressionParts, ", ")
+    
+    return &dynamodb.UpdateItemInput{
+        TableName:                 aws.String(TableSchema.TableName),
+        Key:                       key,
+        UpdateExpression:          aws.String(updateExpression),
+        ExpressionAttributeNames:  expressionAttributeNames,
+        ExpressionAttributeValues: updates,
+    }, nil
+}
+
+// UpdateItemWithCondition creates an UpdateItemInput with a condition expression
+// Useful for conditional updates (e.g., update only if version matches, optimistic locking)
+//
+// Example usage:
+//   updates := map[string]interface{}{
+//       "name": "New Name",
+//       "version": 2,
+//   }
+//   updateInput, err := UpdateItemWithCondition(
+//       "user123", 1640995200,
+//       updates,
+//       "#version = :currentVersion",
+//       map[string]string{"#version": "version"},
+//       map[string]types.AttributeValue{":currentVersion": &types.AttributeValueMemberN{Value: "1"}},
+//   )
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func UpdateItemWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
+    updateInput, err := UpdateItem(hashKeyValue, rangeKeyValue, updates)
+    if err != nil {
+        return nil, err
+    }
+    
+    updateInput.ConditionExpression = aws.String(conditionExpression)
+    
+    // Merge condition attribute names with update attribute names
+    if conditionAttributeNames != nil {
+        for key, value := range conditionAttributeNames {
+            updateInput.ExpressionAttributeNames[key] = value
+        }
+    }
+    
+    // Merge condition attribute values with update attribute values
+    if conditionAttributeValues != nil {
+        for key, value := range conditionAttributeValues {
+            updateInput.ExpressionAttributeValues[key] = value
+        }
+    }
+    
+    return updateInput, nil
+}
+
+// UpdateItemWithExpression creates an UpdateItemInput using DynamoDB expression builder
+// Provides full control over update expressions with type safety
+//
+// Example usage:
+//   import "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+//   
+//   update := expression.Set(expression.Name("name"), expression.Value("New Name")).
+//             Add(expression.Name("views"), expression.Value(1))
+//   condition := expression.Equal(expression.Name("version"), expression.Value(1))
+//   
+//   updateInput, err := UpdateItemWithExpression(
+//       "user123", 1640995200,
+//       update, &condition,
+//   )
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func UpdateItemWithExpression(hashKeyValue interface{}, rangeKeyValue interface{}, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create key for expression update: %v", err)
+    }
+    
+    var expr expression.Expression
+    if conditionBuilder != nil {
+        expr, err = expression.NewBuilder().
+            WithUpdate(updateBuilder).
+            WithCondition(*conditionBuilder).
+            Build()
+    } else {
+        expr, err = expression.NewBuilder().
+            WithUpdate(updateBuilder).
+            Build()
+    }
+    
+    if err != nil {
+        return nil, fmt.Errorf("failed to build update expression: %v", err)
+    }
+    
+    input := &dynamodb.UpdateItemInput{
+        TableName:                 aws.String(TableSchema.TableName),
+        Key:                       key,
+        UpdateExpression:          expr.Update(),
+        ExpressionAttributeNames:  expr.Names(),
+        ExpressionAttributeValues: expr.Values(),
+    }
+    
+    if conditionBuilder != nil {
+        input.ConditionExpression = expr.Condition()
+    }
+    
+    return input, nil
+}
+
+// IncrementAttribute creates an UpdateItemInput to increment/decrement a numeric attribute
+// Useful for counters, views, likes, etc.
+//
+// Example usage:
+//   // Increment views by 1
+//   updateInput, err := IncrementAttribute("user123", 1640995200, "views", 1)
+//   
+//   // Decrement likes by 1
+//   updateInput, err := IncrementAttribute("post456", 1640995200, "likes", -1)
+//   
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create key for increment: %v", err)
+    }
+    
+    return &dynamodb.UpdateItemInput{
+        TableName:        aws.String(TableSchema.TableName),
+        Key:              key,
+        UpdateExpression: aws.String("ADD #attr :val"),
+        ExpressionAttributeNames: map[string]string{
+            "#attr": attributeName,
+        },
+        ExpressionAttributeValues: map[string]types.AttributeValue{
+            ":val": &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", incrementValue)},
+        },
+    }, nil
+}
+
+// AddToSet creates an UpdateItemInput to add values to a string set (SS) or number set (NS)
+// Creates the set if it doesn't exist, otherwise adds to existing set
+//
+// Example usage:
+//   // Add tags to string set
+//   updateInput, err := AddToSet("user123", 1640995200, "tags", []string{"golang", "backend"})
+//   
+//   // Add scores to number set  
+//   updateInput, err := AddToSet("user123", 1640995200, "scores", []int{95, 87})
+//   
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create key for add to set: %v", err)
+    }
+    
+    var attributeValue types.AttributeValue
+    
+    switch v := values.(type) {
+    case []string:
+        if len(v) == 0 {
+            return nil, fmt.Errorf("cannot add empty string set")
+        }
+        attributeValue = &types.AttributeValueMemberSS{Value: v}
+    case []int:
+        if len(v) == 0 {
+            return nil, fmt.Errorf("cannot add empty number set")
+        }
+        numberStrings := make([]string, len(v))
+        for i, num := range v {
+            numberStrings[i] = fmt.Sprintf("%d", num)
+        }
+        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+    default:
+        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+    }
+    
+    return &dynamodb.UpdateItemInput{
+        TableName:        aws.String(TableSchema.TableName),
+        Key:              key,
+        UpdateExpression: aws.String("ADD #attr :val"),
+        ExpressionAttributeNames: map[string]string{
+            "#attr": attributeName,
+        },
+        ExpressionAttributeValues: map[string]types.AttributeValue{
+            ":val": attributeValue,
+        },
+    }, nil
+}
+
+// RemoveFromSet creates an UpdateItemInput to remove values from a string set (SS) or number set (NS)
+//
+// Example usage:
+//   // Remove tags from string set
+//   updateInput, err := RemoveFromSet("user123", 1640995200, "tags", []string{"deprecated"})
+//   
+//   // Remove scores from number set
+//   updateInput, err := RemoveFromSet("user123", 1640995200, "scores", []int{60})
+//   
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create key for remove from set: %v", err)
+    }
+    
+    var attributeValue types.AttributeValue
+    
+    switch v := values.(type) {
+    case []string:
+        if len(v) == 0 {
+            return nil, fmt.Errorf("cannot remove empty string set")
+        }
+        attributeValue = &types.AttributeValueMemberSS{Value: v}
+    case []int:
+        if len(v) == 0 {
+            return nil, fmt.Errorf("cannot remove empty number set")
+        }
+        numberStrings := make([]string, len(v))
+        for i, num := range v {
+            numberStrings[i] = fmt.Sprintf("%d", num)
+        }
+        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+    default:
+        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+    }
+    
+    return &dynamodb.UpdateItemInput{
+        TableName:        aws.String(TableSchema.TableName),
+        Key:              key,
+        UpdateExpression: aws.String("DELETE #attr :val"),
+        ExpressionAttributeNames: map[string]string{
+            "#attr": attributeName,
+        },
+        ExpressionAttributeValues: map[string]types.AttributeValue{
+            ":val": attributeValue,
+        },
+    }, nil
+}
+
 func CreateTriggerHandler(
     onInsert func(context.Context, *SchemaItem) error,
     onModify func(context.Context, *SchemaItem, *SchemaItem) error,
