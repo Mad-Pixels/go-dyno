@@ -71,6 +71,16 @@ func (qb *QueryBuilder) buildCompositeKeyCondition(parts []CompositeKeyPart) exp
 				} else {
 					builder.WriteString("false")
 				}
+			case []string:
+				// For string sets, join with comma
+				builder.WriteString(strings.Join(v, ","))
+			case []int:
+				// For number sets, convert to strings and join
+				strs := make([]string, len(v))
+				for i, num := range v {
+					strs[i] = strconv.Itoa(num)
+				}
+				builder.WriteString(strings.Join(strs, ","))
 			default:
 				builder.WriteString(fmt.Sprintf("%v", v))
 			}
@@ -215,6 +225,8 @@ func (qb *QueryBuilder) buildCompositeKeyValue(parts []CompositeKeyPart) string 
 // - string: Pass through unchanged
 // - int/int64: Convert to decimal string representation
 // - bool: Convert to "1" (true) or "0" (false) for DynamoDB compatibility
+// - []string: Join with comma separator
+// - []int: Convert to strings and join with comma separator
 // - other types: Use fmt.Sprintf as fallback (slower but comprehensive)
 //
 // The bool → "1"/"0" conversion aligns with DynamoDB's numeric boolean storage pattern
@@ -227,10 +239,12 @@ func (qb *QueryBuilder) buildCompositeKeyValue(parts []CompositeKeyPart) string 
 //
 // Example:
 //
-//	formatAttributeValue("user123")    // → "user123"
-//	formatAttributeValue(42)           // → "42"
-//	formatAttributeValue(true)         // → "1"
-//	formatAttributeValue(false)        // → "0"
+//	formatAttributeValue("user123")              // → "user123"
+//	formatAttributeValue(42)                     // → "42"
+//	formatAttributeValue(true)                   // → "1"
+//	formatAttributeValue(false)                  // → "0"
+//	formatAttributeValue([]string{"a", "b"})     // → "a,b"
+//	formatAttributeValue([]int{1, 2, 3})         // → "1,2,3"
 func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
 	switch v := value.(type) {
 	case string:
@@ -244,6 +258,14 @@ func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
 			return "1" // DynamoDB-compatible boolean: true = 1
 		}
 		return "0" // DynamoDB-compatible boolean: false = 0
+	case []string:
+		return strings.Join(v, ",")
+	case []int:
+		strs := make([]string, len(v))
+		for i, num := range v {
+			strs[i] = strconv.Itoa(num)
+		}
+		return strings.Join(strs, ",")
 	default:
 		return fmt.Sprintf("%v", value)
 	}

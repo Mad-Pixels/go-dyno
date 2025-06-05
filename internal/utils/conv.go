@@ -101,6 +101,8 @@ func ToSafeName(s string) string {
 //	ToGolangBaseType("S")       → "string"
 //	ToGolangBaseType("N")       → "int"
 //	ToGolangBaseType("B")       → "bool"
+//	ToGolangBaseType("SS")      → "[]string"
+//	ToGolangBaseType("NS")      → "[]int"
 //	ToGolangBaseType("UNKNOWN") → "any"
 func ToGolangBaseType(dynamoType string) string {
 	switch dynamoType {
@@ -110,6 +112,10 @@ func ToGolangBaseType(dynamoType string) string {
 		return "int"
 	case "B":
 		return "bool"
+	case "SS":
+		return "[]string"
+	case "NS":
+		return "[]int"
 	default:
 		return "any"
 	}
@@ -119,10 +125,12 @@ func ToGolangBaseType(dynamoType string) string {
 //
 // Examples:
 //
-//	ToGolangZeroType("S") → `""`
-//	ToGolangZeroType("N") → "0"
-//	ToGolangZeroType("B") → "false"
-//	ToGolangZeroType("X") → "nil"
+//	ToGolangZeroType("S")  → `""`
+//	ToGolangZeroType("N")  → "0"
+//	ToGolangZeroType("B")  → "false"
+//	ToGolangZeroType("SS") → "nil"
+//	ToGolangZeroType("NS") → "nil"
+//	ToGolangZeroType("X")  → "nil"
 func ToGolangZeroType(dynamoType string) string {
 	switch dynamoType {
 	case "S":
@@ -131,6 +139,8 @@ func ToGolangZeroType(dynamoType string) string {
 		return "0"
 	case "B":
 		return "false"
+	case "SS", "NS":
+		return "nil"
 	default:
 		return "nil"
 	}
@@ -144,8 +154,12 @@ func ToGolangZeroType(dynamoType string) string {
 //	attrs := []common.Attribute{
 //	  {Name: "id", Type: "S"},
 //	  {Name: "count", Type: "N"},
+//	  {Name: "tags", Type: "SS"},
+//	  {Name: "scores", Type: "NS"},
 //	}
 //	ToGolangAttrType("count", attrs)   → "int"
+//	ToGolangAttrType("tags", attrs)    → "[]string"
+//	ToGolangAttrType("scores", attrs)  → "[]int"
 //	ToGolangAttrType("missing", attrs) → "any"
 func ToGolangAttrType(attrName string, attributes []common.Attribute) string {
 	for _, attr := range attributes {

@@ -163,7 +163,11 @@ tasks:
     silent: true 
     internal: true
 
-  _localstack/run:
+  # =================================================
+  # ----------------------PUBLIC--------------------#
+  # =================================================
+
+  localstack/run:
     desc: Run localstack environment.
     deps:
       - _localstack/install
@@ -186,11 +190,6 @@ tasks:
             -var="use_localstack=true"
       - task: localstack/go/prepare
     silent: true
-    internal: true
-
-  # =================================================
-  # ----------------------PUBLIC--------------------#
-  # =================================================
 
   go/mod/vendor:
     desc: Run 'go mod vendor'.
@@ -298,7 +297,7 @@ tasks:
     desc: Run local localstack integration tests.
     dir: "{{ .git_root }}/tests/localstack/" 
     deps:
-      - _localstack/run
+      - localstack/run
     cmds:
       - defer: { task: localstack/stop }
       - go test -parallel 4 -shuffle=on -v ./... 
