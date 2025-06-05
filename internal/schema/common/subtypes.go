@@ -8,6 +8,7 @@ import (
 // AttributeSubtype defines the specific Go type for DynamoDB attributes.
 type AttributeSubtype int
 
+//revive:disable:exported
 const (
 	// Default (zero value) - use automatic mapping.
 	SubtypeDefault AttributeSubtype = iota

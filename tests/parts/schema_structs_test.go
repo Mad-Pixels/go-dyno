@@ -123,7 +123,7 @@ func TestSchemaStructsTemplate(t *testing.T) {
 
 		rendered := utils.MustParseTemplateToString(v2.SchemaStructsTemplate, templateMap)
 		testBasicStructure(t, rendered, templateMap)
-		testMixedTypes(t, rendered, templateMap)
+		testMixedTypes(t, rendered)
 	})
 
 	// Test edge cases with uncommon subtypes
@@ -281,7 +281,7 @@ func testSubtypeGoTypes(t *testing.T, rendered string, templateMap v2.TemplateMa
 }
 
 // testMixedTypes validates mixing of default and explicit subtypes
-func testMixedTypes(t *testing.T, rendered string, templateMap v2.TemplateMap) {
+func testMixedTypes(t *testing.T, rendered string) {
 	t.Helper()
 
 	t.Run("mixed_default_and_explicit_types", func(t *testing.T) {
