@@ -97,6 +97,13 @@ func testUtilityFunctionsContent(t *testing.T, rendered string) {
 			"func DeleteItemWithCondition(",
 			"func BatchDeleteItems(",
 			"func BatchDeleteItemsFromItems(",
+			"func UpdateItem(",
+			"func UpdateItemFromItem(",
+			"func UpdateItemWithCondition(",
+			"func UpdateItemWithExpression(",
+			"func IncrementAttribute(",
+			"func AddToSet(",
+			"func RemoveFromSet(",
 			"func ExtractFromDynamoDBStreamEvent(",
 			"func IsFieldModified(",
 			"func GetBoolFieldChanged(",
@@ -154,6 +161,36 @@ func testUtilityFunctionsContent(t *testing.T, rendered string) {
 	t.Run("batch_limits", func(t *testing.T) {
 		assert.Contains(t, rendered, "maximum 25 items", "Should enforce DynamoDB batch limits")
 		assert.Contains(t, rendered, "len(keys) > 25", "Should check batch size limit")
+	})
+
+	// Test UpdateItem functions
+	t.Run("update_functions", func(t *testing.T) {
+		assert.Contains(t, rendered, "dynamodb.UpdateItemInput", "Should contain UpdateItemInput")
+		assert.Contains(t, rendered, "UpdateExpression", "Should use UpdateExpression")
+		assert.Contains(t, rendered, "ExpressionAttributeNames", "Should use ExpressionAttributeNames")
+		assert.Contains(t, rendered, "ExpressionAttributeValues", "Should use ExpressionAttributeValues")
+	})
+
+	// Test update expression types
+	t.Run("update_expression_types", func(t *testing.T) {
+		assert.Contains(t, rendered, "SET ", "Should support SET operations")
+		assert.Contains(t, rendered, "ADD ", "Should support ADD operations")
+		assert.Contains(t, rendered, "DELETE ", "Should support DELETE operations")
+	})
+
+	// Test set operations
+	t.Run("set_operations", func(t *testing.T) {
+		assert.Contains(t, rendered, "[]string", "Should handle string sets")
+		assert.Contains(t, rendered, "[]int", "Should handle number sets")
+		assert.Contains(t, rendered, "AttributeValueMemberSS", "Should create string set values")
+		assert.Contains(t, rendered, "AttributeValueMemberNS", "Should create number set values")
+	})
+
+	// Test conditional updates
+	t.Run("conditional_updates", func(t *testing.T) {
+		assert.Contains(t, rendered, "ConditionExpression", "Should support conditional updates")
+		assert.Contains(t, rendered, "expression.UpdateBuilder", "Should support expression builder")
+		assert.Contains(t, rendered, "expression.ConditionBuilder", "Should support condition builder")
 	})
 }
 
