@@ -36,12 +36,12 @@ func TestBaseString(t *testing.T) {
 
 	t.Logf("Testing String operations on: %s", basestring.TableName)
 
-	t.Run("String_CRUD", func(t *testing.T) {
-		testStringCRUD(t, client, ctx)
+	t.Run("String_Input", func(t *testing.T) {
+		testStringInput(t, client, ctx)
 	})
 
-	t.Run("String_Raw_CRUD", func(t *testing.T) {
-		testStringRawCRUD(t, client, ctx)
+	t.Run("String_Input_Raw", func(t *testing.T) {
+		testStringInputRaw(t, client, ctx)
 	})
 
 	t.Run("String_QueryBuilder", func(t *testing.T) {
@@ -58,9 +58,9 @@ func TestBaseString(t *testing.T) {
 	})
 }
 
-// ==================== String CRUD Operations ====================
+// ==================== String Object Input ====================
 
-func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) {
+func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("create_string_item", func(t *testing.T) {
 		item := basestring.SchemaItem{
 			Id:          "string-test-001",
@@ -70,21 +70,21 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		}
 
 		// Test marshaling
-		av, err := basestring.PutItem(item)
+		av, err := basestring.ItemInput(item)
 		require.NoError(t, err, "Should marshal string item")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
 		// Verify string fields are properly marshaled as AttributeValueMemberS
 		assert.Contains(t, av, "id", "Should contain id field")
-		assert.Contains(t, av, "category", "Should contain category field")
 		assert.Contains(t, av, "title", "Should contain title field")
+		assert.Contains(t, av, "category", "Should contain category field")
 		assert.Contains(t, av, "description", "Should contain description field")
 
 		// Verify actual string values
-		assert.IsType(t, &types.AttributeValueMemberS{}, av["id"])
-		assert.IsType(t, &types.AttributeValueMemberS{}, av["category"])
-		assert.IsType(t, &types.AttributeValueMemberS{}, av["title"])
-		assert.IsType(t, &types.AttributeValueMemberS{}, av["description"])
+		assert.IsType(t, &types.AttributeValueMemberS{}, av[basestring.ColumnId])
+		assert.IsType(t, &types.AttributeValueMemberS{}, av[basestring.ColumnTitle])
+		assert.IsType(t, &types.AttributeValueMemberS{}, av[basestring.ColumnCategory])
+		assert.IsType(t, &types.AttributeValueMemberS{}, av[basestring.ColumnDescription])
 
 		// Test storage
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
@@ -102,7 +102,7 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 			Category: "docs",
 		}
 
-		key, err := basestring.CreateKey(item)
+		key, err := basestring.KeyInput(item)
 		require.NoError(t, err, "Should create key from item")
 
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
@@ -113,10 +113,10 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
 		// Verify string values are correctly retrieved
-		assert.Equal(t, "string-test-001", getResult.Item["id"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "docs", getResult.Item["category"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "String Operations Guide", getResult.Item["title"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "Comprehensive guide for string handling", getResult.Item["description"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "docs", getResult.Item[basestring.ColumnCategory].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "string-test-001", getResult.Item[basestring.ColumnId].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "String Operations Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Comprehensive guide for string handling", getResult.Item[basestring.ColumnDescription].(*types.AttributeValueMemberS).Value)
 
 		t.Logf("✅ Retrieved string item successfully")
 	})
@@ -129,22 +129,22 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 			Description: "Updated comprehensive guide for string operations",
 		}
 
-		updateInput, err := basestring.UpdateItem(item)
+		updateInput, err := basestring.UpdateItemInput(item)
 		require.NoError(t, err, "Should create update input from item")
 
 		_, err = client.UpdateItem(ctx, updateInput)
 		require.NoError(t, err, "Should update string item")
 
 		// Verify update
-		key, _ := basestring.CreateKey(item)
+		key, _ := basestring.KeyInput(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basestring.TableName),
 			Key:       key,
 		})
 		require.NoError(t, err, "Should retrieve updated item")
 
-		assert.Equal(t, "Updated String Guide", getResult.Item["title"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "Updated comprehensive guide for string operations", getResult.Item["description"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Updated String Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Updated comprehensive guide for string operations", getResult.Item[basestring.ColumnDescription].(*types.AttributeValueMemberS).Value)
 
 		t.Logf("✅ Updated string item successfully")
 	})
@@ -155,14 +155,14 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 			Category: "docs",
 		}
 
-		deleteInput, err := basestring.DeleteItem(item)
+		deleteInput, err := basestring.DeleteItemInput(item)
 		require.NoError(t, err, "Should create delete input from item")
 
 		_, err = client.DeleteItem(ctx, deleteInput)
 		require.NoError(t, err, "Should delete string item")
 
 		// Verify deletion
-		key, _ := basestring.CreateKey(item)
+		key, _ := basestring.KeyInput(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basestring.TableName),
 			Key:       key,
@@ -182,7 +182,7 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		}
 
 		for _, item := range edgeCases {
-			av, err := basestring.PutItem(item)
+			av, err := basestring.ItemInput(item)
 			require.NoError(t, err, "Should handle edge case: %s", item.Id)
 
 			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
@@ -196,9 +196,9 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 	})
 }
 
-// ==================== String Raw CRUD Operations ====================
+// ================== String Raw Object Input ==================
 
-func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) {
+func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("create_string_item_raw", func(t *testing.T) {
 		item := basestring.SchemaItem{
 			Id:          "string-raw-001",
@@ -208,7 +208,7 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 		}
 
 		// Test marshaling (same as object-based)
-		av, err := basestring.PutItem(item)
+		av, err := basestring.ItemInput(item)
 		require.NoError(t, err, "Should marshal string item")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
@@ -223,7 +223,7 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 	})
 
 	t.Run("read_string_item_raw", func(t *testing.T) {
-		key, err := basestring.CreateKeyFromRaw("string-raw-001", "raw-docs")
+		key, err := basestring.KeyInputFromRaw("string-raw-001", "raw-docs")
 		require.NoError(t, err, "Should create key from raw values")
 
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
@@ -234,48 +234,48 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
 		// Verify string values are correctly retrieved
-		assert.Equal(t, "string-raw-001", getResult.Item["id"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "raw-docs", getResult.Item["category"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "Raw String Operations Guide", getResult.Item["title"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "string-raw-001", getResult.Item[basestring.ColumnId].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "raw-docs", getResult.Item[basestring.ColumnCategory].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Raw String Operations Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
 
 		t.Logf("✅ Retrieved string item successfully using raw key")
 	})
 
 	t.Run("update_string_item_raw", func(t *testing.T) {
-		updates := map[string]interface{}{
+		updates := map[string]any{
 			"title":       "Updated Raw String Guide",
 			"description": "Updated guide for raw string operations methods",
 		}
 
-		updateInput, err := basestring.UpdateItemFromRaw("string-raw-001", "raw-docs", updates)
+		updateInput, err := basestring.UpdateItemInputFromRaw("string-raw-001", "raw-docs", updates)
 		require.NoError(t, err, "Should create update input from raw values")
 
 		_, err = client.UpdateItem(ctx, updateInput)
 		require.NoError(t, err, "Should update string item using raw method")
 
 		// Verify update
-		key, _ := basestring.CreateKeyFromRaw("string-raw-001", "raw-docs")
+		key, _ := basestring.KeyInputFromRaw("string-raw-001", "raw-docs")
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basestring.TableName),
 			Key:       key,
 		})
 		require.NoError(t, err, "Should retrieve updated item")
 
-		assert.Equal(t, "Updated Raw String Guide", getResult.Item["title"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "Updated guide for raw string operations methods", getResult.Item["description"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Updated Raw String Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Updated guide for raw string operations methods", getResult.Item[basestring.ColumnDescription].(*types.AttributeValueMemberS).Value)
 
 		t.Logf("✅ Updated string item successfully using raw method")
 	})
 
 	t.Run("delete_string_item_raw", func(t *testing.T) {
-		deleteInput, err := basestring.DeleteItemFromRaw("string-raw-001", "raw-docs")
+		deleteInput, err := basestring.DeleteItemInputFromRaw("string-raw-001", "raw-docs")
 		require.NoError(t, err, "Should create delete input from raw values")
 
 		_, err = client.DeleteItem(ctx, deleteInput)
 		require.NoError(t, err, "Should delete string item using raw method")
 
 		// Verify deletion
-		key, _ := basestring.CreateKeyFromRaw("string-raw-001", "raw-docs")
+		key, _ := basestring.KeyInputFromRaw("string-raw-001", "raw-docs")
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basestring.TableName),
 			Key:       key,
@@ -288,14 +288,14 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 
 	t.Run("raw_vs_object_comparison", func(t *testing.T) {
 		// Create same key using both methods
-		keyFromRaw, err := basestring.CreateKeyFromRaw("comparison-test", "both-methods")
+		keyFromRaw, err := basestring.KeyInputFromRaw("comparison-test", "both-methods")
 		require.NoError(t, err, "Should create key from raw values")
 
 		item := basestring.SchemaItem{
 			Id:       "comparison-test",
 			Category: "both-methods",
 		}
-		keyFromObject, err := basestring.CreateKey(item)
+		keyFromObject, err := basestring.KeyInput(item)
 		require.NoError(t, err, "Should create key from object")
 
 		// Keys should be identical
@@ -308,28 +308,28 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 		edgeCases := []struct {
 			id       string
 			category string
-			updates  map[string]interface{}
+			updates  map[string]any
 		}{
 			{
 				id:       "raw-edge-1",
 				category: "empty",
-				updates:  map[string]interface{}{"title": "", "description": "Empty title"},
+				updates:  map[string]any{"title": "", "description": "Empty title"},
 			},
 			{
 				id:       "raw-edge-2",
 				category: "unicode",
-				updates:  map[string]interface{}{"title": "Unicode: 🚀✨", "description": "Emoji and unicode chars"},
+				updates:  map[string]any{"title": "Unicode: 🚀✨", "description": "Emoji and unicode chars"},
 			},
 			{
 				id:       "raw-edge-3",
 				category: "special-chars",
-				updates:  map[string]interface{}{"title": "Special: !@#$%^&*()", "description": "Special characters"},
+				updates:  map[string]any{"title": "Special: !@#$%^&*()", "description": "Special characters"},
 			},
 		}
 
 		for _, edgeCase := range edgeCases {
 			// Test create with raw update
-			updateInput, err := basestring.UpdateItemFromRaw(edgeCase.id, edgeCase.category, edgeCase.updates)
+			updateInput, err := basestring.UpdateItemInputFromRaw(edgeCase.id, edgeCase.category, edgeCase.updates)
 			require.NoError(t, err, "Should handle raw edge case: %s", edgeCase.id)
 
 			// Note: UpdateItemFromRaw works as upsert-like operation for new items in some cases
@@ -337,7 +337,7 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 			assert.NotNil(t, updateInput, "Update input should be created for edge case: %s", edgeCase.id)
 
 			// Test delete with raw method
-			deleteInput, err := basestring.DeleteItemFromRaw(edgeCase.id, edgeCase.category)
+			deleteInput, err := basestring.DeleteItemInputFromRaw(edgeCase.id, edgeCase.category)
 			require.NoError(t, err, "Should create delete input for edge case: %s", edgeCase.id)
 			assert.NotNil(t, deleteInput, "Delete input should be created")
 		}
@@ -353,7 +353,7 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 			":v": &types.AttributeValueMemberN{Value: "1"},
 		}
 
-		deleteInput, err := basestring.DeleteItemWithCondition(
+		deleteInput, err := basestring.DeleteItemInputWithCondition(
 			"conditional-test", "raw-condition",
 			conditionExpr, conditionNames, conditionValues,
 		)
@@ -362,12 +362,12 @@ func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 		assert.Equal(t, conditionExpr, *deleteInput.ConditionExpression, "Condition should match")
 
 		// Test conditional update with raw method
-		updates := map[string]interface{}{
+		updates := map[string]any{
 			"title":   "Conditional Update",
 			"version": 2,
 		}
 
-		updateInput, err := basestring.UpdateItemWithCondition(
+		updateInput, err := basestring.UpdateItemInputWithCondition(
 			"conditional-test", "raw-condition",
 			updates, conditionExpr, conditionNames, conditionValues,
 		)
@@ -595,7 +595,7 @@ func setupStringTestData(t *testing.T, client *dynamodb.Client, ctx context.Cont
 	}
 
 	for _, item := range testItems {
-		av, err := basestring.PutItem(item)
+		av, err := basestring.ItemInput(item)
 		require.NoError(t, err, "Should marshal string test item")
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{

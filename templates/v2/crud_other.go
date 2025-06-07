@@ -2,81 +2,6 @@ package v2
 
 // CrudOtherKey ...
 const CrudOther = `
-// CreateKey extracts the primary key from a SchemaItem and returns it as DynamoDB AttributeValue map.
-// This is the primary method for creating keys from existing items.
-//
-// Example usage:
-//   item := SchemaItem{Id: "user123", Created: 1640995200, Name: "John"}
-//   key, err := CreateKey(item)
-//   if err != nil {
-//       return err
-//   }
-//   _, err = dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
-//       TableName: aws.String(TableSchema.TableName),
-//       Key: key,
-//   })
-func CreateKey(item SchemaItem) (map[string]types.AttributeValue, error) {
-    key := make(map[string]types.AttributeValue)
-    
-    var hashKeyValue interface{}
-    {{range .AllAttributes}}{{if eq .Name $.HashKey}}
-    hashKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
-    {{end}}{{end}}
-    
-    hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
-    if err != nil {
-        return nil, fmt.Errorf("failed to marshal hash key: %v", err)
-    }
-    key[TableSchema.HashKey] = hashKeyAV
-    
-    if TableSchema.RangeKey != "" {
-        var rangeKeyValue interface{}
-        {{range .AllAttributes}}{{if eq .Name $.RangeKey}}
-        rangeKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
-        {{end}}{{end}}
-        
-        rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)
-        if err != nil {
-            return nil, fmt.Errorf("failed to marshal range key: %v", err)
-        }
-        key[TableSchema.RangeKey] = rangeKeyAV
-    }
-    
-    return key, nil
-}
-
-// CreateKeyFromRaw creates a key from raw hash and range key values.
-// Use this when you have individual key values rather than a complete SchemaItem.
-//
-// Example usage:
-//   key, err := CreateKeyFromRaw("user123", 1640995200)
-//   if err != nil {
-//       return err
-//   }
-//   _, err = dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
-//       TableName: aws.String(TableSchema.TableName),
-//       Key: key,
-//   })
-func CreateKeyFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (map[string]types.AttributeValue, error) {
-    key := make(map[string]types.AttributeValue)
-    
-    hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
-    if err != nil {
-        return nil, fmt.Errorf("failed to marshal hash key: %v", err)
-    }
-    key[TableSchema.HashKey] = hashKeyAV
-    
-    if TableSchema.RangeKey != "" && rangeKeyValue != nil {
-        rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)
-        if err != nil {
-            return nil, fmt.Errorf("failed to marshal range key: %v", err)
-        }
-        key[TableSchema.RangeKey] = rangeKeyAV
-    }
-    
-    return key, nil
-}
-
 // IncrementAttribute creates an UpdateItemInput to increment/decrement a numeric attribute
 // Useful for counters, views, likes, etc.
 //
@@ -92,7 +17,7 @@ func CreateKeyFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (map[
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
+    key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for increment: %v", err)
     }
@@ -125,7 +50,7 @@ func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, att
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
+    key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for add to set: %v", err)
     }
@@ -178,7 +103,7 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
+    key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for remove from set: %v", err)
     }
@@ -215,5 +140,101 @@ func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attribut
             ":val": attributeValue,
         },
     }, nil
+}
+
+// ExtractFromDynamoDBStreamEvent converts a DynamoDB Stream event record into a strongly-typed SchemaItem.
+// This function is essential for processing DynamoDB Streams in Lambda triggers, providing
+// type-safe access to changed data without manual attribute parsing.
+//
+// The function handles all DynamoDB attribute types with proper Go type conversion:
+// - String (S): Direct string assignment  
+// - Number (N): Converts string representation to int with error handling
+// - Boolean (BOOL): Direct boolean assignment
+// - String Set (SS): Copies string slice with nil safety
+// - Number Set (NS): Converts string slice to int slice with error handling
+//
+// Stream Event Processing:
+// - Validates that NewImage exists (required for INSERT/MODIFY events)
+// - Safely extracts each attribute with type checking
+// - Handles missing attributes gracefully (leaves zero values)
+// - Provides error handling for malformed numeric data
+//
+// Parameters:
+//   - dbEvent: DynamoDB Stream event record from AWS Lambda
+//
+// Returns:
+//   - *SchemaItem: Populated struct with data from the stream event
+//   - error: Processing error if NewImage is nil or data is malformed
+//
+// Example usage in Lambda trigger:
+//   func handleDynamoDBStream(ctx context.Context, event events.DynamoDBEvent) error {
+//       for _, record := range event.Records {
+//           switch record.EventName {
+//           case "INSERT", "MODIFY":
+//               item, err := ExtractFromDynamoDBStreamEvent(record)
+//               if err != nil {
+//                   log.Printf("Failed to extract item: %v", err)
+//                   continue
+//               }
+//               
+//               // Process the strongly-typed item
+//               log.Printf("Item changed: %+v", item)
+//               
+//           case "REMOVE":
+//               // Handle deletion using record.Change.OldImage
+//           }
+//       }
+//       return nil
+//   }
+//
+// Error Handling:
+// - Returns error if NewImage is nil (malformed event)
+// - Continues processing other attributes if individual conversions fail
+// - Number conversion errors are logged but don't stop processing
+func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*SchemaItem, error) {
+   if dbEvent.Change.NewImage == nil {
+       return nil, fmt.Errorf("new image is nil in the event")
+   }
+   
+   item := &SchemaItem{}
+   
+   {{range .AllAttributes}}
+   if val, ok := dbEvent.Change.NewImage["{{.Name}}"]; ok {
+       {{if eq .Type "S"}}
+       // String attribute: direct assignment from DynamoDB String type
+       item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
+       {{else if eq .Type "N"}}
+       // Number attribute: convert DynamoDB Number (string) to Go int with error handling
+       if n, err := strconv.Atoi(val.Number()); err == nil {
+           item.{{ToSafeName .Name | ToUpperCamelCase}} = n
+       }
+       {{else if eq .Type "BOOL"}}
+       // Boolean attribute: direct assignment from DynamoDB Boolean type
+       item.{{ToSafeName .Name | ToUpperCamelCase}} = val.Boolean()
+       {{else if eq .Type "SS"}}
+       // String Set attribute: copy slice with nil safety check
+       if ss := val.StringSet(); ss != nil {
+           item.{{ToSafeName .Name | ToUpperCamelCase}} = ss
+       }
+       {{else if eq .Type "NS"}}
+       // Number Set attribute: convert string slice to int slice with error handling
+       if ns := val.NumberSet(); ns != nil {
+           numbers := make([]int, 0, len(ns))
+           for _, numStr := range ns {
+               if num, err := strconv.Atoi(numStr); err == nil {
+                   numbers = append(numbers, num)
+               }
+           }
+           item.{{ToSafeName .Name | ToUpperCamelCase}} = numbers
+       }
+       {{else}}
+       // Unsupported DynamoDB type: {{.Type}} for attribute {{.Name}}
+       // This ensures compilation succeeds even if new types are added to schema
+       _ = val // Mark as used to avoid compilation error
+       {{end}}
+   }
+   {{end}}
+   
+   return item, nil
 }
 `

@@ -37,12 +37,12 @@ func TestBaseNumber(t *testing.T) {
 
 	t.Logf("Testing Number operations on: %s", basenumber.TableName)
 
-	t.Run("Number_CRUD", func(t *testing.T) {
-		testNumberCRUD(t, client, ctx)
+	t.Run("Number_Input", func(t *testing.T) {
+		testNumberInput(t, client, ctx)
 	})
 
-	t.Run("Number_Raw_CRUD", func(t *testing.T) {
-		testNumberRawCRUD(t, client, ctx)
+	t.Run("Number__Input_Raw", func(t *testing.T) {
+		testNumberInputRaw(t, client, ctx)
 	})
 
 	t.Run("Number_QueryBuilder", func(t *testing.T) {
@@ -67,9 +67,9 @@ func TestBaseNumber(t *testing.T) {
 	})
 }
 
-// ==================== Number CRUD Operations ====================
+// ==================== Number Object Input ====================
 
-func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) {
+func testNumberInput(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("create_number_item", func(t *testing.T) {
 		item := basenumber.SchemaItem{
 			Id:        "number-test-001",
@@ -79,7 +79,7 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		}
 
 		// Test marshaling
-		av, err := basenumber.PutItem(item)
+		av, err := basenumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal number item")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
@@ -90,10 +90,10 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		assert.Contains(t, av, "price", "Should contain price field")
 
 		// Verify actual number values
-		assert.IsType(t, &types.AttributeValueMemberS{}, av["id"])        // id is string
-		assert.IsType(t, &types.AttributeValueMemberN{}, av["timestamp"]) // timestamp is number
-		assert.IsType(t, &types.AttributeValueMemberN{}, av["count"])     // count is number
-		assert.IsType(t, &types.AttributeValueMemberN{}, av["price"])     // price is number
+		assert.IsType(t, &types.AttributeValueMemberS{}, av[basenumber.ColumnId])        // id is string
+		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnCount])     // count is number
+		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnPrice])     // price is number
+		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnTimestamp]) // timestamp is number
 
 		// Test storage
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
@@ -111,7 +111,7 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 			Timestamp: 1640995200,
 		}
 
-		key, err := basenumber.CreateKey(item)
+		key, err := basenumber.KeyInput(item)
 		require.NoError(t, err, "Should create key from item")
 
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
@@ -122,10 +122,10 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
 		// Verify number values are correctly retrieved
-		assert.Equal(t, "number-test-001", getResult.Item["id"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "1640995200", getResult.Item["timestamp"].(*types.AttributeValueMemberN).Value)
-		assert.Equal(t, "42", getResult.Item["count"].(*types.AttributeValueMemberN).Value)
-		assert.Equal(t, "1999", getResult.Item["price"].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "42", getResult.Item[basenumber.ColumnCount].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "1999", getResult.Item[basenumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "number-test-001", getResult.Item[basenumber.ColumnId].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "1640995200", getResult.Item[basenumber.ColumnTimestamp].(*types.AttributeValueMemberN).Value)
 
 		t.Logf("✅ Retrieved number item successfully")
 	})
@@ -138,22 +138,22 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 			Price:     2499,
 		}
 
-		updateInput, err := basenumber.UpdateItem(item)
+		updateInput, err := basenumber.UpdateItemInput(item)
 		require.NoError(t, err, "Should create update input from item")
 
 		_, err = client.UpdateItem(ctx, updateInput)
 		require.NoError(t, err, "Should update number item")
 
 		// Verify update
-		key, _ := basenumber.CreateKey(item)
+		key, _ := basenumber.KeyInput(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Key:       key,
 		})
 		require.NoError(t, err, "Should retrieve updated item")
 
-		assert.Equal(t, "100", getResult.Item["count"].(*types.AttributeValueMemberN).Value)
-		assert.Equal(t, "2499", getResult.Item["price"].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "100", getResult.Item[basenumber.ColumnCount].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "2499", getResult.Item[basenumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
 
 		t.Logf("✅ Updated number item successfully")
 	})
@@ -164,14 +164,14 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 			Timestamp: 1640995200,
 		}
 
-		deleteInput, err := basenumber.DeleteItem(item)
+		deleteInput, err := basenumber.DeleteItemInput(item)
 		require.NoError(t, err, "Should create delete input from item")
 
 		_, err = client.DeleteItem(ctx, deleteInput)
 		require.NoError(t, err, "Should delete number item")
 
 		// Verify deletion
-		key, _ := basenumber.CreateKey(item)
+		key, _ := basenumber.KeyInput(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Key:       key,
@@ -191,7 +191,7 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		}
 
 		for _, item := range edgeCases {
-			av, err := basenumber.PutItem(item)
+			av, err := basenumber.ItemInput(item)
 			require.NoError(t, err, "Should handle number edge case: %s", item.Id)
 
 			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
@@ -205,9 +205,9 @@ func testNumberCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 	})
 }
 
-// ==================== Number Raw CRUD Operations ====================
+// ==================== Number Raw Object Input ====================
 
-func testNumberRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) {
+func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("create_number_item_raw", func(t *testing.T) {
 		item := basenumber.SchemaItem{
 			Id:        "number-raw-001",
@@ -217,7 +217,7 @@ func testNumberRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 		}
 
 		// Test marshaling (same as object-based)
-		av, err := basenumber.PutItem(item)
+		av, err := basenumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal number item")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
@@ -232,7 +232,7 @@ func testNumberRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 	})
 
 	t.Run("read_number_item_raw", func(t *testing.T) {
-		key, err := basenumber.CreateKeyFromRaw("number-raw-001", 1640995300)
+		key, err := basenumber.KeyInputFromRaw("number-raw-001", 1640995300)
 		require.NoError(t, err, "Should create key from raw values")
 
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
@@ -243,49 +243,49 @@ func testNumberRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
 		// Verify number values are correctly retrieved
-		assert.Equal(t, "number-raw-001", getResult.Item["id"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(t, "1640995300", getResult.Item["timestamp"].(*types.AttributeValueMemberN).Value)
-		assert.Equal(t, "75", getResult.Item["count"].(*types.AttributeValueMemberN).Value)
-		assert.Equal(t, "3499", getResult.Item["price"].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "75", getResult.Item[basenumber.ColumnCount].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "3499", getResult.Item[basenumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "number-raw-001", getResult.Item[basenumber.ColumnId].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "1640995300", getResult.Item[basenumber.ColumnTimestamp].(*types.AttributeValueMemberN).Value)
 
 		t.Logf("✅ Retrieved number item successfully using raw key")
 	})
 
 	t.Run("update_number_item_raw", func(t *testing.T) {
-		updates := map[string]interface{}{
+		updates := map[string]any{
 			"count": 150,
 			"price": 4999,
 		}
 
-		updateInput, err := basenumber.UpdateItemFromRaw("number-raw-001", 1640995300, updates)
+		updateInput, err := basenumber.UpdateItemInputFromRaw("number-raw-001", 1640995300, updates)
 		require.NoError(t, err, "Should create update input from raw values")
 
 		_, err = client.UpdateItem(ctx, updateInput)
 		require.NoError(t, err, "Should update number item using raw method")
 
 		// Verify update
-		key, _ := basenumber.CreateKeyFromRaw("number-raw-001", 1640995300)
+		key, _ := basenumber.KeyInputFromRaw("number-raw-001", 1640995300)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Key:       key,
 		})
 		require.NoError(t, err, "Should retrieve updated item")
 
-		assert.Equal(t, "150", getResult.Item["count"].(*types.AttributeValueMemberN).Value)
-		assert.Equal(t, "4999", getResult.Item["price"].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "150", getResult.Item[basenumber.ColumnCount].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "4999", getResult.Item[basenumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
 
 		t.Logf("✅ Updated number item successfully using raw method")
 	})
 
 	t.Run("delete_number_item_raw", func(t *testing.T) {
-		deleteInput, err := basenumber.DeleteItemFromRaw("number-raw-001", 1640995300)
+		deleteInput, err := basenumber.DeleteItemInputFromRaw("number-raw-001", 1640995300)
 		require.NoError(t, err, "Should create delete input from raw values")
 
 		_, err = client.DeleteItem(ctx, deleteInput)
 		require.NoError(t, err, "Should delete number item using raw method")
 
 		// Verify deletion
-		key, _ := basenumber.CreateKeyFromRaw("number-raw-001", 1640995300)
+		key, _ := basenumber.KeyInputFromRaw("number-raw-001", 1640995300)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Key:       key,
@@ -298,14 +298,14 @@ func testNumberRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 
 	t.Run("raw_vs_object_number_comparison", func(t *testing.T) {
 		// Create same key using both methods
-		keyFromRaw, err := basenumber.CreateKeyFromRaw("comparison-test", 1640995999)
+		keyFromRaw, err := basenumber.KeyInputFromRaw("comparison-test", 1640995999)
 		require.NoError(t, err, "Should create key from raw values")
 
 		item := basenumber.SchemaItem{
 			Id:        "comparison-test",
 			Timestamp: 1640995999,
 		}
-		keyFromObject, err := basenumber.CreateKey(item)
+		keyFromObject, err := basenumber.KeyInput(item)
 		require.NoError(t, err, "Should create key from object")
 
 		// Keys should be identical
@@ -318,33 +318,33 @@ func testNumberRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Contex
 		edgeCases := []struct {
 			id        string
 			timestamp int
-			updates   map[string]interface{}
+			updates   map[string]any
 		}{
 			{
 				id:        "raw-edge-1",
 				timestamp: 0,
-				updates:   map[string]interface{}{"count": 0, "price": 0},
+				updates:   map[string]any{"count": 0, "price": 0},
 			},
 			{
 				id:        "raw-edge-2",
 				timestamp: 1,
-				updates:   map[string]interface{}{"count": -100, "price": -50},
+				updates:   map[string]any{"count": -100, "price": -50},
 			},
 			{
 				id:        "raw-edge-3",
 				timestamp: 9999999999,
-				updates:   map[string]interface{}{"count": 2147483647, "price": 999999999},
+				updates:   map[string]any{"count": 2147483647, "price": 999999999},
 			},
 		}
 
 		for _, edgeCase := range edgeCases {
 			// Test create with raw update
-			updateInput, err := basenumber.UpdateItemFromRaw(edgeCase.id, edgeCase.timestamp, edgeCase.updates)
+			updateInput, err := basenumber.UpdateItemInputFromRaw(edgeCase.id, edgeCase.timestamp, edgeCase.updates)
 			require.NoError(t, err, "Should handle raw number edge case: %s", edgeCase.id)
 			assert.NotNil(t, updateInput, "Update input should be created for edge case: %s", edgeCase.id)
 
 			// Test delete with raw method
-			deleteInput, err := basenumber.DeleteItemFromRaw(edgeCase.id, edgeCase.timestamp)
+			deleteInput, err := basenumber.DeleteItemInputFromRaw(edgeCase.id, edgeCase.timestamp)
 			require.NoError(t, err, "Should create delete input for edge case: %s", edgeCase.id)
 			assert.NotNil(t, deleteInput, "Delete input should be created")
 		}
@@ -588,7 +588,7 @@ func testNumberIncrementOperations(t *testing.T, client *dynamodb.Client, ctx co
 		Price:     100,
 	}
 
-	av, err := basenumber.PutItem(testItem)
+	av, err := basenumber.ItemInput(testItem)
 	require.NoError(t, err, "Should create test item for increment")
 
 	_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
@@ -606,14 +606,14 @@ func testNumberIncrementOperations(t *testing.T, client *dynamodb.Client, ctx co
 		require.NoError(t, err, "Should increment count")
 
 		// Verify increment
-		key, _ := basenumber.CreateKeyFromRaw("increment-test", 1640995999)
+		key, _ := basenumber.KeyInputFromRaw("increment-test", 1640995999)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Key:       key,
 		})
 		require.NoError(t, err, "Should retrieve incremented item")
 
-		assert.Equal(t, "15", getResult.Item["count"].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "15", getResult.Item[basenumber.ColumnCount].(*types.AttributeValueMemberN).Value)
 
 		t.Logf("✅ Count incremented successfully: 10 + 5 = 15")
 	})
@@ -627,14 +627,14 @@ func testNumberIncrementOperations(t *testing.T, client *dynamodb.Client, ctx co
 		require.NoError(t, err, "Should decrement price")
 
 		// Verify decrement
-		key, _ := basenumber.CreateKeyFromRaw("increment-test", 1640995999)
+		key, _ := basenumber.KeyInputFromRaw("increment-test", 1640995999)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Key:       key,
 		})
 		require.NoError(t, err, "Should retrieve decremented item")
 
-		assert.Equal(t, "75", getResult.Item["price"].(*types.AttributeValueMemberN).Value)
+		assert.Equal(t, "75", getResult.Item[basenumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
 
 		t.Logf("✅ Price decremented successfully: 100 - 25 = 75")
 	})
@@ -718,7 +718,7 @@ func setupNumberTestData(t *testing.T, client *dynamodb.Client, ctx context.Cont
 	}
 
 	for _, item := range testItems {
-		av, err := basenumber.PutItem(item)
+		av, err := basenumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal number test item")
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{

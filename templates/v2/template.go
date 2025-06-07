@@ -16,11 +16,13 @@ package {{.PackageName}}
 
 ` + ScanBuilderTemplate + `
 
-` + CrudPutTemplate + `
+` + ItemInputTemplate + `
 
-` + CrudUpdateTemplate + `
+` + UpdateItemInputTemplate + `
 
-` + CrudDeleteTemplate + `
+` + DeleteItemInputTemplate + `
+
+` + KeyInputTemplate + `
 
 ` + CrudOther + `
 
