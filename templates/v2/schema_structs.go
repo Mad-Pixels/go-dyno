@@ -85,8 +85,8 @@ type SecondaryIndex struct {
 type SchemaItem struct {
 {{- range .AllAttributes}}
    // {{ToSafeName .Name | ToUpperCamelCase}} corresponds to the "{{.Name}}" attribute in DynamoDB
-   // DynamoDB type: {{.Type}} -> Go type: {{ToGolangBaseType .Type}}
-   {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .Type}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
+   // DynamoDB type: {{.Type}} -> Go type: {{ToGolangBaseType .}}
+   {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
 {{- end}}
 }
 

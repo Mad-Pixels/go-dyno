@@ -79,10 +79,10 @@ func NewQueryBuilder() *QueryBuilder {
 // This method sets KeyConditionExpression for DynamoDB Query operation.
 //
 // DynamoDB key attribute: "{{.Name}}" (type: {{.Type}})
-// Go parameter type: {{ToGolangBaseType .Type}}
+// Go parameter type: {{ToGolangBaseType .}}
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .}}) *QueryBuilder {
     qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
     qb.UsedKeys["{{.Name}}"] = true
     return qb
@@ -94,10 +94,10 @@ func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName
 // This method adds FilterExpression condition to DynamoDB Query operation.
 //
 // DynamoDB filter attribute: "{{.Name}}" (type: {{.Type}})
-// Go parameter type: {{ToGolangBaseType .Type}}
+// Go parameter type: {{ToGolangBaseType .}}
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .}}) *QueryBuilder {
     qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
     qb.UsedKeys["{{.Name}}"] = true
     return qb
@@ -247,7 +247,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToL
 {{end}}
 
 {{range .AllAttributes}}
-{{if eq (ToGolangBaseType .Type) "int"}}
+{{if IsNumericAttr .}}
 // With{{ToUpperCamelCase .Name}}Between creates a range condition for the "{{.Name}}" attribute.
 // This method is particularly useful for sort keys in queries where you need to find items
 // within a specific numeric range.
@@ -263,7 +263,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToL
 //   query.With{{ToUpperCamelCase .Name}}Between(100, 500) // {{.Name}} between 100 and 500
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}Between(start, end {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}Between(start, end {{ToGolangBaseType .}}) *QueryBuilder {
     qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").Between(expression.Value(start), expression.Value(end))
     qb.UsedKeys["{{.Name}}"] = true
     return qb
@@ -282,7 +282,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}Between(start, end {{ToGol
 //   query.With{{ToUpperCamelCase .Name}}GreaterThan(1000) // {{.Name}} > 1000
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}GreaterThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}GreaterThan(value {{ToGolangBaseType .}}) *QueryBuilder {
     qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").GreaterThan(expression.Value(value))
     qb.UsedKeys["{{.Name}}"] = true
     return qb
@@ -301,7 +301,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}GreaterThan(value {{ToGola
 //   query.With{{ToUpperCamelCase .Name}}LessThan(500) // {{.Name}} < 500
 //
 // Returns the QueryBuilder for method chaining.
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}LessThan(value {{ToGolangBaseType .Type}}) *QueryBuilder {
+func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}LessThan(value {{ToGolangBaseType .}}) *QueryBuilder {
     qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").LessThan(expression.Value(value))
     qb.UsedKeys["{{.Name}}"] = true
     return qb

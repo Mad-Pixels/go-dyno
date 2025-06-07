@@ -94,56 +94,47 @@ func ToSafeName(s string) string {
 	}
 }
 
-// ToGolangBaseType maps a DynamoDB type to the corresponding Go base type.
+// ToGolangBaseType maps a DynamoDB attribute to the corresponding Go base type.
+// Uses the attribute's subtype if specified, otherwise uses default mapping.
 //
 // Examples:
 //
-//	ToGolangBaseType("S")       → "string"
-//	ToGolangBaseType("N")       → "int"
-//	ToGolangBaseType("BOOL")    → "bool"
-//	ToGolangBaseType("SS")      → "[]string"
-//	ToGolangBaseType("NS")      → "[]int"
-//	ToGolangBaseType("UNKNOWN") → "any"
-func ToGolangBaseType(dynamoType string) string {
-	switch dynamoType {
-	case "S":
-		return "string"
-	case "N":
-		return "int"
-	case "BOOL":
-		return "bool"
-	case "SS":
-		return "[]string"
-	case "NS":
-		return "[]int"
-	default:
-		return "any"
-	}
+//	attr := Attribute{Type: "S"}
+//	ToGolangBaseType(attr) → "string"
+//
+//	attr := Attribute{Type: "N", Subtype: SubtypeInt}
+//	ToGolangBaseType(attr) → "int"
+func ToGolangBaseType(attr common.Attribute) string {
+	return attr.GoType()
 }
 
-// ToGolangZeroType returns the zero value as a string literal for a DynamoDB type.
+// ToGolangZeroType returns the zero value as a string literal for a DynamoDB attribute.
+// Delegates to the attribute's ZeroValue() method for consistency.
 //
 // Examples:
 //
-//	ToGolangZeroType("S")    → `""`
-//	ToGolangZeroType("N")    → "0"
-//	ToGolangZeroType("BOOL") → "false"
-//	ToGolangZeroType("SS")   → "nil"
-//	ToGolangZeroType("NS")   → "nil"
-//	ToGolangZeroType("X")    → "nil"
-func ToGolangZeroType(dynamoType string) string {
-	switch dynamoType {
-	case "S":
-		return `""`
-	case "N":
-		return "0"
-	case "BOOL":
-		return "false"
-	case "SS", "NS":
-		return "nil"
-	default:
-		return "nil"
+//	attr := Attribute{Type: "S"}                           → `""`
+//	attr := Attribute{Type: "N", Subtype: SubtypeInt}      → "0"
+func ToGolangZeroType(attr common.Attribute) string {
+	return attr.ZeroValue()
+}
+
+// IsNumericAttr returns true if the attribute represents a numeric type
+func IsNumericAttr(attr common.Attribute) bool {
+	if attr.Subtype != common.SubtypeDefault {
+		return attr.Subtype.IsNumeric()
 	}
+	// Fallback for default types
+	return attr.Type == "N"
+}
+
+// IsIntegerAttr returns true if the attribute represents an integer type
+func IsIntegerAttr(attr common.Attribute) bool {
+	if attr.Subtype != common.SubtypeDefault {
+		return attr.Subtype.IsInteger()
+	}
+	// Fallback for default types - default N is now int
+	return attr.Type == "N"
 }
 
 // ToGolangAttrType looks up a specific attribute in the provided list and
@@ -154,19 +145,13 @@ func ToGolangZeroType(dynamoType string) string {
 //	attrs := []common.Attribute{
 //	  {Name: "id", Type: "S"},
 //	  {Name: "count", Type: "N"},
-//	  {Name: "is_active", Type: "BOOL"},
-//	  {Name: "tags", Type: "SS"},
-//	  {Name: "scores", Type: "NS"},
 //	}
-//	ToGolangAttrType("count", attrs)     → "int"
-//	ToGolangAttrType("is_active", attrs) → "bool"
-//	ToGolangAttrType("tags", attrs)      → "[]string"
-//	ToGolangAttrType("scores", attrs)    → "[]int"
-//	ToGolangAttrType("missing", attrs)   → "any"
+//	ToGolangAttrType("count", attrs)   → "int"
+//	ToGolangAttrType("missing", attrs) → "any"
 func ToGolangAttrType(attrName string, attributes []common.Attribute) string {
 	for _, attr := range attributes {
 		if attr.Name == attrName {
-			return ToGolangBaseType(attr.Type)
+			return attr.GoType()
 		}
 	}
 	return "any"

@@ -1,0 +1,39 @@
+{
+  "table_name": "custom-number",
+  "hash_key": "id",
+  "range_key": "timestamp",
+  "attributes": [
+    { 
+      "name": "id", 
+      "type": "S" 
+    },
+    { 
+      "name": "timestamp", 
+      "type": "N", 
+      "subtype": "int64" 
+    }
+  ],
+  "common_attributes": [
+    { 
+      "name": "count", 
+      "type": "N", 
+      "subtype": "int32" 
+    },
+    { 
+      "name": "price", 
+      "type": "N", 
+      "subtype": "float32" 
+    },
+    { 
+      "name": "views", 
+      "type": "N", 
+      "subtype": "uint64" 
+    },
+    { 
+      "name": "score", 
+      "type": "N", 
+      "subtype": "int16" 
+    }
+  ],
+  "secondary_indexes": []
+}

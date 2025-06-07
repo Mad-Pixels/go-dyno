@@ -245,28 +245,96 @@ func (qb *QueryBuilder) buildCompositeKeyValue(parts []CompositeKeyPart) string 
 //	formatAttributeValue([]string{"a", "b"})     // → "a,b"
 //	formatAttributeValue([]int{1, 2, 3})         // → "1,2,3"
 func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
-	switch v := value.(type) {
-	case string:
-		return v
-	case int:
-		return strconv.Itoa(v)
-	case int64:
-		return strconv.FormatInt(v, 10)
-	case bool:
-		if v {
-			return "true"
-		}
-		return "false"
-	case []string:
-		return strings.Join(v, ",")
-	case []int:
-		strs := make([]string, len(v))
-		for i, num := range v {
-			strs[i] = strconv.Itoa(num)
-		}
-		return strings.Join(strs, ",")
-	default:
-		return fmt.Sprintf("%v", value)
-	}
+   switch v := value.(type) {
+   case string:
+   	return v
+   case int, int8, int16, int32, int64:
+   	return fmt.Sprintf("%d", v)
+   case uint, uint8, uint16, uint32, uint64:
+   	return fmt.Sprintf("%d", v)
+   case float32, float64:
+   	return fmt.Sprintf("%g", v)
+   case bool:
+   	if v {
+   		return "true"
+   	}
+   	return "false"
+   case []string:
+   	return strings.Join(v, ",")
+   case []int:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = strconv.Itoa(num)
+   	}
+   	return strings.Join(strs, ",")
+   case []int8:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []int16:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []int32:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []int64:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []uint:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []uint8:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []uint16:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []uint32:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []uint64:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%d", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []float32:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%g", num)
+   	}
+   	return strings.Join(strs, ",")
+   case []float64:
+   	strs := make([]string, len(v))
+   	for i, num := range v {
+   		strs[i] = fmt.Sprintf("%g", num)
+   	}
+   	return strings.Join(strs, ",")
+   default:
+   	return fmt.Sprintf("%v", value)
+   }
 }
 `

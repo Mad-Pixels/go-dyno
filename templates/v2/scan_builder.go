@@ -107,13 +107,13 @@ func (sb *ScanBuilder) WithIndex(indexName string) *ScanBuilder {
 // This method adds FilterExpression condition to DynamoDB Scan operation.
 //
 // DynamoDB filter attribute: "{{.Name}}" (type: {{.Type}})
-// Go parameter type: {{ToGolangBaseType .Type}}
+// Go parameter type: {{ToGolangBaseType .}}
 //
 // Note: Filters are applied after items are read, so they don't reduce read capacity consumption.
 // Use queries with key conditions when possible for better performance.
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").Equal(expression.Value({{ToSafeName .Name | ToLowerCamelCase}}))
     sb.FilterConditions = append(sb.FilterConditions, condition)
     sb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
@@ -123,7 +123,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeNam
 {{end}}
 
 {{range .AllAttributes}}
-{{if eq (ToGolangBaseType .Type) "int"}}
+{{if IsNumericAttr .}}
 // Filter{{ToSafeName .Name | ToUpperCamelCase}}Between creates a range filter condition for the "{{.Name}}" attribute.
 // This method adds a BETWEEN condition to the scan filter expression.
 //
@@ -138,7 +138,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeNam
 //   scan.Filter{{ToSafeName .Name | ToUpperCamelCase}}Between(100, 500) // {{.Name}} between 100 and 500
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}Between(start, end {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}Between(start, end {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").Between(expression.Value(start), expression.Value(end))
     sb.FilterConditions = append(sb.FilterConditions, condition)
     return sb
@@ -157,7 +157,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}Between(star
 //   scan.Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(1000) // {{.Name}} > 1000
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(value {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(value {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").GreaterThan(expression.Value(value))
     sb.FilterConditions = append(sb.FilterConditions, condition)
     return sb
@@ -176,7 +176,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThan(
 //   scan.Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThan(500) // {{.Name}} < 500
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThan(value {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThan(value {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").LessThan(expression.Value(value))
     sb.FilterConditions = append(sb.FilterConditions, condition)
     return sb
@@ -192,7 +192,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThan(val
 //   scan.Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThanOrEqual(100) // {{.Name}} >= 100
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThanOrEqual(value {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThanOrEqual(value {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").GreaterThanEqual(expression.Value(value))
     sb.FilterConditions = append(sb.FilterConditions, condition)
     return sb
@@ -208,7 +208,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}GreaterThanO
 //   scan.Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThanOrEqual(1000) // {{.Name}} <= 1000
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThanOrEqual(value {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThanOrEqual(value {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").LessThanEqual(expression.Value(value))
     sb.FilterConditions = append(sb.FilterConditions, condition)
     return sb
@@ -217,7 +217,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThanOrEq
 {{end}}
 
 {{range .AllAttributes}}
-{{if eq (ToGolangBaseType .Type) "string"}}
+{{if eq (ToGolangBaseType .) "string"}}
 // Filter{{ToSafeName .Name | ToUpperCamelCase}}Contains creates a contains filter condition for the "{{.Name}}" attribute.
 // This method adds a contains() condition to the scan filter expression.
 //
@@ -231,7 +231,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}LessThanOrEq
 //   scan.Filter{{ToSafeName .Name | ToUpperCamelCase}}Contains("gmail") // {{.Name}} contains "gmail"
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}Contains(value {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}Contains(value {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").Contains(value)
     sb.FilterConditions = append(sb.FilterConditions, condition)
     return sb
@@ -250,7 +250,7 @@ func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}Contains(val
 //   scan.Filter{{ToSafeName .Name | ToUpperCamelCase}}BeginsWith("user_") // {{.Name}} begins with "user_"
 //
 // Returns the ScanBuilder for method chaining.
-func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}BeginsWith(value {{ToGolangBaseType .Type}}) *ScanBuilder {
+func (sb *ScanBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}BeginsWith(value {{ToGolangBaseType .}}) *ScanBuilder {
     condition := expression.Name("{{.Name}}").BeginsWith(value)
     sb.FilterConditions = append(sb.FilterConditions, condition)
     return sb
