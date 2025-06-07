@@ -41,6 +41,10 @@ func TestBaseNumber(t *testing.T) {
 		testNumberCRUD(t, client, ctx)
 	})
 
+	t.Run("Number_Raw_CRUD", func(t *testing.T) {
+		testNumberRawCRUD(t, client, ctx)
+	})
+
 	t.Run("Number_QueryBuilder", func(t *testing.T) {
 		testNumberQueryBuilder(t, client, ctx)
 	})
