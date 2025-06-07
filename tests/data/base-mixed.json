@@ -1,0 +1,17 @@
+{
+  "table_name": "base-mixed",
+  "hash_key": "pk",
+  "range_key": "sk",
+  "attributes": [
+    { "name": "pk", "type": "S" },
+    { "name": "sk", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "name", "type": "S" },
+    { "name": "count", "type": "N" },
+    { "name": "is_active", "type": "BOOL" },
+    { "name": "tags", "type": "SS" },
+    { "name": "scores", "type": "NS" }
+  ],
+  "secondary_indexes": []
+}

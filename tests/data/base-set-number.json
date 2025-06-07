@@ -1,0 +1,14 @@
+{
+  "table_name": "base-set-number",
+  "hash_key": "user_id",
+  "range_key": "session_id",
+  "attributes": [
+    { "name": "user_id", "type": "S" },
+    { "name": "session_id", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "scores", "type": "NS" },
+    { "name": "ratings", "type": "NS" }
+  ],
+  "secondary_indexes": []
+}
