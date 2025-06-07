@@ -1,0 +1,39 @@
+{
+  "table_name": "gsi",
+  "hash_key": "pk",
+  "range_key": "sk",
+  "attributes": [
+    { "name": "pk", "type": "S" },
+    { "name": "sk", "type": "S" },
+    { "name": "gsi1_pk", "type": "S" },
+    { "name": "gsi1_sk", "type": "S" },
+    { "name": "gsi2_pk", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "entity_type", "type": "S" },
+    { "name": "status", "type": "S" },
+    { "name": "created_at", "type": "N" },
+    { "name": "updated_at", "type": "N" }
+  ],
+  "secondary_indexes": [
+    {
+      "name": "GSI1",
+      "hash_key": "gsi1_pk",
+      "range_key": "gsi1_sk",
+      "projection_type": "ALL"
+    },
+    {
+      "name": "GSI2",
+      "hash_key": "gsi2_pk",
+      "range_key": "created_at",
+      "projection_type": "KEYS_ONLY"
+    },
+    {
+      "name": "StatusIndex",
+      "hash_key": "status",
+      "range_key": "created_at",
+      "projection_type": "INCLUDE",
+      "non_key_attributes": ["entity_type", "updated_at"]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "table_name": "composite-keys",
+  "hash_key": "tenant_id",
+  "range_key": "item_id",
+  "attributes": [
+    { "name": "tenant_id", "type": "S" },
+    { "name": "item_id", "type": "S" },
+    { "name": "status", "type": "S" },
+    { "name": "category", "type": "S" },
+    { "name": "type_status", "type": "S" },
+    { "name": "category_status", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "type", "type": "S" },
+    { "name": "priority", "type": "N" },
+    { "name": "created_at", "type": "N" },
+    { "name": "updated_at", "type": "N" }
+  ],
+  "secondary_indexes": [
+    {
+      "name": "TypeStatusIndex",
+      "hash_key": "type_status",
+      "range_key": "priority",
+      "projection_type": "ALL"
+    },
+    {
+      "name": "CategoryStatusIndex", 
+      "hash_key": "category_status",
+      "range_key": "created_at",
+      "projection_type": "INCLUDE",
+      "non_key_attributes": ["type", "updated_at"]
+    }
+  ]
+}
