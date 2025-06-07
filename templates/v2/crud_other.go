@@ -1,6 +1,6 @@
 package v2
 
-// CrudOtherKey ...
+// CrudOther ...
 const CrudOther = `
 // IncrementAttribute creates an UpdateItemInput to increment/decrement a numeric attribute
 // Useful for counters, views, likes, etc.
