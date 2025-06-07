@@ -16,5 +16,13 @@ package {{.PackageName}}
 
 ` + ScanBuilderTemplate + `
 
+` + CrudPutTemplate + `
+
+` + CrudUpdateTemplate + `
+
+` + CrudDeleteTemplate + `
+
+` + CrudOther + `
+
 ` + UtilityFunctionsTemplate + `
 `
