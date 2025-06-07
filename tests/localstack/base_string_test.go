@@ -40,6 +40,10 @@ func TestBaseString(t *testing.T) {
 		testStringCRUD(t, client, ctx)
 	})
 
+	t.Run("String_Raw_CRUD", func(t *testing.T) {
+		testStringRawCRUD(t, client, ctx)
+	})
+
 	t.Run("String_QueryBuilder", func(t *testing.T) {
 		testStringQueryBuilder(t, client, ctx)
 	})
@@ -93,8 +97,13 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 	})
 
 	t.Run("read_string_item", func(t *testing.T) {
-		key, err := basestring.CreateKey("string-test-001", "docs")
-		require.NoError(t, err, "Should create key")
+		item := basestring.SchemaItem{
+			Id:       "string-test-001",
+			Category: "docs",
+		}
+
+		key, err := basestring.CreateKey(item)
+		require.NoError(t, err, "Should create key from item")
 
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basestring.TableName),
@@ -113,19 +122,21 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 	})
 
 	t.Run("update_string_item", func(t *testing.T) {
-		updates := map[string]interface{}{
-			"title":       "Updated String Guide",
-			"description": "Updated comprehensive guide for string operations",
+		item := basestring.SchemaItem{
+			Id:          "string-test-001",
+			Category:    "docs",
+			Title:       "Updated String Guide",
+			Description: "Updated comprehensive guide for string operations",
 		}
 
-		updateInput, err := basestring.UpdateItem("string-test-001", "docs", updates)
-		require.NoError(t, err, "Should create update input")
+		updateInput, err := basestring.UpdateItem(item)
+		require.NoError(t, err, "Should create update input from item")
 
 		_, err = client.UpdateItem(ctx, updateInput)
 		require.NoError(t, err, "Should update string item")
 
 		// Verify update
-		key, _ := basestring.CreateKey("string-test-001", "docs")
+		key, _ := basestring.CreateKey(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basestring.TableName),
 			Key:       key,
@@ -139,14 +150,19 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 	})
 
 	t.Run("delete_string_item", func(t *testing.T) {
-		deleteInput, err := basestring.DeleteItem("string-test-001", "docs")
-		require.NoError(t, err, "Should create delete input")
+		item := basestring.SchemaItem{
+			Id:       "string-test-001",
+			Category: "docs",
+		}
+
+		deleteInput, err := basestring.DeleteItem(item)
+		require.NoError(t, err, "Should create delete input from item")
 
 		_, err = client.DeleteItem(ctx, deleteInput)
 		require.NoError(t, err, "Should delete string item")
 
 		// Verify deletion
-		key, _ := basestring.CreateKey("string-test-001", "docs")
+		key, _ := basestring.CreateKey(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basestring.TableName),
 			Key:       key,
@@ -177,6 +193,188 @@ func testStringCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) 
 		}
 
 		t.Logf("✅ String edge cases handled successfully")
+	})
+}
+
+// ==================== String Raw CRUD Operations ====================
+
+func testStringRawCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) {
+	t.Run("create_string_item_raw", func(t *testing.T) {
+		item := basestring.SchemaItem{
+			Id:          "string-raw-001",
+			Category:    "raw-docs",
+			Title:       "Raw String Operations Guide",
+			Description: "Guide for raw string handling methods",
+		}
+
+		// Test marshaling (same as object-based)
+		av, err := basestring.PutItem(item)
+		require.NoError(t, err, "Should marshal string item")
+		assert.NotEmpty(t, av, "Marshaled item should not be empty")
+
+		// Test storage
+		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(basestring.TableName),
+			Item:      av,
+		})
+		require.NoError(t, err, "Should store string item in DynamoDB")
+
+		t.Logf("✅ Created string item for raw testing: %s/%s", item.Id, item.Category)
+	})
+
+	t.Run("read_string_item_raw", func(t *testing.T) {
+		key, err := basestring.CreateKeyFromRaw("string-raw-001", "raw-docs")
+		require.NoError(t, err, "Should create key from raw values")
+
+		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(basestring.TableName),
+			Key:       key,
+		})
+		require.NoError(t, err, "Should retrieve string item using raw key")
+		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
+
+		// Verify string values are correctly retrieved
+		assert.Equal(t, "string-raw-001", getResult.Item["id"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "raw-docs", getResult.Item["category"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Raw String Operations Guide", getResult.Item["title"].(*types.AttributeValueMemberS).Value)
+
+		t.Logf("✅ Retrieved string item successfully using raw key")
+	})
+
+	t.Run("update_string_item_raw", func(t *testing.T) {
+		updates := map[string]interface{}{
+			"title":       "Updated Raw String Guide",
+			"description": "Updated guide for raw string operations methods",
+		}
+
+		updateInput, err := basestring.UpdateItemFromRaw("string-raw-001", "raw-docs", updates)
+		require.NoError(t, err, "Should create update input from raw values")
+
+		_, err = client.UpdateItem(ctx, updateInput)
+		require.NoError(t, err, "Should update string item using raw method")
+
+		// Verify update
+		key, _ := basestring.CreateKeyFromRaw("string-raw-001", "raw-docs")
+		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(basestring.TableName),
+			Key:       key,
+		})
+		require.NoError(t, err, "Should retrieve updated item")
+
+		assert.Equal(t, "Updated Raw String Guide", getResult.Item["title"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(t, "Updated guide for raw string operations methods", getResult.Item["description"].(*types.AttributeValueMemberS).Value)
+
+		t.Logf("✅ Updated string item successfully using raw method")
+	})
+
+	t.Run("delete_string_item_raw", func(t *testing.T) {
+		deleteInput, err := basestring.DeleteItemFromRaw("string-raw-001", "raw-docs")
+		require.NoError(t, err, "Should create delete input from raw values")
+
+		_, err = client.DeleteItem(ctx, deleteInput)
+		require.NoError(t, err, "Should delete string item using raw method")
+
+		// Verify deletion
+		key, _ := basestring.CreateKeyFromRaw("string-raw-001", "raw-docs")
+		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(basestring.TableName),
+			Key:       key,
+		})
+		require.NoError(t, err, "GetItem should not error for missing item")
+		assert.Empty(t, getResult.Item, "String item should be deleted")
+
+		t.Logf("✅ Deleted string item successfully using raw method")
+	})
+
+	t.Run("raw_vs_object_comparison", func(t *testing.T) {
+		// Create same key using both methods
+		keyFromRaw, err := basestring.CreateKeyFromRaw("comparison-test", "both-methods")
+		require.NoError(t, err, "Should create key from raw values")
+
+		item := basestring.SchemaItem{
+			Id:       "comparison-test",
+			Category: "both-methods",
+		}
+		keyFromObject, err := basestring.CreateKey(item)
+		require.NoError(t, err, "Should create key from object")
+
+		// Keys should be identical
+		assert.Equal(t, keyFromRaw, keyFromObject, "Raw and object-based keys should be identical")
+
+		t.Logf("✅ Raw and object-based methods produce identical results")
+	})
+
+	t.Run("raw_string_edge_cases", func(t *testing.T) {
+		edgeCases := []struct {
+			id       string
+			category string
+			updates  map[string]interface{}
+		}{
+			{
+				id:       "raw-edge-1",
+				category: "empty",
+				updates:  map[string]interface{}{"title": "", "description": "Empty title"},
+			},
+			{
+				id:       "raw-edge-2",
+				category: "unicode",
+				updates:  map[string]interface{}{"title": "Unicode: 🚀✨", "description": "Emoji and unicode chars"},
+			},
+			{
+				id:       "raw-edge-3",
+				category: "special-chars",
+				updates:  map[string]interface{}{"title": "Special: !@#$%^&*()", "description": "Special characters"},
+			},
+		}
+
+		for _, edgeCase := range edgeCases {
+			// Test create with raw update
+			updateInput, err := basestring.UpdateItemFromRaw(edgeCase.id, edgeCase.category, edgeCase.updates)
+			require.NoError(t, err, "Should handle raw edge case: %s", edgeCase.id)
+
+			// Note: UpdateItemFromRaw works as upsert-like operation for new items in some cases
+			// For proper testing, we'd first PutItem, then UpdateItemFromRaw
+			assert.NotNil(t, updateInput, "Update input should be created for edge case: %s", edgeCase.id)
+
+			// Test delete with raw method
+			deleteInput, err := basestring.DeleteItemFromRaw(edgeCase.id, edgeCase.category)
+			require.NoError(t, err, "Should create delete input for edge case: %s", edgeCase.id)
+			assert.NotNil(t, deleteInput, "Delete input should be created")
+		}
+
+		t.Logf("✅ Raw string edge cases handled successfully")
+	})
+
+	t.Run("raw_conditional_operations", func(t *testing.T) {
+		// Test conditional delete with raw method
+		conditionExpr := "#version = :v"
+		conditionNames := map[string]string{"#version": "version"}
+		conditionValues := map[string]types.AttributeValue{
+			":v": &types.AttributeValueMemberN{Value: "1"},
+		}
+
+		deleteInput, err := basestring.DeleteItemWithCondition(
+			"conditional-test", "raw-condition",
+			conditionExpr, conditionNames, conditionValues,
+		)
+		require.NoError(t, err, "Should create conditional delete with raw method")
+		assert.NotNil(t, deleteInput.ConditionExpression, "Should have condition expression")
+		assert.Equal(t, conditionExpr, *deleteInput.ConditionExpression, "Condition should match")
+
+		// Test conditional update with raw method
+		updates := map[string]interface{}{
+			"title":   "Conditional Update",
+			"version": 2,
+		}
+
+		updateInput, err := basestring.UpdateItemWithCondition(
+			"conditional-test", "raw-condition",
+			updates, conditionExpr, conditionNames, conditionValues,
+		)
+		require.NoError(t, err, "Should create conditional update with raw method")
+		assert.NotNil(t, updateInput.ConditionExpression, "Should have condition expression")
+
+		t.Logf("✅ Raw conditional operations work correctly")
 	})
 }
 

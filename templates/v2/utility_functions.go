@@ -107,27 +107,20 @@ func GetBoolFieldChanged(dbEvent events.DynamoDBEventRecord, fieldName string) b
     return !oldValue && newValue
 }
 
-func CreateKey(hashKeyValue interface{}, rangeKeyValue interface{}) (map[string]types.AttributeValue, error) {
-    key := make(map[string]types.AttributeValue)
-    
-    hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
-    if err != nil {
-        return nil, fmt.Errorf("failed to marshal hash key: %v", err)
-    }
-    key[TableSchema.HashKey] = hashKeyAV
-    
-    if TableSchema.RangeKey != "" && rangeKeyValue != nil {
-        rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)
-        if err != nil {
-            return nil, fmt.Errorf("failed to marshal range key: %v", err)
-        }
-        key[TableSchema.RangeKey] = rangeKeyAV
-    }
-    
-    return key, nil
-}
-
-func CreateKeyFromItem(item SchemaItem) (map[string]types.AttributeValue, error) {
+// CreateKey extracts the primary key from a SchemaItem and returns it as DynamoDB AttributeValue map.
+// This is the primary method for creating keys from existing items.
+//
+// Example usage:
+//   item := SchemaItem{Id: "user123", Created: 1640995200, Name: "John"}
+//   key, err := CreateKey(item)
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
+//       TableName: aws.String(TableSchema.TableName),
+//       Key: key,
+//   })
+func CreateKey(item SchemaItem) (map[string]types.AttributeValue, error) {
     key := make(map[string]types.AttributeValue)
     
     var hashKeyValue interface{}
@@ -157,19 +150,52 @@ func CreateKeyFromItem(item SchemaItem) (map[string]types.AttributeValue, error)
     return key, nil
 }
 
-// DeleteItem creates a DeleteItemInput for DynamoDB delete operation
-// Returns a configured DeleteItemInput ready for client.DeleteItem() call
+// CreateKeyFromRaw creates a key from raw hash and range key values.
+// Use this when you have individual key values rather than a complete SchemaItem.
 //
 // Example usage:
-//   deleteInput, err := DeleteItem("user123", 1640995200)
+//   key, err := CreateKeyFromRaw("user123", 1640995200)
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
+//       TableName: aws.String(TableSchema.TableName),
+//       Key: key,
+//   })
+func CreateKeyFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (map[string]types.AttributeValue, error) {
+    key := make(map[string]types.AttributeValue)
+    
+    hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal hash key: %v", err)
+    }
+    key[TableSchema.HashKey] = hashKeyAV
+    
+    if TableSchema.RangeKey != "" && rangeKeyValue != nil {
+        rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)
+        if err != nil {
+            return nil, fmt.Errorf("failed to marshal range key: %v", err)
+        }
+        key[TableSchema.RangeKey] = rangeKeyAV
+    }
+    
+    return key, nil
+}
+
+// DeleteItem creates a DeleteItemInput using an existing SchemaItem.
+// This is the primary method for deleting items using complete objects.
+//
+// Example usage:
+//   item := SchemaItem{Id: "user123", Created: 1640995200}
+//   deleteInput, err := DeleteItem(item)
 //   if err != nil {
 //       return err
 //   }
 //   _, err = dynamoClient.DeleteItem(ctx, deleteInput)
-func DeleteItem(hashKeyValue interface{}, rangeKeyValue interface{}) (*dynamodb.DeleteItemInput, error) {
-    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+func DeleteItem(item SchemaItem) (*dynamodb.DeleteItemInput, error) {
+    key, err := CreateKey(item)
     if err != nil {
-        return nil, fmt.Errorf("failed to create key for delete: %v", err)
+        return nil, fmt.Errorf("failed to create key from item for delete: %v", err)
     }
     
     return &dynamodb.DeleteItemInput{
@@ -178,20 +204,19 @@ func DeleteItem(hashKeyValue interface{}, rangeKeyValue interface{}) (*dynamodb.
     }, nil
 }
 
-// DeleteItemFromItem creates a DeleteItemInput using an existing SchemaItem
-// Extracts the key from the item and creates delete input
+// DeleteItemFromRaw creates a DeleteItemInput for DynamoDB delete operation using raw key values.
+// Use this when you have individual key values rather than a complete SchemaItem.
 //
 // Example usage:
-//   item := SchemaItem{Id: "user123", Created: 1640995200}
-//   deleteInput, err := DeleteItemFromItem(item)
+//   deleteInput, err := DeleteItemFromRaw("user123", 1640995200)
 //   if err != nil {
 //       return err
 //   }
 //   _, err = dynamoClient.DeleteItem(ctx, deleteInput)
-func DeleteItemFromItem(item SchemaItem) (*dynamodb.DeleteItemInput, error) {
-    key, err := CreateKeyFromItem(item)
+func DeleteItemFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (*dynamodb.DeleteItemInput, error) {
+    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
-        return nil, fmt.Errorf("failed to create key from item for delete: %v", err)
+        return nil, fmt.Errorf("failed to create key for delete: %v", err)
     }
     
     return &dynamodb.DeleteItemInput{
@@ -215,7 +240,7 @@ func DeleteItemFromItem(item SchemaItem) (*dynamodb.DeleteItemInput, error) {
 //   }
 //   _, err = dynamoClient.DeleteItem(ctx, deleteInput)
 func DeleteItemWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, conditionExpression string, expressionAttributeNames map[string]string, expressionAttributeValues map[string]types.AttributeValue) (*dynamodb.DeleteItemInput, error) {
-    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for conditional delete: %v", err)
     }
@@ -297,7 +322,7 @@ func BatchDeleteItemsFromItems(items []SchemaItem) (*dynamodb.BatchWriteItemInpu
     
     keys := make([]map[string]types.AttributeValue, 0, len(items))
     for _, item := range items {
-        key, err := CreateKeyFromItem(item)
+        key, err := CreateKey(item)
         if err != nil {
             return nil, fmt.Errorf("failed to create key from item: %v", err)
         }
@@ -307,8 +332,73 @@ func BatchDeleteItemsFromItems(items []SchemaItem) (*dynamodb.BatchWriteItemInpu
     return BatchDeleteItems(keys)
 }
 
-// UpdateItem creates an UpdateItemInput for DynamoDB update operation
-// Uses SET action to update specific attributes while preserving others
+// UpdateItem creates an UpdateItemInput using an existing SchemaItem.
+// Updates all non-key attributes from the provided item.
+// This is the primary method for updating items using complete objects.
+//
+// Example usage:
+//   item := SchemaItem{
+//       Id: "user123", Created: 1640995200,
+//       Name: "Updated Name", Age: 30,
+//   }
+//   updateInput, err := UpdateItem(item)
+//   if err != nil {
+//       return err
+//   }
+//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
+func UpdateItem(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKey(item)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create key from item for update: %v", err)
+    }
+    
+    // Marshal the entire item to get all attributes
+    allAttributes, err := attributevalue.MarshalMap(item)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal item for update: %v", err)
+    }
+    
+    // Remove key attributes from update
+    updates := make(map[string]types.AttributeValue)
+    for attrName, attrValue := range allAttributes {
+        if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
+            updates[attrName] = attrValue
+        }
+    }
+    
+    if len(updates) == 0 {
+        return nil, fmt.Errorf("no non-key attributes to update")
+    }
+    
+    var updateExpressionParts []string
+    expressionAttributeNames := make(map[string]string)
+    expressionAttributeValues := make(map[string]types.AttributeValue)
+    
+    i := 0
+    for attrName, attrValue := range updates {
+        nameKey := fmt.Sprintf("#attr%d", i)
+        valueKey := fmt.Sprintf(":val%d", i)
+        
+        updateExpressionParts = append(updateExpressionParts, fmt.Sprintf("%s = %s", nameKey, valueKey))
+        expressionAttributeNames[nameKey] = attrName
+        expressionAttributeValues[valueKey] = attrValue
+        i++
+    }
+    
+    updateExpression := "SET " + strings.Join(updateExpressionParts, ", ")
+    
+    return &dynamodb.UpdateItemInput{
+        TableName:                 aws.String(TableSchema.TableName),
+        Key:                       key,
+        UpdateExpression:          aws.String(updateExpression),
+        ExpressionAttributeNames:  expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
+    }, nil
+}
+
+// UpdateItemFromRaw creates an UpdateItemInput for DynamoDB update operation using raw values.
+// Uses SET action to update specific attributes while preserving others.
+// Use this when you have individual key values and update map rather than a complete SchemaItem.
 //
 // Example usage:
 //   updates := map[string]interface{}{
@@ -316,13 +406,13 @@ func BatchDeleteItemsFromItems(items []SchemaItem) (*dynamodb.BatchWriteItemInpu
 //       "age": 30,
 //       "is_active": true,
 //   }
-//   updateInput, err := UpdateItem("user123", 1640995200, updates)
+//   updateInput, err := UpdateItemFromRaw("user123", 1640995200, updates)
 //   if err != nil {
 //       return err
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
-func UpdateItem(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+func UpdateItemFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}) (*dynamodb.UpdateItemInput, error) {
+    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for update: %v", err)
     }
@@ -362,69 +452,6 @@ func UpdateItem(hashKeyValue interface{}, rangeKeyValue interface{}, updates map
     }, nil
 }
 
-// UpdateItemFromItem creates an UpdateItemInput using an existing SchemaItem
-// Updates all non-key attributes from the provided item
-//
-// Example usage:
-//   item := SchemaItem{
-//       Id: "user123", Created: 1640995200,
-//       Name: "Updated Name", Age: 30,
-//   }
-//   updateInput, err := UpdateItemFromItem(item)
-//   if err != nil {
-//       return err
-//   }
-//   _, err = dynamoClient.UpdateItem(ctx, updateInput)
-func UpdateItemFromItem(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKeyFromItem(item)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create key from item for update: %v", err)
-    }
-    
-    // Marshal the entire item to get all attributes
-    allAttributes, err := attributevalue.MarshalMap(item)
-    if err != nil {
-        return nil, fmt.Errorf("failed to marshal item for update: %v", err)
-    }
-    
-    // Remove key attributes from update
-    updates := make(map[string]types.AttributeValue)
-    for attrName, attrValue := range allAttributes {
-        if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
-            updates[attrName] = attrValue
-        }
-    }
-    
-    if len(updates) == 0 {
-        return nil, fmt.Errorf("no non-key attributes to update")
-    }
-    
-    var updateExpressionParts []string
-    expressionAttributeNames := make(map[string]string)
-    
-    i := 0
-    for attrName, attrValue := range updates {
-        nameKey := fmt.Sprintf("#attr%d", i)
-        valueKey := fmt.Sprintf(":val%d", i)
-        
-        updateExpressionParts = append(updateExpressionParts, fmt.Sprintf("%s = %s", nameKey, valueKey))
-        expressionAttributeNames[nameKey] = attrName
-        updates[valueKey] = attrValue
-        delete(updates, attrName)
-        i++
-    }
-    
-    updateExpression := "SET " + strings.Join(updateExpressionParts, ", ")
-    
-    return &dynamodb.UpdateItemInput{
-        TableName:                 aws.String(TableSchema.TableName),
-        Key:                       key,
-        UpdateExpression:          aws.String(updateExpression),
-        ExpressionAttributeNames:  expressionAttributeNames,
-        ExpressionAttributeValues: updates,
-    }, nil
-}
-
 // UpdateItemWithCondition creates an UpdateItemInput with a condition expression
 // Useful for conditional updates (e.g., update only if version matches, optimistic locking)
 //
@@ -445,7 +472,7 @@ func UpdateItemFromItem(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func UpdateItemWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
-    updateInput, err := UpdateItem(hashKeyValue, rangeKeyValue, updates)
+    updateInput, err := UpdateItemFromRaw(hashKeyValue, rangeKeyValue, updates)
     if err != nil {
         return nil, err
     }
@@ -488,7 +515,7 @@ func UpdateItemWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func UpdateItemWithExpression(hashKeyValue interface{}, rangeKeyValue interface{}, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for expression update: %v", err)
     }
@@ -539,7 +566,7 @@ func UpdateItemWithExpression(hashKeyValue interface{}, rangeKeyValue interface{
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for increment: %v", err)
     }
@@ -572,7 +599,7 @@ func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, att
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for add to set: %v", err)
     }
@@ -625,7 +652,7 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    key, err := CreateKey(hashKeyValue, rangeKeyValue)
+    key, err := CreateKeyFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for remove from set: %v", err)
     }
