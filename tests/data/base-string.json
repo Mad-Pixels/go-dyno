@@ -1,0 +1,14 @@
+{
+  "table_name": "base-string",
+  "hash_key": "id",
+  "range_key": "category",
+  "attributes": [
+    { "name": "id", "type": "S" },
+    { "name": "category", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "title", "type": "S" },
+    { "name": "description", "type": "S" }
+  ],
+  "secondary_indexes": []
+}

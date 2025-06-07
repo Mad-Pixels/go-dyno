@@ -1,0 +1,14 @@
+{
+  "table_name": "base-set-string",
+  "hash_key": "id",
+  "range_key": "group_id",
+  "attributes": [
+    { "name": "id", "type": "S" },
+    { "name": "group_id", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "tags", "type": "SS" },
+    { "name": "categories", "type": "SS" }
+  ],
+  "secondary_indexes": []
+}

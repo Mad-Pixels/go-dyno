@@ -16,5 +16,15 @@ package {{.PackageName}}
 
 ` + ScanBuilderTemplate + `
 
+` + ItemInputTemplate + `
+
+` + UpdateItemInputTemplate + `
+
+` + DeleteItemInputTemplate + `
+
+` + KeyInputTemplate + `
+
+` + CrudOther + `
+
 ` + UtilityFunctionsTemplate + `
 `
