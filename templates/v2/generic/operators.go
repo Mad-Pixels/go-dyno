@@ -151,14 +151,6 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
     },
 }
 
-// ValidateOperator checks if operator is valid for the given field using pre-computed cache
-func ValidateOperator(fieldName string, op OperatorType) bool {
-    if fi, ok := TableSchema.FieldsMap[fieldName]; ok {
-        return fi.SupportsOperator(op)
-    }
-    return false
-}
-
 // ValidateValues checks if the number of values is correct for the operator
 func ValidateValues(op OperatorType, values []interface{}) bool {
     switch op {
@@ -180,21 +172,32 @@ func IsKeyConditionOperator(op OperatorType) bool {
     return allowedKeyConditionOperators[op]
 }
 
+// ValidateOperator checks if operator is valid for the given field using pre-computed cache
+func ValidateOperator(fieldName string, op OperatorType) bool {
+    if fi, ok := TableSchema.FieldsMap[fieldName]; ok {
+        return fi.SupportsOperator(op)
+    }
+    return false
+}
+
 // BuildConditionExpression converts operator to DynamoDB filter expression
 func BuildConditionExpression(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
-    if !ValidateOperator(field, op) {
-        return expression.ConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s", op, field)
+    // Check if field exists in schema
+    fieldInfo, exists := TableSchema.FieldsMap[field]
+    if !exists {
+        return expression.ConditionBuilder{}, fmt.Errorf("field %s not found in schema", field)
+    }
+    
+    // Check if operator is supported for this field type
+    if !fieldInfo.SupportsOperator(op) {
+        return expression.ConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s (type %s)", op, field, fieldInfo.DynamoType)
     }
     
     if !ValidateValues(op, values) {
         return expression.ConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
     
-    handler, ok := conditionOperatorHandlers[op]
-    if !ok {
-        return expression.ConditionBuilder{}, fmt.Errorf("unsupported operator %s for filter conditions", op)
-    }
-    
+    handler := conditionOperatorHandlers[op]
     fieldExpr := expression.Name(field)
     result := handler(fieldExpr, values)
     
@@ -203,8 +206,20 @@ func BuildConditionExpression(field string, op OperatorType, values []interface{
 
 // BuildKeyConditionExpression converts operator to DynamoDB key condition
 func BuildKeyConditionExpression(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
-    if !ValidateOperator(field, op) {
-        return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s", op, field)
+    // Check if field exists in schema
+    fieldInfo, exists := TableSchema.FieldsMap[field]
+    if !exists {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("field %s not found in schema", field)
+    }
+    
+    // Check if field is actually a key
+    if !fieldInfo.IsKey {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("field %s is not a key field", field)
+    }
+    
+    // Check if operator is supported for this field type
+    if !fieldInfo.SupportsOperator(op) {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s (type %s)", op, field, fieldInfo.DynamoType)
     }
     
     if !ValidateValues(op, values) {
@@ -216,11 +231,7 @@ func BuildKeyConditionExpression(field string, op OperatorType, values []interfa
         return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for key conditions", op)
     }
     
-    handler, ok := keyOperatorHandlers[op]
-    if !ok {
-        return expression.KeyConditionBuilder{}, fmt.Errorf("unsupported operator %s for key conditions", op)
-    }
-    
+    handler := keyOperatorHandlers[op]
     fieldExpr := expression.Key(field)
     result := handler(fieldExpr, values)
     
