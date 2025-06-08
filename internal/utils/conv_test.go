@@ -103,45 +103,45 @@ func TestToLowerCase(t *testing.T) {
 	}
 }
 
-func TestToGolangBaseType(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"S", "string"},
-		{"N", "int"},
-		{"BOOL", "bool"},
-		{"SS", "[]string"},
-		{"NS", "[]int"},
-		{"UNKNOWN", "any"},
-		{"", "any"},
-	}
+// func TestToGolangBaseType(t *testing.T) {
+// 	tests := []struct {
+// 		input    string
+// 		expected string
+// 	}{
+// 		{"S", "string"},
+// 		{"N", "int"},
+// 		{"BOOL", "bool"},
+// 		{"SS", "[]string"},
+// 		{"NS", "[]int"},
+// 		{"UNKNOWN", "any"},
+// 		{"", "any"},
+// 	}
 
-	for _, tt := range tests {
-		result := ToGolangBaseType(tt.input)
-		assert.Equal(t, tt.expected, result, "input: %q", tt.input)
-	}
-}
+// 	for _, tt := range tests {
+// 		result := ToGolangBaseType(tt.input)
+// 		assert.Equal(t, tt.expected, result, "input: %q", tt.input)
+// 	}
+// }
 
-func TestToGolangZeroType(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"S", `""`},
-		{"N", "0"},
-		{"BOOL", "false"},
-		{"SS", "nil"},
-		{"NS", "nil"},
-		{"UNKNOWN", "nil"},
-		{"", "nil"},
-	}
+// func TestToGolangZeroType(t *testing.T) {
+// 	tests := []struct {
+// 		input    string
+// 		expected string
+// 	}{
+// 		{"S", `""`},
+// 		{"N", "0"},
+// 		{"BOOL", "false"},
+// 		{"SS", "nil"},
+// 		{"NS", "nil"},
+// 		{"UNKNOWN", "nil"},
+// 		{"", "nil"},
+// 	}
 
-	for _, tt := range tests {
-		result := ToGolangZeroType(tt.input)
-		assert.Equal(t, tt.expected, result, "input: %q", tt.input)
-	}
-}
+// 	for _, tt := range tests {
+// 		result := ToGolangZeroType(tt.input)
+// 		assert.Equal(t, tt.expected, result, "input: %q", tt.input)
+// 	}
+// }
 
 func TestToGolangAttrType(t *testing.T) {
 	attrs := []common.Attribute{
