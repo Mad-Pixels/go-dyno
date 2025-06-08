@@ -73,6 +73,16 @@ var keyOperatorHandlers = map[OperatorType]KeyOperatorHandler{
     },
 }
 
+// Pre-computed set of operators allowed for key conditions - single source of truth
+var allowedKeyConditionOperators = map[OperatorType]bool{
+    EQ:      true,
+    GT:      true,
+    LT:      true,
+    GTE:     true,
+    LTE:     true,
+    BETWEEN: true,
+}
+
 var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
     // Basic operators (same as for keys, but with NameBuilder)
     EQ: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
@@ -167,12 +177,7 @@ func ValidateValues(op OperatorType, values []interface{}) bool {
 
 // IsKeyConditionOperator checks if operator can be used in key conditions
 func IsKeyConditionOperator(op OperatorType) bool {
-    switch op {
-    case EQ, GT, LT, GTE, LTE, BETWEEN:
-        return true
-    default:
-        return false
-    }
+    return allowedKeyConditionOperators[op]
 }
 
 // BuildConditionExpression converts operator to DynamoDB filter expression
