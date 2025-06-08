@@ -1,5 +1,6 @@
 package inputs
 
+// KeyInputsTemplate ...
 const KeyInputsTemplate = `
 // KeyInput creates key from SchemaItem with validation
 func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
