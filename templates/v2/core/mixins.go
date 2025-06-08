@@ -24,12 +24,7 @@ func (fm *FilterMixin) Filter(field string, op OperatorType, values ...interface
         return
     }
 
-    fieldInfo, exists := TableSchema.FieldsMap[field]
-    if !exists {
-        return
-    }
-
-    if !ValidateOperator(fieldInfo.DynamoType, op) {
+    if !ValidateOperator(field, op) {
         return
     }
 
@@ -174,7 +169,7 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...inte
         return
     }
 
-    if !ValidateOperator(fieldInfo.DynamoType, op) {
+    if !ValidateOperator(field, op) {
         return
     }
 

@@ -35,19 +35,24 @@ func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
 
 // UpdateItemInputFromRaw creates update request from raw values
 func UpdateItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}) (*dynamodb.UpdateItemInput, error) {
+    // All validations at the beginning
+    if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
+        return nil, err
+    }
     if err := validateUpdatesMap(updates); err != nil {
         return nil, err
     }
 
+    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for update: %v", err)
     }
    
-    // Use helper to marshal raw updates
-    marshaledUpdates, err := marshalRawUpdates(updates)
+    // Use AWS SDK marshaler instead of manual conversion
+    marshaledUpdates, err := attributevalue.MarshalMap(updates)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to marshal updates: %v", err)
     }
    
     // Use helper to build expression
@@ -64,10 +69,18 @@ func UpdateItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{},
 
 // UpdateItemInputWithCondition creates conditional update request
 func UpdateItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
+    // All validations at the beginning
+    if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
+        return nil, err
+    }
+    if err := validateUpdatesMap(updates); err != nil {
+        return nil, err
+    }
     if err := validateConditionExpression(conditionExpression); err != nil {
         return nil, err
     }
 
+    // Pure business logic after validation
     updateInput, err := UpdateItemInputFromRaw(hashKeyValue, rangeKeyValue, updates)
     if err != nil {
         return nil, err
@@ -88,6 +101,12 @@ func UpdateItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interf
 
 // UpdateItemInputWithExpression creates update with expression builder
 func UpdateItemInputWithExpression(hashKeyValue interface{}, rangeKeyValue interface{}, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
+    // All validations at the beginning
+    if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
+        return nil, err
+    }
+    
+    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for expression update: %v", err)
@@ -122,4 +141,5 @@ func UpdateItemInputWithExpression(hashKeyValue interface{}, rangeKeyValue inter
     }
    
     return input, nil
-}`
+}
+`

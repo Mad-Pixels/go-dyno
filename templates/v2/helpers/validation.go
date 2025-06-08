@@ -2,15 +2,19 @@ package helpers
 
 // ValidationHelpersTemplate ...
 const ValidationHelpersTemplate = `
-// validateHashKey checks if hash key value is valid
-func validateHashKey(value interface{}) error {
+// validateKeyPart checks if key part (hash or range) value is valid
+func validateKeyPart(partName string, value interface{}) error {
     if value == nil {
-        return fmt.Errorf("hash key cannot be nil")
+        // Only hash key cannot be nil, range key can be nil
+        if partName == "hash" {
+            return fmt.Errorf("hash key cannot be nil")
+        }
+        return nil // range key can be nil
     }
     
     switch v := value.(type) {
     case string:
-        if v == "" {
+        if v == "" && partName == "hash" {
             return fmt.Errorf("hash key string cannot be empty")
         }
     case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
@@ -18,19 +22,20 @@ func validateHashKey(value interface{}) error {
     case float32, float64:
         // floats are valid but unusual for keys
     default:
-        return fmt.Errorf("unsupported hash key type: %T", value)
+        return fmt.Errorf("unsupported %s key type: %T", partName, value)
     }
     
     return nil
 }
 
+// validateHashKey checks if hash key value is valid
+func validateHashKey(value interface{}) error {
+    return validateKeyPart("hash", value)
+}
+
 // validateRangeKey checks if range key value is valid (nil is allowed)
 func validateRangeKey(value interface{}) error {
-    if value == nil {
-        return nil // range key can be nil
-    }
-    
-    return validateHashKey(value) // same validation rules
+    return validateKeyPart("range", value)
 }
 
 // validateAttributeName checks if attribute name is valid
@@ -113,6 +118,26 @@ func validateConditionExpression(expr string) error {
     
     if len(expr) > 4096 {
         return fmt.Errorf("condition expression too long: %d chars (max 4096)", len(expr))
+    }
+    
+    return nil
+}
+
+// validateIncrementValue checks if increment value is valid
+func validateIncrementValue(value int) error {
+    // DynamoDB supports any int value for ADD operation
+    // No specific validation needed, but we keep the function for consistency
+    return nil
+}
+
+// validateKeyInputs validates both hash and range key inputs for operations
+func validateKeyInputs(hashKeyValue, rangeKeyValue interface{}) error {
+    if err := validateHashKey(hashKeyValue); err != nil {
+        return fmt.Errorf("invalid hash key: %v", err)
+    }
+    
+    if err := validateRangeKey(rangeKeyValue); err != nil {
+        return fmt.Errorf("invalid range key: %v", err)
     }
     
     return nil
