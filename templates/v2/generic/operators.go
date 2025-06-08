@@ -177,6 +177,10 @@ func IsKeyConditionOperator(op OperatorType) bool {
 
 // BuildConditionExpression converts operator to DynamoDB filter expression
 func BuildConditionExpression(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
+    if !ValidateOperator(field, op) {
+        return expression.ConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s", op, field)
+    }
+    
     if !ValidateValues(op, values) {
         return expression.ConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
@@ -194,6 +198,10 @@ func BuildConditionExpression(field string, op OperatorType, values []interface{
 
 // BuildKeyConditionExpression converts operator to DynamoDB key condition
 func BuildKeyConditionExpression(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
+    if !ValidateOperator(field, op) {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s", op, field)
+    }
+    
     if !ValidateValues(op, values) {
         return expression.KeyConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
