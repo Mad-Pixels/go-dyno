@@ -17,22 +17,22 @@ const CrudOther = `
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
-    key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create key for increment: %v", err)
-    }
-    
-    return &dynamodb.UpdateItemInput{
-        TableName:        aws.String(TableSchema.TableName),
-        Key:              key,
-        UpdateExpression: aws.String("ADD #attr :val"),
-        ExpressionAttributeNames: map[string]string{
-            "#attr": attributeName,
-        },
-        ExpressionAttributeValues: map[string]types.AttributeValue{
-            ":val": &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", incrementValue)},
-        },
-    }, nil
+   key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
+   if err != nil {
+       return nil, fmt.Errorf("failed to create key for increment: %v", err)
+   }
+   
+   return &dynamodb.UpdateItemInput{
+       TableName:        aws.String(TableSchema.TableName),
+       Key:              key,
+       UpdateExpression: aws.String("ADD #attr :val"),
+       ExpressionAttributeNames: map[string]string{
+           "#attr": attributeName,
+       },
+       ExpressionAttributeValues: map[string]types.AttributeValue{
+           ":val": &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", incrementValue)},
+       },
+   }, nil
 }
 
 // AddToSet creates an UpdateItemInput to add values to a string set (SS) or number set (NS)
@@ -50,43 +50,43 @@ func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, att
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create key for add to set: %v", err)
-    }
-    
-    var attributeValue types.AttributeValue
-    
-    switch v := values.(type) {
-    case []string:
-        if len(v) == 0 {
-            return nil, fmt.Errorf("cannot add empty string set")
-        }
-        attributeValue = &types.AttributeValueMemberSS{Value: v}
-    case []int:
-        if len(v) == 0 {
-            return nil, fmt.Errorf("cannot add empty number set")
-        }
-        numberStrings := make([]string, len(v))
-        for i, num := range v {
-            numberStrings[i] = fmt.Sprintf("%d", num)
-        }
-        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
-    default:
-        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
-    }
-    
-    return &dynamodb.UpdateItemInput{
-        TableName:        aws.String(TableSchema.TableName),
-        Key:              key,
-        UpdateExpression: aws.String("ADD #attr :val"),
-        ExpressionAttributeNames: map[string]string{
-            "#attr": attributeName,
-        },
-        ExpressionAttributeValues: map[string]types.AttributeValue{
-            ":val": attributeValue,
-        },
-    }, nil
+   key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
+   if err != nil {
+       return nil, fmt.Errorf("failed to create key for add to set: %v", err)
+   }
+   
+   var attributeValue types.AttributeValue
+   
+   switch v := values.(type) {
+   case []string:
+       if len(v) == 0 {
+           return nil, fmt.Errorf("cannot add empty string set")
+       }
+       attributeValue = &types.AttributeValueMemberSS{Value: v}
+   case []int:
+       if len(v) == 0 {
+           return nil, fmt.Errorf("cannot add empty number set")
+       }
+       numberStrings := make([]string, len(v))
+       for i, num := range v {
+           numberStrings[i] = fmt.Sprintf("%d", num)
+       }
+       attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+   default:
+       return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+   }
+   
+   return &dynamodb.UpdateItemInput{
+       TableName:        aws.String(TableSchema.TableName),
+       Key:              key,
+       UpdateExpression: aws.String("ADD #attr :val"),
+       ExpressionAttributeNames: map[string]string{
+           "#attr": attributeName,
+       },
+       ExpressionAttributeValues: map[string]types.AttributeValue{
+           ":val": attributeValue,
+       },
+   }, nil
 }
 
 // RemoveFromSet creates an UpdateItemInput to remove values from a string set (SS) or number set (NS)
@@ -103,43 +103,43 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
 //   }
 //   _, err = dynamoClient.UpdateItem(ctx, updateInput)
 func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create key for remove from set: %v", err)
-    }
-    
-    var attributeValue types.AttributeValue
-    
-    switch v := values.(type) {
-    case []string:
-        if len(v) == 0 {
-            return nil, fmt.Errorf("cannot remove empty string set")
-        }
-        attributeValue = &types.AttributeValueMemberSS{Value: v}
-    case []int:
-        if len(v) == 0 {
-            return nil, fmt.Errorf("cannot remove empty number set")
-        }
-        numberStrings := make([]string, len(v))
-        for i, num := range v {
-            numberStrings[i] = fmt.Sprintf("%d", num)
-        }
-        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
-    default:
-        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
-    }
-    
-    return &dynamodb.UpdateItemInput{
-        TableName:        aws.String(TableSchema.TableName),
-        Key:              key,
-        UpdateExpression: aws.String("DELETE #attr :val"),
-        ExpressionAttributeNames: map[string]string{
-            "#attr": attributeName,
-        },
-        ExpressionAttributeValues: map[string]types.AttributeValue{
-            ":val": attributeValue,
-        },
-    }, nil
+   key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
+   if err != nil {
+       return nil, fmt.Errorf("failed to create key for remove from set: %v", err)
+   }
+   
+   var attributeValue types.AttributeValue
+   
+   switch v := values.(type) {
+   case []string:
+       if len(v) == 0 {
+           return nil, fmt.Errorf("cannot remove empty string set")
+       }
+       attributeValue = &types.AttributeValueMemberSS{Value: v}
+   case []int:
+       if len(v) == 0 {
+           return nil, fmt.Errorf("cannot remove empty number set")
+       }
+       numberStrings := make([]string, len(v))
+       for i, num := range v {
+           numberStrings[i] = fmt.Sprintf("%d", num)
+       }
+       attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+   default:
+       return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+   }
+   
+   return &dynamodb.UpdateItemInput{
+       TableName:        aws.String(TableSchema.TableName),
+       Key:              key,
+       UpdateExpression: aws.String("DELETE #attr :val"),
+       ExpressionAttributeNames: map[string]string{
+           "#attr": attributeName,
+       },
+       ExpressionAttributeValues: map[string]types.AttributeValue{
+           ":val": attributeValue,
+       },
+   }, nil
 }
 
 // ExtractFromDynamoDBStreamEvent converts a DynamoDB Stream event record into a strongly-typed SchemaItem.
@@ -148,7 +148,7 @@ func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attribut
 //
 // The function handles all DynamoDB attribute types with proper Go type conversion:
 // - String (S): Direct string assignment  
-// - Number (N): Converts string representation to int with error handling
+// - Number (N): Converts string representation to appropriate Go numeric type with error handling
 // - Boolean (BOOL): Direct boolean assignment
 // - String Set (SS): Copies string slice with nil safety
 // - Number Set (NS): Converts string slice to int slice with error handling
@@ -192,49 +192,101 @@ func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attribut
 // - Continues processing other attributes if individual conversions fail
 // - Number conversion errors are logged but don't stop processing
 func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*SchemaItem, error) {
-   if dbEvent.Change.NewImage == nil {
-       return nil, fmt.Errorf("new image is nil in the event")
-   }
-   
-   item := &SchemaItem{}
-   
-   {{range .AllAttributes}}
-   if val, ok := dbEvent.Change.NewImage["{{.Name}}"]; ok {
-       {{if eq .Type "S"}}
-       // String attribute: direct assignment from DynamoDB String type
-       item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
-       {{else if eq .Type "N"}}
-       // Number attribute: convert DynamoDB Number (string) to Go int with error handling
-       if n, err := strconv.Atoi(val.Number()); err == nil {
-           item.{{ToSafeName .Name | ToUpperCamelCase}} = n
-       }
-       {{else if eq .Type "BOOL"}}
-       // Boolean attribute: direct assignment from DynamoDB Boolean type
-       item.{{ToSafeName .Name | ToUpperCamelCase}} = val.Boolean()
-       {{else if eq .Type "SS"}}
-       // String Set attribute: copy slice with nil safety check
-       if ss := val.StringSet(); ss != nil {
-           item.{{ToSafeName .Name | ToUpperCamelCase}} = ss
-       }
-       {{else if eq .Type "NS"}}
-       // Number Set attribute: convert string slice to int slice with error handling
-       if ns := val.NumberSet(); ns != nil {
-           numbers := make([]int, 0, len(ns))
-           for _, numStr := range ns {
-               if num, err := strconv.Atoi(numStr); err == nil {
-                   numbers = append(numbers, num)
-               }
-           }
-           item.{{ToSafeName .Name | ToUpperCamelCase}} = numbers
-       }
-       {{else}}
-       // Unsupported DynamoDB type: {{.Type}} for attribute {{.Name}}
-       // This ensures compilation succeeds even if new types are added to schema
-       _ = val // Mark as used to avoid compilation error
-       {{end}}
-   }
-   {{end}}
-   
-   return item, nil
+  if dbEvent.Change.NewImage == nil {
+      return nil, fmt.Errorf("new image is nil in the event")
+  }
+  
+  item := &SchemaItem{}
+  
+  {{range .AllAttributes}}
+  if val, ok := dbEvent.Change.NewImage["{{.Name}}"]; ok {
+      {{if eq .Type "S"}}
+      // String attribute: direct assignment from DynamoDB String type
+      item.{{ToSafeName .Name | ToUpperCamelCase}} = val.String()
+      {{else if eq .Type "N"}}
+      // Number attribute: convert DynamoDB Number (string) to Go type with error handling
+      {{$goType := ToGolangBaseType .}}
+      {{if eq $goType "int"}}
+      if n, err := strconv.Atoi(val.Number()); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = n
+      }
+      {{else if eq $goType "int64"}}
+      if n, err := strconv.ParseInt(val.Number(), 10, 64); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = n
+      }
+      {{else if eq $goType "int32"}}
+      if n, err := strconv.ParseInt(val.Number(), 10, 32); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = int32(n)
+      }
+      {{else if eq $goType "int16"}}
+      if n, err := strconv.ParseInt(val.Number(), 10, 16); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = int16(n)
+      }
+      {{else if eq $goType "int8"}}
+      if n, err := strconv.ParseInt(val.Number(), 10, 8); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = int8(n)
+      }
+      {{else if eq $goType "uint"}}
+      if n, err := strconv.ParseUint(val.Number(), 10, 0); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = uint(n)
+      }
+      {{else if eq $goType "uint64"}}
+      if n, err := strconv.ParseUint(val.Number(), 10, 64); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = n
+      }
+      {{else if eq $goType "uint32"}}
+      if n, err := strconv.ParseUint(val.Number(), 10, 32); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = uint32(n)
+      }
+      {{else if eq $goType "uint16"}}
+      if n, err := strconv.ParseUint(val.Number(), 10, 16); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = uint16(n)
+      }
+      {{else if eq $goType "uint8"}}
+      if n, err := strconv.ParseUint(val.Number(), 10, 8); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = uint8(n)
+      }
+      {{else if eq $goType "float32"}}
+      if n, err := strconv.ParseFloat(val.Number(), 32); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = float32(n)
+      }
+      {{else if eq $goType "float64"}}
+      if n, err := strconv.ParseFloat(val.Number(), 64); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = n
+      }
+      {{else}}
+      // Default: try parsing as float64 for unknown numeric types
+      if n, err := strconv.ParseFloat(val.Number(), 64); err == nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = {{$goType}}(n)
+      }
+      {{end}}
+      {{else if eq .Type "BOOL"}}
+      // Boolean attribute: direct assignment from DynamoDB Boolean type
+      item.{{ToSafeName .Name | ToUpperCamelCase}} = val.Boolean()
+      {{else if eq .Type "SS"}}
+      // String Set attribute: copy slice with nil safety check
+      if ss := val.StringSet(); ss != nil {
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = ss
+      }
+      {{else if eq .Type "NS"}}
+      // Number Set attribute: convert string slice to int slice with error handling
+      if ns := val.NumberSet(); ns != nil {
+          numbers := make([]int, 0, len(ns))
+          for _, numStr := range ns {
+              if num, err := strconv.Atoi(numStr); err == nil {
+                  numbers = append(numbers, num)
+              }
+          }
+          item.{{ToSafeName .Name | ToUpperCamelCase}} = numbers
+      }
+      {{else}}
+      // Unsupported DynamoDB type: {{.Type}} for attribute {{.Name}}
+      // This ensures compilation succeeds even if new types are added to schema
+      _ = val // Mark as used to avoid compilation error
+      {{end}}
+  }
+  {{end}}
+  
+  return item, nil
 }
 `

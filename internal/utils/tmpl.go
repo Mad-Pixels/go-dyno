@@ -77,7 +77,7 @@ func MustParseTemplateFormatted(b *bytes.Buffer, tmpl string, vars any) {
 //
 // Example:
 //
-//	tmpl := "Field: {{ .Field }}, Type: {{ ToGolangBaseType .Type }}"
+//	tmpl := "Field: {{ .Field }}, Type: {{ ToGolangBaseType . }}"
 //	output := utils.MustParseTemplateToString(tmpl, map[string]string{
 //		"Field": "age",
 //		"Type":  "N",
@@ -131,6 +131,8 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 			"ToGolangZeroType": ToGolangZeroType,
 			"ToGolangAttrType": ToGolangAttrType,
 			"ToSafeName":       ToSafeName,
+			"IsNumericAttr":    IsNumericAttr,
+			"IsIntegerAttr":    IsIntegerAttr,
 		},
 	).
 		Parse(tmpl)
