@@ -18,9 +18,17 @@ func NewFilterMixin() FilterMixin {
     }
 }
 
-// Filter adds a filter condition using the universal operator system with automatic type lookup
+// Filter adds a filter condition using the universal operator system with O(1) validation
 func (fm *FilterMixin) Filter(field string, op OperatorType, values ...interface{}) {
-    // Use simplified function that automatically looks up field type
+    if !ValidateValues(op, values) {
+        return
+    }
+
+    // O(1) validation using pre-computed operators
+    if !ValidateOperator(field, op) {
+        return
+    }
+
     filterCond, err := BuildConditionExpression(field, op, values)
     if err != nil {
         return
@@ -147,9 +155,28 @@ func NewKeyConditionMixin() KeyConditionMixin {
     }
 }
 
-// With adds a key condition using the universal operator system with automatic type lookup
+// With adds a key condition using the universal operator system with O(1) validation
 func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...interface{}) {
-    // Use simplified function that automatically looks up field type and validates key fields
+    if !ValidateValues(op, values) {
+        return
+    }
+
+    // O(1) field existence check
+    fieldInfo, exists := TableSchema.FieldsMap[field]
+    if !exists {
+        return
+    }
+
+    // O(1) key validation
+    if !fieldInfo.IsKey {
+        return
+    }
+
+    // O(1) operator validation using pre-computed cache
+    if !fieldInfo.SupportsOperator(op) {
+        return
+    }
+
     keyCond, err := BuildKeyConditionExpression(field, op, values)
     if err != nil {
         return

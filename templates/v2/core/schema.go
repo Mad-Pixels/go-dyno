@@ -2,12 +2,18 @@ package core
 
 // SchemaTemplate ...
 const SchemaTemplate = `
-// FieldInfo contains metadata about a schema field
+// FieldInfo contains metadata about a schema field with pre-computed allowed operators
 type FieldInfo struct {
-    DynamoType string
-    IsKey      bool
-    IsHashKey  bool
-    IsRangeKey bool
+    DynamoType       string
+    IsKey            bool
+    IsHashKey        bool
+    IsRangeKey       bool
+    AllowedOperators map[OperatorType]bool // Pre-computed for O(1) validation
+}
+
+// SupportsOperator checks if the field supports the given operator in O(1) time
+func (fi FieldInfo) SupportsOperator(op OperatorType) bool {
+    return fi.AllowedOperators[op]
 }
 
 // DynamoSchema ...
@@ -18,7 +24,7 @@ type DynamoSchema struct {
     Attributes       []Attribute
     CommonAttributes []Attribute
     SecondaryIndexes []SecondaryIndex
-    // NEW: Быстрый поиск полей O(1)
+    // O(1) field lookup with pre-computed operators
     FieldsMap        map[string]FieldInfo
 }
 
@@ -49,7 +55,88 @@ type SchemaItem struct {
 {{- end}}
 }
 
-// TableSchema ...
+// buildAllowedOperators returns pre-computed allowed operators for a DynamoDB type
+func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
+    allowed := make(map[OperatorType]bool)
+    
+    switch dynamoType {
+    case "S": // String
+        allowed[EQ] = true
+        allowed[NE] = true
+        allowed[GT] = true
+        allowed[LT] = true
+        allowed[GTE] = true
+        allowed[LTE] = true
+        allowed[BETWEEN] = true
+        allowed[CONTAINS] = true
+        allowed[NOT_CONTAINS] = true
+        allowed[BEGINS_WITH] = true
+        allowed[IN] = true
+        allowed[NOT_IN] = true
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "N": // Number
+        allowed[EQ] = true
+        allowed[NE] = true
+        allowed[GT] = true
+        allowed[LT] = true
+        allowed[GTE] = true
+        allowed[LTE] = true
+        allowed[BETWEEN] = true
+        allowed[IN] = true
+        allowed[NOT_IN] = true
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "BOOL": // Boolean
+        allowed[EQ] = true
+        allowed[NE] = true
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "SS": // String Set
+        allowed[CONTAINS] = true
+        allowed[NOT_CONTAINS] = true
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "NS": // Number Set
+        allowed[CONTAINS] = true
+        allowed[NOT_CONTAINS] = true
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "BS": // Binary Set
+        allowed[CONTAINS] = true
+        allowed[NOT_CONTAINS] = true
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "L": // List
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "M": // Map
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    case "NULL": // Null
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+        
+    default:
+        // For unknown types allow only basic operations
+        allowed[EQ] = true
+        allowed[NE] = true
+        allowed[EXISTS] = true
+        allowed[NOT_EXISTS] = true
+    }
+    
+    return allowed
+}
+
+// TableSchema with pre-computed allowed operators for each field
 var TableSchema = DynamoSchema{
     TableName: "{{.TableName}}",
     HashKey:   "{{.HashKey}}",
@@ -99,14 +186,15 @@ var TableSchema = DynamoSchema{
         {{- end}}
     },
     
-    // NEW: Предварительно собранная map для O(1) поиска
+    // Pre-computed FieldsMap with allowed operators for O(1) validation
     FieldsMap: map[string]FieldInfo{
         {{- range .AllAttributes}}
         "{{.Name}}": {
-            DynamoType: "{{.Type}}",
-            IsKey:      {{if or (eq .Name $.HashKey) (eq .Name $.RangeKey)}}true{{else}}false{{end}},
-            IsHashKey:  {{if eq .Name $.HashKey}}true{{else}}false{{end}},
-            IsRangeKey: {{if eq .Name $.RangeKey}}true{{else}}false{{end}},
+            DynamoType:       "{{.Type}}",
+            IsKey:            {{if or (eq .Name $.HashKey) (eq .Name $.RangeKey)}}true{{else}}false{{end}},
+            IsHashKey:        {{if eq .Name $.HashKey}}true{{else}}false{{end}},
+            IsRangeKey:       {{if eq .Name $.RangeKey}}true{{else}}false{{end}},
+            AllowedOperators: buildAllowedOperators("{{.Type}}"),
         },
         {{- end}}
     },

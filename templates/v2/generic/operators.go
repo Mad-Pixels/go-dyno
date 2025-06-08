@@ -31,12 +31,12 @@ const (
     NOT_EXISTS OperatorType = "attribute_not_exists"
 )
 
-// ExpressionScope defines whether this is a key condition or filter condition
-type ExpressionScope string
+// ConditionType defines whether this is a key condition or filter condition
+type ConditionType string
 
 const (
-    ScopeKey        ExpressionScope = "KEY"
-    ScopeCondition  ExpressionScope = "CONDITION"
+    KeyCondition    ConditionType = "KEY"
+    FilterCondition ConditionType = "FILTER"
 )
 
 // Condition represents a single query or filter condition
@@ -44,47 +44,16 @@ type Condition struct {
     Field     string
     Operator  OperatorType
     Values    []interface{}
-    Scope     ExpressionScope
+    Type      ConditionType
 }
 
-// ValidateOperator checks if operator is valid for the given DynamoDB type
-func ValidateOperator(dynamoType string, op OperatorType) bool {
-    switch dynamoType {
-    case "S": // String
-        return op == EQ || op == NE || op == GT || op == LT || op == GTE || op == LTE || 
-               op == BETWEEN || op == CONTAINS || op == NOT_CONTAINS || op == BEGINS_WITH || op == IN || op == NOT_IN ||
-               op == EXISTS || op == NOT_EXISTS
-               
-    case "N": // Number  
-        return op == EQ || op == NE || op == GT || op == LT || op == GTE || op == LTE || 
-               op == BETWEEN || op == IN || op == NOT_IN ||
-               op == EXISTS || op == NOT_EXISTS
-               
-    case "BOOL": // Boolean
-        return op == EQ || op == NE || op == EXISTS || op == NOT_EXISTS
-        
-    case "SS": // String Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
-        return op == CONTAINS || op == NOT_CONTAINS || op == EXISTS || op == NOT_EXISTS
-        
-    case "NS": // Number Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
-        return op == CONTAINS || op == NOT_CONTAINS || op == EXISTS || op == NOT_EXISTS
-        
-    case "BS": // Binary Set (rare)
-        return op == CONTAINS || op == NOT_CONTAINS || op == EXISTS || op == NOT_EXISTS
-        
-    case "L": // List
-        return op == EXISTS || op == NOT_EXISTS
-        
-    case "M": // Map
-        return op == EXISTS || op == NOT_EXISTS
-        
-    case "NULL": // Null
-        return op == EXISTS || op == NOT_EXISTS
-        
-    default:
-        // For unknown types allow only basic operations
-        return op == EQ || op == NE || op == EXISTS || op == NOT_EXISTS
+// ValidateOperator checks if operator is valid for the given field using pre-computed cache
+func ValidateOperator(fieldName string, op OperatorType) bool {
+    fieldInfo, exists := TableSchema.FieldsMap[fieldName]
+    if !exists {
+        return false
     }
+    return fieldInfo.SupportsOperator(op)
 }
 
 // ValidateValues checks if the number of values is correct for the operator
@@ -103,195 +72,157 @@ func ValidateValues(op OperatorType, values []interface{}) bool {
     }
 }
 
-// Pre-allocated map to avoid allocations on every check
-var keyOperators = map[OperatorType]bool{
-    EQ:      true,
-    GT:      true,
-    LT:      true,
-    GTE:     true,
-    LTE:     true,
-    BETWEEN: true,
-}
-
-// isKeyOperator checks if operator can be used in key conditions
-func isKeyOperator(op OperatorType) bool {
-    return keyOperators[op]
-}
-
-// validateExpressionInput performs common validation for both key and condition expressions
-func validateExpressionInput(field string, op OperatorType, values []interface{}, scope ExpressionScope) (string, error) {
-    // Common validation for both key and condition expressions
-    if !ValidateValues(op, values) {
-        return "", fmt.Errorf("invalid number of values for operator %s", op)
-    }
-    
-    // Look up field type automatically from schema
-    fieldInfo, exists := TableSchema.FieldsMap[field]
-    if !exists {
-        return "", fmt.Errorf("field %s not found in schema", field)
-    }
-    
-    // Validate operator compatibility with DynamoDB field type
-    if !ValidateOperator(fieldInfo.DynamoType, op) {
-        return "", fmt.Errorf("operator %s not supported for DynamoDB type %s", op, fieldInfo.DynamoType)
-    }
-    
-    // Key expressions have limited operators
-    if scope == ScopeKey {
-        if !fieldInfo.IsKey {
-            return "", fmt.Errorf("field %s is not a key field", field)
-        }
-        if !isKeyOperator(op) {
-            return "", fmt.Errorf("operator %s not supported for key conditions", op)
-        }
-    }
-    
-    return fieldInfo.DynamoType, nil
-}
-
-// buildKeyConditionInternal builds key condition expressions with proper validation
-func buildKeyConditionInternal(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
-    _, err := validateExpressionInput(field, op, values, ScopeKey)
-    if err != nil {
-        return expression.KeyConditionBuilder{}, err
-    }
-    
-    return buildKeyExpressionByOperator(field, op, values)
-}
-
-// buildConditionInternal builds filter condition expressions with proper validation  
-func buildConditionInternal(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
-    _, err := validateExpressionInput(field, op, values, ScopeCondition)
-    if err != nil {
-        return expression.ConditionBuilder{}, err
-    }
-    
-    return buildFilterExpressionByOperator(field, op, values)
-}
-
-// buildKeyExpressionByOperator builds key condition expressions
-func buildKeyExpressionByOperator(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
-    fieldExpr := expression.Key(field)
-    
+// IsKeyConditionOperator checks if operator can be used in key conditions
+func IsKeyConditionOperator(op OperatorType) bool {
     switch op {
-    case EQ:
-        return fieldExpr.Equal(expression.Value(values[0])), nil
-    case GT:
-        return fieldExpr.GreaterThan(expression.Value(values[0])), nil
-    case LT:
-        return fieldExpr.LessThan(expression.Value(values[0])), nil
-    case GTE:
-        return fieldExpr.GreaterThanEqual(expression.Value(values[0])), nil
-    case LTE:
-        return fieldExpr.LessThanEqual(expression.Value(values[0])), nil
-    case BETWEEN:
-        return fieldExpr.Between(expression.Value(values[0]), expression.Value(values[1])), nil
+    case EQ, GT, LT, GTE, LTE, BETWEEN:
+        return true
     default:
-        return expression.KeyConditionBuilder{}, fmt.Errorf("unsupported key operator %s", op)
+        return false
     }
 }
 
-// buildFilterExpressionByOperator builds filter condition expressions
-func buildFilterExpressionByOperator(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
-    fieldExpr := expression.Name(field)
+// Type-safe handler functions for different expression types
+type KeyOperatorHandler func(expression.KeyBuilder, []interface{}) expression.KeyConditionBuilder
+type ConditionOperatorHandler func(expression.NameBuilder, []interface{}) expression.ConditionBuilder
+
+// getKeyOperatorHandlers returns handlers that work with key conditions
+func getKeyOperatorHandlers() map[OperatorType]KeyOperatorHandler {
+    return map[OperatorType]KeyOperatorHandler{
+        EQ: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+            return field.Equal(expression.Value(values[0]))
+        },
+        GT: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+            return field.GreaterThan(expression.Value(values[0]))
+        },
+        LT: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+            return field.LessThan(expression.Value(values[0]))
+        },
+        GTE: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+            return field.GreaterThanEqual(expression.Value(values[0]))
+        },
+        LTE: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+            return field.LessThanEqual(expression.Value(values[0]))
+        },
+        BETWEEN: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+            return field.Between(expression.Value(values[0]), expression.Value(values[1]))
+        },
+    }
+}
+
+// getConditionOperatorHandlers returns handlers that work with filter conditions
+func getConditionOperatorHandlers() map[OperatorType]ConditionOperatorHandler {
+    handlers := make(map[OperatorType]ConditionOperatorHandler)
     
-    switch op {
-    case EQ:
-        return fieldExpr.Equal(expression.Value(values[0])), nil
-    case NE:
-        return fieldExpr.NotEqual(expression.Value(values[0])), nil
-    case GT:
-        return fieldExpr.GreaterThan(expression.Value(values[0])), nil
-    case LT:
-        return fieldExpr.LessThan(expression.Value(values[0])), nil
-    case GTE:
-        return fieldExpr.GreaterThanEqual(expression.Value(values[0])), nil
-    case LTE:
-        return fieldExpr.LessThanEqual(expression.Value(values[0])), nil
-    case BETWEEN:
-        return fieldExpr.Between(expression.Value(values[0]), expression.Value(values[1])), nil
-    case CONTAINS:
-        return fieldExpr.Contains(fmt.Sprintf("%v", values[0])), nil
-    case NOT_CONTAINS:
-        return expression.Not(fieldExpr.Contains(fmt.Sprintf("%v", values[0]))), nil
-    case BEGINS_WITH:
-        return fieldExpr.BeginsWith(fmt.Sprintf("%v", values[0])), nil
-    case IN:
+    // Basic operators (same as for keys, but with NameBuilder)
+    handlers[EQ] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.Equal(expression.Value(values[0]))
+    }
+    handlers[NE] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.NotEqual(expression.Value(values[0]))
+    }
+    handlers[GT] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.GreaterThan(expression.Value(values[0]))
+    }
+    handlers[LT] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.LessThan(expression.Value(values[0]))
+    }
+    handlers[GTE] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.GreaterThanEqual(expression.Value(values[0]))
+    }
+    handlers[LTE] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.LessThanEqual(expression.Value(values[0]))
+    }
+    handlers[BETWEEN] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.Between(expression.Value(values[0]), expression.Value(values[1]))
+    }
+    
+    // Filter-only operators
+    handlers[CONTAINS] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.Contains(fmt.Sprintf("%v", values[0]))
+    }
+    handlers[NOT_CONTAINS] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return expression.Not(field.Contains(fmt.Sprintf("%v", values[0])))
+    }
+    handlers[BEGINS_WITH] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return field.BeginsWith(fmt.Sprintf("%v", values[0]))
+    }
+    handlers[IN] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
         if len(values) == 0 {
-            return expression.AttributeNotExists(fieldExpr), nil
+            return expression.AttributeNotExists(field)
         }
         if len(values) == 1 {
-            return fieldExpr.Equal(expression.Value(values[0])), nil
+            return field.Equal(expression.Value(values[0]))
         }
         operands := make([]expression.OperandBuilder, len(values))
         for i, v := range values {
             operands[i] = expression.Value(v)
         }
-        return fieldExpr.In(operands[0], operands[1:]...), nil
-    case NOT_IN:
+        return field.In(operands[0], operands[1:]...)
+    }
+    handlers[NOT_IN] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
         if len(values) == 0 {
-            return expression.AttributeExists(fieldExpr), nil
+            return expression.AttributeExists(field)
         }
         if len(values) == 1 {
-            return fieldExpr.NotEqual(expression.Value(values[0])), nil
+            return field.NotEqual(expression.Value(values[0]))
         }
         operands := make([]expression.OperandBuilder, len(values))
         for i, v := range values {
             operands[i] = expression.Value(v)
         }
-        return expression.Not(fieldExpr.In(operands[0], operands[1:]...)), nil
-    case EXISTS:
-        return expression.AttributeExists(fieldExpr), nil
-    case NOT_EXISTS:
-        return expression.AttributeNotExists(fieldExpr), nil
-    default:
-        return expression.ConditionBuilder{}, fmt.Errorf("unsupported filter operator %s", op)
+        return expression.Not(field.In(operands[0], operands[1:]...))
     }
+    handlers[EXISTS] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return expression.AttributeExists(field)
+    }
+    handlers[NOT_EXISTS] = func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+        return expression.AttributeNotExists(field)
+    }
+    
+    return handlers
 }
 
 // BuildConditionExpression converts operator to DynamoDB filter expression
-// Automatically looks up field type from TableSchema
 func BuildConditionExpression(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
-    return buildConditionInternal(field, op, values)
-}
-
-// BuildKeyConditionExpression converts operator to DynamoDB key condition
-// Automatically looks up field type from TableSchema
-func BuildKeyConditionExpression(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
-    return buildKeyConditionInternal(field, op, values)
-}
-
-// BuildConditionExpressionWithType converts operator to DynamoDB filter expression with explicit type
-// Use this for fields not in TableSchema or to override type validation
-func BuildConditionExpressionWithType(field string, op OperatorType, values []interface{}, dynamoType string) (expression.ConditionBuilder, error) {
-    // Manual validation when type is provided explicitly
     if !ValidateValues(op, values) {
         return expression.ConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
     
-    if !ValidateOperator(dynamoType, op) {
-        return expression.ConditionBuilder{}, fmt.Errorf("operator %s not supported for DynamoDB type %s", op, dynamoType)
+    handlers := getConditionOperatorHandlers()
+    
+    handler, ok := handlers[op]
+    if !ok {
+        return expression.ConditionBuilder{}, fmt.Errorf("unsupported operator %s for filter conditions", op)
     }
     
-    return buildFilterExpressionByOperator(field, op, values)
+    fieldExpr := expression.Name(field)
+    result := handler(fieldExpr, values)
+    
+    return result, nil
 }
 
-// BuildKeyConditionExpressionWithType converts operator to DynamoDB key condition with explicit type
-// Use this for fields not in TableSchema or to override type validation
-func BuildKeyConditionExpressionWithType(field string, op OperatorType, values []interface{}, dynamoType string) (expression.KeyConditionBuilder, error) {
-    // Manual validation when type is provided explicitly
+// BuildKeyConditionExpression converts operator to DynamoDB key condition
+func BuildKeyConditionExpression(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
     if !ValidateValues(op, values) {
         return expression.KeyConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
     
-    if !ValidateOperator(dynamoType, op) {
-        return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for DynamoDB type %s", op, dynamoType)
-    }
-    
-    if !isKeyOperator(op) {
+    // Key conditions have limited operators
+    if !IsKeyConditionOperator(op) {
         return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for key conditions", op)
     }
     
-    return buildKeyExpressionByOperator(field, op, values)
+    handlers := getKeyOperatorHandlers()
+    
+    handler, ok := handlers[op]
+    if !ok {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("unsupported operator %s for key conditions", op)
+    }
+    
+    fieldExpr := expression.Key(field)
+    result := handler(fieldExpr, values)
+    
+    return result, nil
 }
 `
