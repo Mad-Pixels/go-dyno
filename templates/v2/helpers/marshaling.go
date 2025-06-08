@@ -44,21 +44,6 @@ func buildUpdateExpression(updates map[string]types.AttributeValue) (string, map
     return "SET " + strings.Join(updateParts, ", "), attrNames, attrValues
 }
 
-// marshalRawUpdates converts raw map to AttributeValue map
-func marshalRawUpdates(updates map[string]interface{}) (map[string]types.AttributeValue, error) {
-    result := make(map[string]types.AttributeValue, len(updates))
-    
-    for attrName, value := range updates {
-        av, err := attributevalue.Marshal(value)
-        if err != nil {
-            return nil, fmt.Errorf("failed to marshal update value for %s: %v", attrName, err)
-        }
-        result[attrName] = av
-    }
-    
-    return result, nil
-}
-
 // mergeExpressionAttributes merges condition attributes into existing maps
 func mergeExpressionAttributes(
     baseNames map[string]string, 

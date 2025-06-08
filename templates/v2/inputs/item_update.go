@@ -49,10 +49,10 @@ func UpdateItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{},
         return nil, fmt.Errorf("failed to create key for update: %v", err)
     }
    
-    // Use helper to marshal raw updates
-    marshaledUpdates, err := marshalRawUpdates(updates)
+    // Use AWS SDK marshaler instead of manual conversion
+    marshaledUpdates, err := attributevalue.MarshalMap(updates)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to marshal updates: %v", err)
     }
    
     // Use helper to build expression
