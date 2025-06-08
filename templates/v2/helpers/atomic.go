@@ -4,6 +4,10 @@ package helpers
 const AtomicHelpersTemplate = `
 // IncrementAttribute ...
 func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
+    if err := validateAttributeName(attributeName); err != nil {
+        return nil, err
+    }
+
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for increment: %v", err)
@@ -24,6 +28,10 @@ func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, att
 
 // AddToSet ...
 func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
+    if err := validateAttributeName(attributeName); err != nil {
+        return nil, err
+    }
+
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for add to set: %v", err)

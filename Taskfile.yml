@@ -299,7 +299,7 @@ tasks:
     deps:
       - localstack/run
     cmds:
-      - defer: { task: localstack/stop }
+      # - defer: { task: localstack/stop }
       - go test -parallel 4 -shuffle=on -v ./... 
     silent: true
   

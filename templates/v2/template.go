@@ -24,5 +24,5 @@ package {{.PackageName}}
 
 ` + inputs.ItemInputsTemplate + inputs.UpdateInputsTemplate + inputs.DeleteInputsTemplate + inputs.KeyInputsTemplate + `
 
-` + helpers.AtomicHelpersTemplate + helpers.StreamHelpersTemplate + helpers.ConverterHelpersTemplate + `
+` + helpers.AtomicHelpersTemplate + helpers.StreamHelpersTemplate + helpers.ConverterHelpersTemplate + helpers.MarshalingHelpersTemplate + helpers.ValidationHelpersTemplate + `
 `
