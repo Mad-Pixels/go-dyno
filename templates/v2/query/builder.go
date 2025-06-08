@@ -2,52 +2,34 @@ package query
 
 // QueryBuilderTemplate ...
 const QueryBuilderTemplate = `
-// QueryBuilder ...
+// QueryBuilder provides a fluent interface for building DynamoDB queries
 type QueryBuilder struct {
-    IndexName           string
-    KeyConditions       map[string]expression.KeyConditionBuilder
-    FilterConditions    []expression.ConditionBuilder
-    UsedKeys            map[string]bool
-    Attributes          map[string]interface{}
-    SortDescending      bool
-    LimitValue          *int
-    ExclusiveStartKey   map[string]types.AttributeValue
-    PreferredSortKey    string
+    IndexName         string
+    KeyConditions     map[string]expression.KeyConditionBuilder
+    FilterConditions  []expression.ConditionBuilder
+    UsedKeys          map[string]bool
+    Attributes        map[string]interface{}
+    SortDescending    bool
+    LimitValue        *int
+    ExclusiveStartKey map[string]types.AttributeValue
+    PreferredSortKey  string
 }
 
-// NewQueryBuilder ...
+// NewQueryBuilder creates a new QueryBuilder instance
 func NewQueryBuilder() *QueryBuilder {
     return &QueryBuilder{
-        KeyConditions:   make(map[string]expression.KeyConditionBuilder),
-        UsedKeys:        make(map[string]bool),
-        Attributes:      make(map[string]interface{}),
+        KeyConditions: make(map[string]expression.KeyConditionBuilder),
+        UsedKeys:      make(map[string]bool),
+        Attributes:    make(map[string]interface{}),
     }
 }
-
-{{range .Attributes}}
-// With{{ToSafeName .Name | ToUpperCamelCase}} ...
-func (qb *QueryBuilder) With{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .}}) *QueryBuilder {
-    qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
-    qb.UsedKeys["{{.Name}}"] = true
-    return qb
-}
-{{end}}
-
-{{range .CommonAttributes}}
-// Filter{{ToSafeName .Name | ToUpperCamelCase}} ...
-func (qb *QueryBuilder) Filter{{ToSafeName .Name | ToUpperCamelCase}}({{ToSafeName .Name | ToLowerCamelCase}} {{ToGolangBaseType .}}) *QueryBuilder {
-    qb.Attributes["{{.Name}}"] = {{ToSafeName .Name | ToLowerCamelCase}}
-    qb.UsedKeys["{{.Name}}"] = true
-    return qb
-}
-{{end}}
 
 {{range .SecondaryIndexes}}
 {{if gt (len .HashKeyParts) 0}}
 {{- $hasNonConstant := false -}}
 {{- range .HashKeyParts -}}{{- if not .IsConstant -}}{{- $hasNonConstant = true -}}{{- end -}}{{- end -}}
 {{- if $hasNonConstant}}
-// With{{ToUpperCamelCase .Name}}HashKey ...
+// With{{ToUpperCamelCase .Name}}HashKey sets composite hash key for {{.Name}} index
 func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{range $i, $part := .HashKeyParts}}{{if not $part.IsConstant}}{{if $i}}, {{end}}{{$part.Value | ToLowerCamelCase}} {{ToGolangAttrType $part.Value $.AllAttributes}}{{end}}{{end}}) *QueryBuilder {
     {{range .HashKeyParts}}{{if not .IsConstant}}
     qb.Attributes["{{.Value}}"] = {{.Value | ToLowerCamelCase}}
@@ -71,7 +53,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{range $i, $part 
 }
 {{end}}
 {{else if .HashKey}}
-// With{{ToUpperCamelCase .Name}}HashKey ...
+// With{{ToUpperCamelCase .Name}}HashKey sets hash key for {{.Name}} index
 func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{.HashKey | ToLowerCamelCase}} {{ToGolangAttrType .HashKey $.AllAttributes}}) *QueryBuilder {
     qb.Attributes["{{.HashKey}}"] = {{.HashKey | ToLowerCamelCase}}
     qb.UsedKeys["{{.HashKey}}"] = true
@@ -81,7 +63,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{.HashKey | ToLow
 {{end}}
 {{end}}
 
-// WithPreferredSortKey ...
+// WithPreferredSortKey sets the preferred sort key for index selection
 func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
     qb.PreferredSortKey = key
     return qb
@@ -92,7 +74,7 @@ func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
 {{- $hasNonConstant := false -}}
 {{- range .RangeKeyParts -}}{{- if not .IsConstant -}}{{- $hasNonConstant = true -}}{{- end -}}{{- end -}}
 {{- if $hasNonConstant}}
-// With{{ToUpperCamelCase .Name}}RangeKey ...
+// With{{ToUpperCamelCase .Name}}RangeKey sets composite range key for {{.Name}} index
 func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{range $i, $part := .RangeKeyParts}}{{if not $part.IsConstant}}{{if $i}}, {{end}}{{$part.Value | ToLowerCamelCase}} {{ToGolangAttrType $part.Value $.AllAttributes}}{{end}}{{end}}) *QueryBuilder {
     {{range .RangeKeyParts}}{{if not .IsConstant}}
     qb.Attributes["{{.Value}}"] = {{.Value | ToLowerCamelCase}}
@@ -102,7 +84,7 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{range $i, $part
 }
 {{end}}
 {{else if .RangeKey}}
-// With{{ToUpperCamelCase .Name}}RangeKey ...
+// With{{ToUpperCamelCase .Name}}RangeKey sets range key for {{.Name}} index
 func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToLowerCamelCase}} {{ToGolangAttrType .RangeKey $.AllAttributes}}) *QueryBuilder {
     qb.Attributes["{{.RangeKey}}"] = {{.RangeKey | ToLowerCamelCase}}
     qb.UsedKeys["{{.RangeKey}}"] = true
@@ -112,50 +94,25 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToL
 {{end}}
 {{end}}
 
-{{range .AllAttributes}}
-{{if IsNumericAttr .}}
-// With{{ToUpperCamelCase .Name}}Between ...
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}Between(start, end {{ToGolangBaseType .}}) *QueryBuilder {
-    qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").Between(expression.Value(start), expression.Value(end))
-    qb.UsedKeys["{{.Name}}"] = true
-    return qb
-}
-
-// With{{ToUpperCamelCase .Name}}GreaterThan ...
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}GreaterThan(value {{ToGolangBaseType .}}) *QueryBuilder {
-    qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").GreaterThan(expression.Value(value))
-    qb.UsedKeys["{{.Name}}"] = true
-    return qb
-}
-
-// With{{ToUpperCamelCase .Name}}LessThan ...
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}LessThan(value {{ToGolangBaseType .}}) *QueryBuilder {
-    qb.KeyConditions["{{.Name}}"] = expression.Key("{{.Name}}").LessThan(expression.Value(value))
-    qb.UsedKeys["{{.Name}}"] = true
-    return qb
-}
-{{end}}
-{{end}}
-
-// OrderByDesc ...
+// OrderByDesc sets descending sort order
 func (qb *QueryBuilder) OrderByDesc() *QueryBuilder {
     qb.SortDescending = true
     return qb
 }
 
-// OrderByAsc ...
+// OrderByAsc sets ascending sort order  
 func (qb *QueryBuilder) OrderByAsc() *QueryBuilder {
     qb.SortDescending = false
     return qb
 }
 
-// Limit ...
+// Limit sets the maximum number of items to return
 func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
     qb.LimitValue = &limit
     return qb
 }
 
-// StartFrom ...
+// StartFrom sets the exclusive start key for pagination
 func (qb *QueryBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeValue) *QueryBuilder {
     qb.ExclusiveStartKey = lastEvaluatedKey
     return qb

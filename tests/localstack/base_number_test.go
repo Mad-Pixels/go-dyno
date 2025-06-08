@@ -78,24 +78,20 @@ func testNumberInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 			Price:     1999,
 		}
 
-		// Test marshaling
 		av, err := basenumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal number item")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
-		// Verify number fields are properly marshaled as AttributeValueMemberN
 		assert.Contains(t, av, "id", "Should contain id field")
 		assert.Contains(t, av, "timestamp", "Should contain timestamp field")
 		assert.Contains(t, av, "count", "Should contain count field")
 		assert.Contains(t, av, "price", "Should contain price field")
 
-		// Verify actual number values
-		assert.IsType(t, &types.AttributeValueMemberS{}, av[basenumber.ColumnId])        // id is string
-		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnCount])     // count is number
-		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnPrice])     // price is number
-		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnTimestamp]) // timestamp is number
+		assert.IsType(t, &types.AttributeValueMemberS{}, av[basenumber.ColumnId])
+		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnCount])
+		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnPrice])
+		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumber.ColumnTimestamp])
 
-		// Test storage
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Item:      av,
@@ -121,7 +117,6 @@ func testNumberInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 		require.NoError(t, err, "Should retrieve number item")
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
-		// Verify number values are correctly retrieved
 		assert.Equal(t, "42", getResult.Item[basenumber.ColumnCount].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "1999", getResult.Item[basenumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "number-test-001", getResult.Item[basenumber.ColumnId].(*types.AttributeValueMemberS).Value)
@@ -144,7 +139,6 @@ func testNumberInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 		_, err = client.UpdateItem(ctx, updateInput)
 		require.NoError(t, err, "Should update number item")
 
-		// Verify update
 		key, _ := basenumber.KeyInput(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
@@ -170,7 +164,6 @@ func testNumberInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 		_, err = client.DeleteItem(ctx, deleteInput)
 		require.NoError(t, err, "Should delete number item")
 
-		// Verify deletion
 		key, _ := basenumber.KeyInput(item)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
@@ -184,10 +177,10 @@ func testNumberInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 
 	t.Run("number_edge_cases", func(t *testing.T) {
 		edgeCases := []basenumber.SchemaItem{
-			{Id: "edge-1", Timestamp: 0, Count: 0, Price: 0},                           // Zero values
-			{Id: "edge-2", Timestamp: 1, Count: -100, Price: -50},                      // Negative numbers
-			{Id: "edge-3", Timestamp: 9999999999, Count: 2147483647, Price: 999999999}, // Large numbers
-			{Id: "edge-4", Timestamp: 1640995100, Count: 1, Price: 1},                  // Minimal positive
+			{Id: "edge-1", Timestamp: 0, Count: 0, Price: 0},
+			{Id: "edge-2", Timestamp: 1, Count: -100, Price: -50},
+			{Id: "edge-3", Timestamp: 9999999999, Count: 2147483647, Price: 999999999},
+			{Id: "edge-4", Timestamp: 1640995100, Count: 1, Price: 1},
 		}
 
 		for _, item := range edgeCases {
@@ -216,12 +209,10 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 			Price:     3499,
 		}
 
-		// Test marshaling (same as object-based)
 		av, err := basenumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal number item")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
-		// Test storage
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(basenumber.TableName),
 			Item:      av,
@@ -242,7 +233,6 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		require.NoError(t, err, "Should retrieve number item using raw key")
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
-		// Verify number values are correctly retrieved
 		assert.Equal(t, "75", getResult.Item[basenumber.ColumnCount].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "3499", getResult.Item[basenumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "number-raw-001", getResult.Item[basenumber.ColumnId].(*types.AttributeValueMemberS).Value)
@@ -263,7 +253,6 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		_, err = client.UpdateItem(ctx, updateInput)
 		require.NoError(t, err, "Should update number item using raw method")
 
-		// Verify update
 		key, _ := basenumber.KeyInputFromRaw("number-raw-001", 1640995300)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
@@ -284,7 +273,6 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		_, err = client.DeleteItem(ctx, deleteInput)
 		require.NoError(t, err, "Should delete number item using raw method")
 
-		// Verify deletion
 		key, _ := basenumber.KeyInputFromRaw("number-raw-001", 1640995300)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
@@ -297,7 +285,6 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 	})
 
 	t.Run("raw_vs_object_number_comparison", func(t *testing.T) {
-		// Create same key using both methods
 		keyFromRaw, err := basenumber.KeyInputFromRaw("comparison-test", 1640995999)
 		require.NoError(t, err, "Should create key from raw values")
 
@@ -308,7 +295,6 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		keyFromObject, err := basenumber.KeyInput(item)
 		require.NoError(t, err, "Should create key from object")
 
-		// Keys should be identical
 		assert.Equal(t, keyFromRaw, keyFromObject, "Raw and object-based keys should be identical")
 
 		t.Logf("✅ Raw and object-based number methods produce identical results")
@@ -338,12 +324,10 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		}
 
 		for _, edgeCase := range edgeCases {
-			// Test create with raw update
 			updateInput, err := basenumber.UpdateItemInputFromRaw(edgeCase.id, edgeCase.timestamp, edgeCase.updates)
 			require.NoError(t, err, "Should handle raw number edge case: %s", edgeCase.id)
 			assert.NotNil(t, updateInput, "Update input should be created for edge case: %s", edgeCase.id)
 
-			// Test delete with raw method
 			deleteInput, err := basenumber.DeleteItemInputFromRaw(edgeCase.id, edgeCase.timestamp)
 			require.NoError(t, err, "Should create delete input for edge case: %s", edgeCase.id)
 			assert.NotNil(t, deleteInput, "Delete input should be created")
@@ -353,7 +337,6 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 	})
 
 	t.Run("raw_increment_operations", func(t *testing.T) {
-		// Test increment operations with raw methods
 		incrementInput, err := basenumber.IncrementAttribute("increment-raw-test", 1640995888, "count", 10)
 		require.NoError(t, err, "Should create increment input with raw method")
 		assert.NotNil(t, incrementInput.UpdateExpression, "Should have update expression")
@@ -365,6 +348,37 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 
 		t.Logf("✅ Raw increment operations work correctly")
 	})
+
+	t.Run("raw_conditional_operations", func(t *testing.T) {
+		conditionExpr := "#version = :v"
+		conditionNames := map[string]string{"#version": "version"}
+		conditionValues := map[string]types.AttributeValue{
+			":v": &types.AttributeValueMemberN{Value: "1"},
+		}
+
+		deleteInput, err := basenumber.DeleteItemInputWithCondition(
+			"conditional-test", 1640995777,
+			conditionExpr, conditionNames, conditionValues,
+		)
+		require.NoError(t, err, "Should create conditional delete with raw method")
+		assert.NotNil(t, deleteInput.ConditionExpression, "Should have condition expression")
+		assert.Equal(t, conditionExpr, *deleteInput.ConditionExpression, "Condition should match")
+
+		updates := map[string]any{
+			"count":   50,
+			"price":   2999,
+			"version": 2,
+		}
+
+		updateInput, err := basenumber.UpdateItemInputWithCondition(
+			"conditional-test", 1640995777,
+			updates, conditionExpr, conditionNames, conditionValues,
+		)
+		require.NoError(t, err, "Should create conditional update with raw method")
+		assert.NotNil(t, updateInput.ConditionExpression, "Should have condition expression")
+
+		t.Logf("✅ Raw conditional operations work correctly")
+	})
 }
 
 // ==================== Number QueryBuilder Tests ====================
@@ -374,7 +388,7 @@ func testNumberQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 	setupNumberTestData(t, client, ctx)
 
 	t.Run("number_hash_key_query", func(t *testing.T) {
-		qb := basenumber.NewQueryBuilder().WithId("query-number-test")
+		qb := basenumber.NewQueryBuilder().WithEQ("id", "query-number-test")
 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build number hash key query")
@@ -386,8 +400,8 @@ func testNumberQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 
 	t.Run("number_hash_and_range_query", func(t *testing.T) {
 		qb := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			WithTimestamp(1640995300)
+			WithEQ("id", "query-number-test").
+			WithEQ("timestamp", 1640995300)
 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build number hash+range query")
@@ -398,9 +412,9 @@ func testNumberQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 
 	t.Run("number_filters", func(t *testing.T) {
 		qb := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			FilterCount(25).
-			FilterPrice(1500)
+			WithEQ("id", "query-number-test").
+			FilterEQ("count", 25).
+			FilterEQ("price", 1500)
 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with number filters")
@@ -409,14 +423,25 @@ func testNumberQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 		t.Logf("✅ Number filters query built successfully")
 	})
 
+	t.Run("number_range_conditions", func(t *testing.T) {
+		qb := basenumber.NewQueryBuilder().
+			WithEQ("id", "query-number-test").
+			WithBetween("timestamp", 1640995200, 1640995500)
+
+		queryInput, err := qb.BuildQuery()
+		require.NoError(t, err, "Should build number between query")
+		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
+
+		t.Logf("✅ Number range condition built successfully")
+	})
+
 	t.Run("number_query_execution", func(t *testing.T) {
-		qb := basenumber.NewQueryBuilder().WithId("query-number-test")
+		qb := basenumber.NewQueryBuilder().WithEQ("id", "query-number-test")
 
 		items, err := qb.Execute(ctx, client)
 		require.NoError(t, err, "Should execute number query")
 		assert.NotEmpty(t, items, "Should return number items")
 
-		// Verify returned items have correct number types
 		for _, item := range items {
 			assert.Equal(t, "query-number-test", item.Id, "All items should have correct hash key")
 			assert.Greater(t, item.Timestamp, 0, "All items should have positive timestamp")
@@ -428,25 +453,22 @@ func testNumberQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 	})
 
 	t.Run("number_sorting", func(t *testing.T) {
-		// Test sorting by number range key (timestamp)
 		qbAsc := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
+			WithEQ("id", "query-number-test").
 			OrderByAsc()
 
 		itemsAsc, err := qbAsc.Execute(ctx, client)
 		require.NoError(t, err, "Should execute ascending number query")
 
 		qbDesc := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
+			WithEQ("id", "query-number-test").
 			OrderByDesc()
 
 		itemsDesc, err := qbDesc.Execute(ctx, client)
 		require.NoError(t, err, "Should execute descending number query")
 
-		// Verify sorting is different for numbers
 		if len(itemsAsc) > 1 && len(itemsDesc) > 1 {
 			assert.NotEqual(t, itemsAsc[0].Timestamp, itemsDesc[0].Timestamp, "Number sorting should produce different order")
-			// Verify ascending order
 			if len(itemsAsc) > 1 {
 				assert.LessOrEqual(t, itemsAsc[0].Timestamp, itemsAsc[1].Timestamp, "Ascending should be in increasing order")
 			}
@@ -461,8 +483,8 @@ func testNumberQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 func testNumberScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("number_scan_filters", func(t *testing.T) {
 		sb := basenumber.NewScanBuilder().
-			FilterId("query-number-test").
-			FilterCount(25)
+			FilterEQ("id", "query-number-test").
+			FilterEQ("count", 25)
 
 		scanInput, err := sb.BuildScan()
 		require.NoError(t, err, "Should build scan with number filters")
@@ -471,15 +493,27 @@ func testNumberScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Co
 		t.Logf("✅ Number scan filters built successfully")
 	})
 
+	t.Run("number_advanced_filters", func(t *testing.T) {
+		sb := basenumber.NewScanBuilder().
+			FilterGT("count", 20).
+			FilterLT("price", 3000).
+			FilterBetween("timestamp", 1640995200, 1640995600)
+
+		scanInput, err := sb.BuildScan()
+		require.NoError(t, err, "Should build scan with advanced number filters")
+		assert.NotNil(t, scanInput.FilterExpression, "Should have filter expression")
+
+		t.Logf("✅ Advanced number filters built successfully")
+	})
+
 	t.Run("number_scan_execution", func(t *testing.T) {
 		sb := basenumber.NewScanBuilder().
-			FilterCountGreaterThan(20).
+			FilterGT("count", 20).
 			Limit(10)
 
 		items, err := sb.Execute(ctx, client)
 		require.NoError(t, err, "Should execute number scan")
 
-		// Verify items match filter criteria
 		for _, item := range items {
 			assert.Greater(t, item.Count, 20, "Items should match greater than filter")
 		}
@@ -493,8 +527,8 @@ func testNumberScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Co
 func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("timestamp_between", func(t *testing.T) {
 		qb := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			WithTimestampBetween(1640995200, 1640995400)
+			WithEQ("id", "query-number-test").
+			WithBetween("timestamp", 1640995200, 1640995400)
 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build timestamp between query")
@@ -503,7 +537,6 @@ func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx contex
 		items, err := qb.Execute(ctx, client)
 		require.NoError(t, err, "Should execute between query")
 
-		// Verify all returned items are within range
 		for _, item := range items {
 			assert.GreaterOrEqual(t, item.Timestamp, 1640995200, "Timestamp should be >= start")
 			assert.LessOrEqual(t, item.Timestamp, 1640995400, "Timestamp should be <= end")
@@ -514,8 +547,8 @@ func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx contex
 
 	t.Run("timestamp_greater_than", func(t *testing.T) {
 		qb := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			WithTimestampGreaterThan(1640995300)
+			WithEQ("id", "query-number-test").
+			WithGT("timestamp", 1640995300)
 
 		_, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build timestamp greater than query")
@@ -523,7 +556,6 @@ func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx contex
 		items, err := qb.Execute(ctx, client)
 		require.NoError(t, err, "Should execute greater than query")
 
-		// Verify all returned items are greater than threshold
 		for _, item := range items {
 			assert.Greater(t, item.Timestamp, 1640995300, "Timestamp should be > threshold")
 		}
@@ -533,8 +565,8 @@ func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx contex
 
 	t.Run("timestamp_less_than", func(t *testing.T) {
 		qb := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			WithTimestampLessThan(1640995350)
+			WithEQ("id", "query-number-test").
+			WithLT("timestamp", 1640995350)
 
 		_, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build timestamp less than query")
@@ -542,7 +574,6 @@ func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx contex
 		items, err := qb.Execute(ctx, client)
 		require.NoError(t, err, "Should execute less than query")
 
-		// Verify all returned items are less than threshold
 		for _, item := range items {
 			assert.Less(t, item.Timestamp, 1640995350, "Timestamp should be < threshold")
 		}
@@ -551,24 +582,23 @@ func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx contex
 	})
 
 	t.Run("count_range_conditions", func(t *testing.T) {
-		// Test range conditions on common attributes (count)
 		qbBetween := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			WithCountBetween(20, 40)
+			WithEQ("id", "query-number-test").
+			FilterBetween("count", 20, 40)
 
 		_, err := qbBetween.BuildQuery()
 		require.NoError(t, err, "Should build count between query")
 
 		qbGreater := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			WithCountGreaterThan(30)
+			WithEQ("id", "query-number-test").
+			FilterGT("count", 30)
 
 		_, err = qbGreater.BuildQuery()
 		require.NoError(t, err, "Should build count greater than query")
 
 		qbLess := basenumber.NewQueryBuilder().
-			WithId("query-number-test").
-			WithCountLessThan(35)
+			WithEQ("id", "query-number-test").
+			FilterLT("count", 35)
 
 		_, err = qbLess.BuildQuery()
 		require.NoError(t, err, "Should build count less than query")
@@ -598,14 +628,12 @@ func testNumberIncrementOperations(t *testing.T, client *dynamodb.Client, ctx co
 	require.NoError(t, err, "Should store test item")
 
 	t.Run("increment_count", func(t *testing.T) {
-		// Increment count by 5
 		incrementInput, err := basenumber.IncrementAttribute("increment-test", 1640995999, "count", 5)
 		require.NoError(t, err, "Should create increment input")
 
 		_, err = client.UpdateItem(ctx, incrementInput)
 		require.NoError(t, err, "Should increment count")
 
-		// Verify increment
 		key, _ := basenumber.KeyInputFromRaw("increment-test", 1640995999)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
@@ -619,14 +647,12 @@ func testNumberIncrementOperations(t *testing.T, client *dynamodb.Client, ctx co
 	})
 
 	t.Run("decrement_price", func(t *testing.T) {
-		// Decrement price by 25 (negative increment)
 		decrementInput, err := basenumber.IncrementAttribute("increment-test", 1640995999, "price", -25)
 		require.NoError(t, err, "Should create decrement input")
 
 		_, err = client.UpdateItem(ctx, decrementInput)
 		require.NoError(t, err, "Should decrement price")
 
-		// Verify decrement
 		key, _ := basenumber.KeyInputFromRaw("increment-test", 1640995999)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumber.TableName),
