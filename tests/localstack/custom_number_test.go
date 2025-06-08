@@ -236,14 +236,12 @@ func testCustomTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx contex
 // ==================== Custom Types QueryBuilder Tests ====================
 
 func testCustomTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.Context) {
-	// Setup test data with custom types
 	setupCustomTypesTestData(t, client, ctx)
 
 	t.Run("custom_types_parameters", func(t *testing.T) {
-		// Test that QueryBuilder methods accept correct custom types
 		qb := customnumber.NewQueryBuilder().
-			WithId("query-custom-test").
-			WithTimestamp(1640995400) // int64 parameter
+			WithEQ("id", "query-custom-test").
+			WithEQ("timestamp", int64(1640995400))
 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with custom int64 parameter")
@@ -254,11 +252,11 @@ func testCustomTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx cont
 
 	t.Run("custom_types_filters", func(t *testing.T) {
 		qb := customnumber.NewQueryBuilder().
-			WithId("query-custom-test").
-			FilterCount(int32(50)).      // int32 parameter
-			FilterPrice(float32(25.0)).  // float32 parameter
-			FilterViews(uint64(500000)). // uint64 parameter
-			FilterScore(int16(80))       // int16 parameter
+			WithEQ("id", "query-custom-test").
+			FilterEQ("count", int32(50)).
+			FilterEQ("price", float32(25.0)).
+			FilterEQ("views", uint64(500000)).
+			FilterEQ("score", int16(80))
 
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with custom type filters")
@@ -268,13 +266,12 @@ func testCustomTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx cont
 	})
 
 	t.Run("custom_types_execution", func(t *testing.T) {
-		qb := customnumber.NewQueryBuilder().WithId("query-custom-test")
+		qb := customnumber.NewQueryBuilder().WithEQ("id", "query-custom-test")
 
 		items, err := qb.Execute(ctx, client)
 		require.NoError(t, err, "Should execute query with custom types")
 		assert.NotEmpty(t, items, "Should return items")
 
-		// Verify returned items have correct custom types
 		for _, item := range items {
 			assert.IsType(t, int64(0), item.Timestamp, "Timestamp should be int64")
 			assert.IsType(t, int32(0), item.Count, "Count should be int32")
@@ -291,10 +288,9 @@ func testCustomTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx cont
 
 func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("int64_timestamp_conditions", func(t *testing.T) {
-		// Test range conditions on int64 timestamp
 		qb := customnumber.NewQueryBuilder().
-			WithId("query-custom-test").
-			WithTimestampBetween(1640995200, 1640995500)
+			WithEQ("id", "query-custom-test").
+			WithBetween("timestamp", int64(1640995200), int64(1640995500))
 
 		_, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build int64 timestamp between condition")
@@ -302,7 +298,6 @@ func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx c
 		items, err := qb.Execute(ctx, client)
 		require.NoError(t, err, "Should execute int64 between query")
 
-		// Verify all items are within range
 		for _, item := range items {
 			assert.GreaterOrEqual(t, item.Timestamp, int64(1640995200), "Timestamp should be >= start")
 			assert.LessOrEqual(t, item.Timestamp, int64(1640995500), "Timestamp should be <= end")
@@ -312,10 +307,9 @@ func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx c
 	})
 
 	t.Run("int32_count_conditions", func(t *testing.T) {
-		// Test range conditions on int32 count
 		qb := customnumber.NewQueryBuilder().
-			WithId("query-custom-test").
-			WithCountBetween(40, 60)
+			WithEQ("id", "query-custom-test").
+			FilterBetween("count", int32(40), int32(60))
 
 		_, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build int32 count between condition")
@@ -324,10 +318,9 @@ func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx c
 	})
 
 	t.Run("uint64_views_conditions", func(t *testing.T) {
-		// Test range conditions on uint64 views
 		qb := customnumber.NewQueryBuilder().
-			WithId("query-custom-test").
-			WithViewsGreaterThan(1000000)
+			WithEQ("id", "query-custom-test").
+			FilterGT("views", uint64(1000000))
 
 		_, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build uint64 views greater than condition")
