@@ -2,7 +2,7 @@ package inputs
 
 // KeyInputsTemplate ...
 const KeyInputsTemplate = `
-// KeyInput ...
+// KeyInput creates key from SchemaItem with validation
 func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     key := make(map[string]types.AttributeValue)
    
@@ -10,6 +10,10 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     {{range .AllAttributes}}{{if eq .Name $.HashKey}}
     hashKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
     {{end}}{{end}}
+   
+    if err := validateHashKey(hashKeyValue); err != nil {
+        return nil, fmt.Errorf("invalid hash key: %v", err)
+    }
    
     hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
     if err != nil {
@@ -23,6 +27,10 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
         rangeKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
         {{end}}{{end}}
        
+        if err := validateRangeKey(rangeKeyValue); err != nil {
+            return nil, fmt.Errorf("invalid range key: %v", err)
+        }
+       
         rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)
         if err != nil {
             return nil, fmt.Errorf("failed to marshal range key: %v", err)
@@ -33,8 +41,16 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     return key, nil
 }
 
-// KeyInputFromRaw ...
+// KeyInputFromRaw creates key from raw values with validation
 func KeyInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (map[string]types.AttributeValue, error) {
+    if err := validateHashKey(hashKeyValue); err != nil {
+        return nil, fmt.Errorf("invalid hash key: %v", err)
+    }
+    
+    if err := validateRangeKey(rangeKeyValue); err != nil {
+        return nil, fmt.Errorf("invalid range key: %v", err)
+    }
+    
     key := make(map[string]types.AttributeValue)
    
     hashKeyAV, err := attributevalue.Marshal(hashKeyValue)

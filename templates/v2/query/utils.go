@@ -25,30 +25,7 @@ func (qb *QueryBuilder) buildCompositeKeyCondition(parts []CompositeKeyPart) exp
 			builder.WriteString(part.Value)
 		} else {
 			value := qb.Attributes[part.Value]
-			switch v := value.(type) {
-			case string:
-				builder.WriteString(v)
-			case int:
-				builder.WriteString(strconv.Itoa(v))
-			case int64:
-				builder.WriteString(strconv.FormatInt(v, 10))
-			case bool:
-				if v {
-					builder.WriteString("true")
-				} else {
-					builder.WriteString("false")
-				}
-			case []string:
-				builder.WriteString(strings.Join(v, ","))
-			case []int:
-				strs := make([]string, len(v))
-				for i, num := range v {
-					strs[i] = strconv.Itoa(num)
-				}
-				builder.WriteString(strings.Join(strs, ","))
-			default:
-				builder.WriteString(fmt.Sprintf("%v", v))
-			}
+			builder.WriteString(qb.formatAttributeValue(value))
 		}
 	}
 	compositeKeyName := qb.getCompositeKeyName(parts)
@@ -152,9 +129,7 @@ func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
    switch v := value.(type) {
    case string:
    	return v
-   case int, int8, int16, int32, int64:
-   	return fmt.Sprintf("%d", v)
-   case uint, uint8, uint16, uint32, uint64:
+   case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
    	return fmt.Sprintf("%d", v)
    case float32, float64:
    	return fmt.Sprintf("%g", v)
@@ -165,80 +140,59 @@ func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
    	return "false"
    case []string:
    	return strings.Join(v, ",")
+   
    case []int:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = strconv.Itoa(num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []int8:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []int16:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []int32:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []int64:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return v[i] })
    case []uint:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []uint8:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []uint16:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []uint32:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
    case []uint64:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%d", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatIntSlice(len(v), func(i int) int64 { return int64(v[i]) })
+   
    case []float32:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%g", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatFloatSlice(len(v), func(i int) float64 { return float64(v[i]) })
    case []float64:
-   	strs := make([]string, len(v))
-   	for i, num := range v {
-   		strs[i] = fmt.Sprintf("%g", num)
-   	}
-   	return strings.Join(strs, ",")
+   	return qb.formatFloatSlice(len(v), func(i int) float64 { return v[i] })
+   
    default:
    	return fmt.Sprintf("%v", value)
    }
+}
+
+func (qb *QueryBuilder) formatIntSlice(length int, getValue func(int) int64) string {
+	if length == 0 {
+		return ""
+	}
+	
+	strs := make([]string, length)
+	for i := 0; i < length; i++ {
+		strs[i] = strconv.FormatInt(getValue(i), 10)
+	}
+	return strings.Join(strs, ",")
+}
+
+func (qb *QueryBuilder) formatFloatSlice(length int, getValue func(int) float64) string {
+	if length == 0 {
+		return ""
+	}
+	
+	strs := make([]string, length)
+	for i := 0; i < length; i++ {
+		strs[i] = strconv.FormatFloat(getValue(i), 'g', -1, 64)
+	}
+	return strings.Join(strs, ",")
 }
 `

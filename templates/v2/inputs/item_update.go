@@ -2,99 +2,72 @@ package inputs
 
 // UpdateInputsTemplate ...
 const UpdateInputsTemplate = `
-// UpdateItemInput ...
+// UpdateItemInput creates update request from SchemaItem
 func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
     key, err := KeyInput(item)
     if err != nil {
         return nil, fmt.Errorf("failed to create key from item for update: %v", err)
     }
    
-    allAttributes, err := attributevalue.MarshalMap(item)
+    // Use helper to marshal item
+    allAttributes, err := marshalItemToMap(item)
     if err != nil {
         return nil, fmt.Errorf("failed to marshal item for update: %v", err)
     }
    
-    updates := make(map[string]types.AttributeValue)
-    for attrName, attrValue := range allAttributes {
-        if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
-            updates[attrName] = attrValue
-        }
-    }
-   
+    // Use helper to extract non-key attributes
+    updates := extractNonKeyAttributes(allAttributes)
     if len(updates) == 0 {
         return nil, fmt.Errorf("no non-key attributes to update")
     }
    
-    var updateExpressionParts []string
-    expressionAttributeNames := make(map[string]string)
-    expressionAttributeValues := make(map[string]types.AttributeValue)
-   
-    i := 0
-    for attrName, attrValue := range updates {
-        nameKey := fmt.Sprintf("#attr%d", i)
-        valueKey := fmt.Sprintf(":val%d", i)
-       
-        updateExpressionParts = append(updateExpressionParts, fmt.Sprintf("%s = %s", nameKey, valueKey))
-        expressionAttributeNames[nameKey] = attrName
-        expressionAttributeValues[valueKey] = attrValue
-        i++
-    }
-   
-    updateExpression := "SET " + strings.Join(updateExpressionParts, ", ")
+    // Use helper to build expression
+    updateExpression, attrNames, attrValues := buildUpdateExpression(updates)
    
     return &dynamodb.UpdateItemInput{
         TableName:                 aws.String(TableSchema.TableName),
         Key:                       key,
         UpdateExpression:          aws.String(updateExpression),
-        ExpressionAttributeNames:  expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
+        ExpressionAttributeNames:  attrNames,
+        ExpressionAttributeValues: attrValues,
     }, nil
 }
 
-// UpdateItemInputFromRaw ...
+// UpdateItemInputFromRaw creates update request from raw values
 func UpdateItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}) (*dynamodb.UpdateItemInput, error) {
+    if err := validateUpdatesMap(updates); err != nil {
+        return nil, err
+    }
+
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for update: %v", err)
     }
    
-    if len(updates) == 0 {
-        return nil, fmt.Errorf("no updates provided")
+    // Use helper to marshal raw updates
+    marshaledUpdates, err := marshalRawUpdates(updates)
+    if err != nil {
+        return nil, err
     }
    
-    var updateExpressionParts []string
-    expressionAttributeNames := make(map[string]string)
-    expressionAttributeValues := make(map[string]types.AttributeValue)
-   
-    i := 0
-    for attrName, value := range updates {
-        nameKey := fmt.Sprintf("#attr%d", i)
-        valueKey := fmt.Sprintf(":val%d", i)
-       
-        updateExpressionParts = append(updateExpressionParts, fmt.Sprintf("%s = %s", nameKey, valueKey))
-        expressionAttributeNames[nameKey] = attrName
-       
-        av, err := attributevalue.Marshal(value)
-        if err != nil {
-            return nil, fmt.Errorf("failed to marshal update value for %s: %v", attrName, err)
-        }
-        expressionAttributeValues[valueKey] = av
-        i++
-    }
-   
-    updateExpression := "SET " + strings.Join(updateExpressionParts, ", ")
+    // Use helper to build expression
+    updateExpression, attrNames, attrValues := buildUpdateExpression(marshaledUpdates)
    
     return &dynamodb.UpdateItemInput{
         TableName:                 aws.String(TableSchema.TableName),
         Key:                       key,
         UpdateExpression:          aws.String(updateExpression),
-        ExpressionAttributeNames:  expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
+        ExpressionAttributeNames:  attrNames,
+        ExpressionAttributeValues: attrValues,
     }, nil
 }
 
-// UpdateItemInputWithCondition ...
+// UpdateItemInputWithCondition creates conditional update request
 func UpdateItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
+    if err := validateConditionExpression(conditionExpression); err != nil {
+        return nil, err
+    }
+
     updateInput, err := UpdateItemInputFromRaw(hashKeyValue, rangeKeyValue, updates)
     if err != nil {
         return nil, err
@@ -102,22 +75,18 @@ func UpdateItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interf
    
     updateInput.ConditionExpression = aws.String(conditionExpression)
    
-    if conditionAttributeNames != nil {
-        for key, value := range conditionAttributeNames {
-            updateInput.ExpressionAttributeNames[key] = value
-        }
-    }
-   
-    if conditionAttributeValues != nil {
-        for key, value := range conditionAttributeValues {
-            updateInput.ExpressionAttributeValues[key] = value
-        }
-    }
+    // Use helper to merge expression attributes
+    updateInput.ExpressionAttributeNames, updateInput.ExpressionAttributeValues = mergeExpressionAttributes(
+        updateInput.ExpressionAttributeNames,
+        updateInput.ExpressionAttributeValues,
+        conditionAttributeNames,
+        conditionAttributeValues,
+    )
    
     return updateInput, nil
 }
 
-// UpdateItemInputWithExpression ...
+// UpdateItemInputWithExpression creates update with expression builder
 func UpdateItemInputWithExpression(hashKeyValue interface{}, rangeKeyValue interface{}, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
