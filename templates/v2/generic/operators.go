@@ -31,12 +31,12 @@ const (
     NOT_EXISTS OperatorType = "attribute_not_exists"
 )
 
-// ExpressionType defines whether this is a key condition or filter condition
-type ExpressionType string
+// ExpressionScope defines whether this is a key condition or filter condition
+type ExpressionScope string
 
 const (
-    KeyExpression    ExpressionType = "KEY"
-    FilterExpression ExpressionType = "FILTER"
+    ScopeKey    ExpressionScope = "KEY"
+    ScopeFilter ExpressionScope = "FILTER"
 )
 
 // Condition represents a single query or filter condition
@@ -44,7 +44,7 @@ type Condition struct {
     Field     string
     Operator  OperatorType
     Values    []interface{}
-    Type      ExpressionType
+    Scope     ExpressionScope
 }
 
 // ValidateOperator checks if operator is valid for the given DynamoDB type
@@ -103,37 +103,39 @@ func ValidateValues(op OperatorType, values []interface{}) bool {
     }
 }
 
-// getKeyOperators returns operators that can be used in key conditions
-func getKeyOperators() map[OperatorType]bool {
-    return map[OperatorType]bool{
-        EQ:      true,
-        GT:      true,
-        LT:      true,
-        GTE:     true,
-        LTE:     true,
-        BETWEEN: true,
-    }
+// Pre-allocated map to avoid allocations on every check
+var keyOperators = map[OperatorType]bool{
+    EQ:      true,
+    GT:      true,
+    LT:      true,
+    GTE:     true,
+    LTE:     true,
+    BETWEEN: true,
 }
 
 // isKeyOperator checks if operator can be used in key conditions
 func isKeyOperator(op OperatorType) bool {
-    keyOps := getKeyOperators()
-    return keyOps[op]
+    return keyOperators[op]
 }
 
 // buildExpressionInternal unified internal function for building expressions
-func buildExpressionInternal(field string, op OperatorType, values []interface{}, exprType ExpressionType) (interface{}, error) {
+func buildExpressionInternal(field string, op OperatorType, values []interface{}, dynamoType string, scope ExpressionScope) (interface{}, error) {
     // Common validation for both key and filter expressions
     if !ValidateValues(op, values) {
         return nil, fmt.Errorf("invalid number of values for operator %s", op)
     }
     
+    // Validate operator compatibility with DynamoDB field type
+    if !ValidateOperator(dynamoType, op) {
+        return nil, fmt.Errorf("operator %s not compatible with DynamoDB type %s", op, dynamoType)
+    }
+    
     // Key expressions have limited operators
-    if exprType == KeyExpression && !isKeyOperator(op) {
+    if scope == ScopeKey && !isKeyOperator(op) {
         return nil, fmt.Errorf("operator %s not supported for key conditions", op)
     }
     
-    if exprType == KeyExpression {
+    if scope == ScopeKey {
         return buildKeyExpressionByOperator(field, op, values)
     } else {
         return buildFilterExpressionByOperator(field, op, values)
@@ -222,14 +224,20 @@ func buildFilterExpressionByOperator(field string, op OperatorType, values []int
 
 // BuildConditionExpression converts operator to DynamoDB filter expression
 func BuildConditionExpression(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
-    result, err := buildExpressionInternal(field, op, values, FilterExpression)
+    // Default to string type if type info not available - safer fallback
+    return BuildConditionExpressionWithType(field, op, values, "S")
+}
+
+// BuildConditionExpressionWithType converts operator to DynamoDB filter expression with type validation
+func BuildConditionExpressionWithType(field string, op OperatorType, values []interface{}, dynamoType string) (expression.ConditionBuilder, error) {
+    result, err := buildExpressionInternal(field, op, values, dynamoType, ScopeFilter)
     if err != nil {
         return expression.ConditionBuilder{}, err
     }
     
     conditionBuilder, ok := result.(expression.ConditionBuilder)
     if !ok {
-        return expression.ConditionBuilder{}, fmt.Errorf("internal error: expected ConditionBuilder")
+        return expression.ConditionBuilder{}, fmt.Errorf("internal error: expected ConditionBuilder, got %T", result)
     }
     
     return conditionBuilder, nil
@@ -237,14 +245,20 @@ func BuildConditionExpression(field string, op OperatorType, values []interface{
 
 // BuildKeyConditionExpression converts operator to DynamoDB key condition
 func BuildKeyConditionExpression(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
-    result, err := buildExpressionInternal(field, op, values, KeyExpression)
+    // Default to string type if type info not available - safer fallback  
+    return BuildKeyConditionExpressionWithType(field, op, values, "S")
+}
+
+// BuildKeyConditionExpressionWithType converts operator to DynamoDB key condition with type validation
+func BuildKeyConditionExpressionWithType(field string, op OperatorType, values []interface{}, dynamoType string) (expression.KeyConditionBuilder, error) {
+    result, err := buildExpressionInternal(field, op, values, dynamoType, ScopeKey)
     if err != nil {
         return expression.KeyConditionBuilder{}, err
     }
     
     keyConditionBuilder, ok := result.(expression.KeyConditionBuilder)
     if !ok {
-        return expression.KeyConditionBuilder{}, fmt.Errorf("internal error: expected KeyConditionBuilder")
+        return expression.KeyConditionBuilder{}, fmt.Errorf("internal error: expected KeyConditionBuilder, got %T", result)
     }
     
     return keyConditionBuilder, nil

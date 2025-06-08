@@ -18,7 +18,7 @@ func NewFilterMixin() FilterMixin {
     }
 }
 
-// Filter adds a filter condition using the universal operator system
+// Filter adds a filter condition using the universal operator system with proper type validation
 func (fm *FilterMixin) Filter(field string, op OperatorType, values ...interface{}) {
     if !ValidateValues(op, values) {
         return
@@ -29,11 +29,8 @@ func (fm *FilterMixin) Filter(field string, op OperatorType, values ...interface
         return
     }
 
-    if !ValidateOperator(fieldInfo.DynamoType, op) {
-        return
-    }
-
-    filterCond, err := BuildConditionExpression(field, op, values)
+    // Use type-aware function for better validation
+    filterCond, err := BuildConditionExpressionWithType(field, op, values, fieldInfo.DynamoType)
     if err != nil {
         return
     }
@@ -159,7 +156,7 @@ func NewKeyConditionMixin() KeyConditionMixin {
     }
 }
 
-// With adds a key condition using the universal operator system
+// With adds a key condition using the universal operator system with proper type validation
 func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...interface{}) {
     if !ValidateValues(op, values) {
         return
@@ -174,11 +171,8 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...inte
         return
     }
 
-    if !ValidateOperator(fieldInfo.DynamoType, op) {
-        return
-    }
-
-    keyCond, err := BuildKeyConditionExpression(field, op, values)
+    // Use type-aware function for better validation
+    keyCond, err := BuildKeyConditionExpressionWithType(field, op, values, fieldInfo.DynamoType)
     if err != nil {
         return
     }
