@@ -13,7 +13,7 @@ func validateKeyPart(partName string, value interface{}) error {
     }
     
     switch v := value.(type) {
-    case string:
+    case stringconvertStreamAttributesToDynamoDB:
         if v == "" && partName == "hash" {
             return fmt.Errorf("hash key string cannot be empty")
         }

@@ -1,7 +1,5 @@
 package core
 
-// В templates/v2/core/schema.go добавляем FieldInfo и FieldsMap
-
 // SchemaTemplate ...
 const SchemaTemplate = `
 // FieldInfo contains metadata about a schema field
@@ -47,7 +45,7 @@ type SecondaryIndex struct {
 
 type SchemaItem struct {
 {{- range .AllAttributes}}
-    {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
+    {{ToSafeName .Name | ToUpperCamelCase}} {{if eq .Type "SS"}}[]string{{else if eq .Type "NS"}}[]int{{else if eq .Type "BS"}}[][]byte{{else}}{{ToGolangBaseType .}}{{end}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
 {{- end}}
 }
 

@@ -104,19 +104,39 @@ func ToSafeName(s string) string {
 //
 //	attr := Attribute{Type: "N", Subtype: SubtypeInt}
 //	ToGolangBaseType(attr) → "int"
+//
+//	attr := Attribute{Type: "SS"}
+//	ToGolangBaseType(attr) → "[]string"
 func ToGolangBaseType(attr common.Attribute) string {
-	return attr.GoType()
+	// Handle Set types first
+	switch attr.Type {
+	case "SS":
+		return "[]string"
+	case "NS":
+		return "[]int"
+	case "BS":
+		return "[][]byte"
+	default:
+		return attr.GoType()
+	}
 }
 
 // ToGolangZeroType returns the zero value as a string literal for a DynamoDB attribute.
-// Delegates to the attribute's ZeroValue() method for consistency.
+// Handles Set types properly.
 //
 // Examples:
 //
 //	attr := Attribute{Type: "S"}                           → `""`
 //	attr := Attribute{Type: "N", Subtype: SubtypeInt}      → "0"
+//	attr := Attribute{Type: "SS"}                          → "nil"
 func ToGolangZeroType(attr common.Attribute) string {
-	return attr.ZeroValue()
+	// Handle Set types first
+	switch attr.Type {
+	case "SS", "NS", "BS":
+		return "nil"
+	default:
+		return attr.ZeroValue()
+	}
 }
 
 // IsNumericAttr returns true if the attribute represents a numeric type
@@ -145,13 +165,15 @@ func IsIntegerAttr(attr common.Attribute) bool {
 //	attrs := []common.Attribute{
 //	  {Name: "id", Type: "S"},
 //	  {Name: "count", Type: "N"},
+//	  {Name: "tags", Type: "SS"},
 //	}
 //	ToGolangAttrType("count", attrs)   → "int"
+//	ToGolangAttrType("tags", attrs)    → "[]string"
 //	ToGolangAttrType("missing", attrs) → "any"
 func ToGolangAttrType(attrName string, attributes []common.Attribute) string {
 	for _, attr := range attributes {
 		if attr.Name == attrName {
-			return attr.GoType()
+			return ToGolangBaseType(attr)
 		}
 	}
 	return "any"
