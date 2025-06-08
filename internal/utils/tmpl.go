@@ -8,6 +8,7 @@ import (
 
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/rs/zerolog"
+	"golang.org/x/tools/imports"
 	"mvdan.cc/gofumpt/format"
 )
 
@@ -156,8 +157,18 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 				Log(zerolog.FatalLevel)
 			os.Exit(1)
 		}
+		imported, err := imports.Process("", formatted, &imports.Options{
+			Comments:  true,
+			TabWidth:  8,
+			TabIndent: true,
+		})
+		if err != nil {
+			logger.NewFailure("internal: failed to process imports with goimports", err).
+				Log(zerolog.FatalLevel)
+			os.Exit(1)
+		}
 
 		b.Reset()
-		b.Write(formatted)
+		b.Write(imported)
 	}
 }

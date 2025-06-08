@@ -1,27 +1,195 @@
 package query
 
-// QueryBuilderTemplate ...
+// QueryBuilderTemplate with mixins
 const QueryBuilderTemplate = `
 // QueryBuilder provides a fluent interface for building DynamoDB queries
 type QueryBuilder struct {
-    IndexName         string
-    KeyConditions     map[string]expression.KeyConditionBuilder
-    FilterConditions  []expression.ConditionBuilder
-    UsedKeys          map[string]bool
-    Attributes        map[string]interface{}
-    SortDescending    bool
-    LimitValue        *int
-    ExclusiveStartKey map[string]types.AttributeValue
-    PreferredSortKey  string
+    FilterMixin
+    PaginationMixin
+    KeyConditionMixin
+    IndexName string
 }
 
 // NewQueryBuilder creates a new QueryBuilder instance
 func NewQueryBuilder() *QueryBuilder {
     return &QueryBuilder{
-        KeyConditions: make(map[string]expression.KeyConditionBuilder),
-        UsedKeys:      make(map[string]bool),
-        Attributes:    make(map[string]interface{}),
+        FilterMixin:       NewFilterMixin(),
+        PaginationMixin:   NewPaginationMixin(),
+        KeyConditionMixin: NewKeyConditionMixin(),
     }
+}
+
+// Filter adds a filter condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) Filter(field string, op OperatorType, values ...interface{}) *QueryBuilder {
+    qb.FilterMixin.Filter(field, op, values...)
+    return qb
+}
+
+// FilterEQ adds equality filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterEQ(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterEQ(field, value)
+    return qb
+}
+
+// FilterContains adds contains filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterContains(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterContains(field, value)
+    return qb
+}
+
+// FilterNotContains adds not contains filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterNotContains(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterNotContains(field, value)
+    return qb
+}
+
+// FilterBeginsWith adds begins_with filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterBeginsWith(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterBeginsWith(field, value)
+    return qb
+}
+
+// FilterBetween adds range filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterBetween(field string, start, end interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterBetween(field, start, end)
+    return qb
+}
+
+// FilterGT adds greater than filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterGT(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterGT(field, value)
+    return qb
+}
+
+// FilterLT adds less than filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterLT(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterLT(field, value)
+    return qb
+}
+
+// FilterGTE adds greater than or equal filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterGTE(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterGTE(field, value)
+    return qb
+}
+
+// FilterLTE adds less than or equal filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterLTE(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterLTE(field, value)
+    return qb
+}
+
+// FilterExists adds attribute exists filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterExists(field string) *QueryBuilder {
+    qb.FilterMixin.FilterExists(field)
+    return qb
+}
+
+// FilterNotExists adds attribute not exists filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterNotExists(field string) *QueryBuilder {
+    qb.FilterMixin.FilterNotExists(field)
+    return qb
+}
+
+// FilterNE adds not equal filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterNE(field string, value interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterNE(field, value)
+    return qb
+}
+
+// FilterIn adds IN filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterIn(field string, values ...interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterIn(field, values...)
+    return qb
+}
+
+// FilterNotIn adds NOT_IN filter and returns QueryBuilder for chaining
+func (qb *QueryBuilder) FilterNotIn(field string, values ...interface{}) *QueryBuilder {
+    qb.FilterMixin.FilterNotIn(field, values...)
+    return qb
+}
+
+// With adds key condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) With(field string, op OperatorType, values ...interface{}) *QueryBuilder {
+    qb.KeyConditionMixin.With(field, op, values...)
+    if op == EQ && len(values) == 1 {
+        qb.Attributes[field] = values[0]
+        qb.UsedKeys[field] = true
+    }
+    return qb
+}
+
+// WithEQ adds equality key condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) WithEQ(field string, value interface{}) *QueryBuilder {
+    qb.KeyConditionMixin.WithEQ(field, value)
+    qb.Attributes[field] = value
+    qb.UsedKeys[field] = true
+    return qb
+}
+
+// WithBetween adds range key condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) WithBetween(field string, start, end interface{}) *QueryBuilder {
+    qb.KeyConditionMixin.WithBetween(field, start, end)
+    qb.UsedKeys[field] = true
+    return qb
+}
+
+// WithGT adds greater than key condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) WithGT(field string, value interface{}) *QueryBuilder {
+    qb.KeyConditionMixin.WithGT(field, value)
+    qb.UsedKeys[field] = true
+    return qb
+}
+
+// WithGTE adds greater than or equal key condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) WithGTE(field string, value interface{}) *QueryBuilder {
+    qb.KeyConditionMixin.WithGTE(field, value)
+    qb.UsedKeys[field] = true
+    return qb
+}
+
+// WithLT adds less than key condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) WithLT(field string, value interface{}) *QueryBuilder {
+    qb.KeyConditionMixin.WithLT(field, value)
+    qb.UsedKeys[field] = true
+    return qb
+}
+
+// WithLTE adds less than or equal key condition and returns QueryBuilder for chaining
+func (qb *QueryBuilder) WithLTE(field string, value interface{}) *QueryBuilder {
+    qb.KeyConditionMixin.WithLTE(field, value)
+    qb.UsedKeys[field] = true
+    return qb
+}
+
+// WithPreferredSortKey sets the preferred sort key and returns QueryBuilder for chaining
+func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
+    qb.KeyConditionMixin.WithPreferredSortKey(key)
+    return qb
+}
+
+// OrderByDesc sets descending sort order and returns QueryBuilder for chaining
+func (qb *QueryBuilder) OrderByDesc() *QueryBuilder {
+    qb.KeyConditionMixin.OrderByDesc()
+    return qb
+}
+
+// OrderByAsc sets ascending sort order and returns QueryBuilder for chaining
+func (qb *QueryBuilder) OrderByAsc() *QueryBuilder {
+    qb.KeyConditionMixin.OrderByAsc()
+    return qb
+}
+
+// Limit sets the maximum number of items and returns QueryBuilder for chaining
+func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
+    qb.PaginationMixin.Limit(limit)
+    return qb
+}
+
+// StartFrom sets the exclusive start key and returns QueryBuilder for chaining
+func (qb *QueryBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeValue) *QueryBuilder {
+    qb.PaginationMixin.StartFrom(lastEvaluatedKey)
+    return qb
 }
 
 {{range .SecondaryIndexes}}
@@ -63,12 +231,6 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{.HashKey | ToLow
 {{end}}
 {{end}}
 
-// WithPreferredSortKey sets the preferred sort key for index selection
-func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
-    qb.PreferredSortKey = key
-    return qb
-}
-
 {{range .SecondaryIndexes}}
 {{if gt (len .RangeKeyParts) 0}}
 {{- $hasNonConstant := false -}}
@@ -93,28 +255,4 @@ func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToL
 }
 {{end}}
 {{end}}
-
-// OrderByDesc sets descending sort order
-func (qb *QueryBuilder) OrderByDesc() *QueryBuilder {
-    qb.SortDescending = true
-    return qb
-}
-
-// OrderByAsc sets ascending sort order  
-func (qb *QueryBuilder) OrderByAsc() *QueryBuilder {
-    qb.SortDescending = false
-    return qb
-}
-
-// Limit sets the maximum number of items to return
-func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
-    qb.LimitValue = &limit
-    return qb
-}
-
-// StartFrom sets the exclusive start key for pagination
-func (qb *QueryBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeValue) *QueryBuilder {
-    qb.ExclusiveStartKey = lastEvaluatedKey
-    return qb
-}
 `

@@ -9,7 +9,7 @@ import (
 	"github.com/Mad-Pixels/go-dyno/templates/v2/scan"
 )
 
-// CodeTemplate with generic operators support
+// CodeTemplate with mixins and optimized operators
 const CodeTemplate = `
 package {{.PackageName}}
 
@@ -21,9 +21,11 @@ package {{.PackageName}}
 
 ` + core.SchemaTemplate + `
 
-` + query.QueryBuilderTemplate + query.QueryBuilderUniversalTemplate + query.QueryBuilderBuildTemplate + query.QueryBuilderUtilsTemplate + `
+` + core.MixinsTemplate + `
 
-` + scan.ScanBuilderTemplate + scan.ScanBuilderUniversalTemplate + scan.ScanBuilderBuildTemplate + `
+` + query.QueryBuilderTemplate + query.QueryBuilderBuildTemplate + query.QueryBuilderUtilsTemplate + `
+
+` + scan.ScanBuilderTemplate + scan.ScanBuilderBuildTemplate + `
 
 ` + inputs.ItemInputsTemplate + inputs.UpdateInputsTemplate + inputs.DeleteInputsTemplate + inputs.KeyInputsTemplate + `
 
