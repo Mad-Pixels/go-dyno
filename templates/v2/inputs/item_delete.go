@@ -1,5 +1,6 @@
 package inputs
 
+// DeleteInputsTemplate ...
 const DeleteInputsTemplate = `
 // DeleteItemInput ...
 func DeleteItemInput(item SchemaItem) (*dynamodb.DeleteItemInput, error) {

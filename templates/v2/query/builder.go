@@ -1,5 +1,6 @@
 package query
 
+// QueryBuilderTemplate ...
 const QueryBuilderTemplate = `
 // QueryBuilder ...
 type QueryBuilder struct {

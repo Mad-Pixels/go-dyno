@@ -1,5 +1,6 @@
 package inputs
 
+// UpdateInputsTemplate ...
 const UpdateInputsTemplate = `
 // UpdateItemInput ...
 func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {

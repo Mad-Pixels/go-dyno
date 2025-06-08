@@ -1,5 +1,6 @@
 package inputs
 
+// ItemInputsTemplate ...
 const ItemInputsTemplate = `
 // ItemInput ...
 func ItemInput(item SchemaItem) (map[string]types.AttributeValue, error) {

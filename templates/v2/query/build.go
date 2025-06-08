@@ -1,5 +1,6 @@
 package query
 
+// QueryBuilderBuildTemplate ...
 const QueryBuilderBuildTemplate = `
 // Build ...
 func (qb *QueryBuilder) Build() (string, expression.KeyConditionBuilder, *expression.ConditionBuilder, map[string]types.AttributeValue, error) {

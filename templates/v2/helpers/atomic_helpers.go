@@ -1,5 +1,6 @@
 package helpers
 
+// AtomicHelpersTemplate ...
 const AtomicHelpersTemplate = `
 // IncrementAttribute ...
 func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {

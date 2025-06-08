@@ -1,5 +1,6 @@
 package scan
 
+// ScanBuilderTemplate ...
 const ScanBuilderTemplate = `
 // ScanBuilder ...
 type ScanBuilder struct {

@@ -1,5 +1,6 @@
 package helpers
 
+// StreamHelpersTemplate ...
 const StreamHelpersTemplate = `
 // ExtractFromDynamoDBStreamEvent ...
 func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*SchemaItem, error) {

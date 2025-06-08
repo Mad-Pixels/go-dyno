@@ -1,5 +1,6 @@
 package query
 
+// QueryBuilderUtilsTemplate ...
 const QueryBuilderUtilsTemplate = `
 func (qb *QueryBuilder) hasAllKeys(parts []CompositeKeyPart) bool {
 	for _, part := range parts {

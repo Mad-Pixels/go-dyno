@@ -1,5 +1,6 @@
 package core
 
+// SchemaTemplate ...
 const SchemaTemplate = `
 // DynamoSchema ...
 type DynamoSchema struct {

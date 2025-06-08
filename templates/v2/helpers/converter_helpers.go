@@ -1,5 +1,6 @@
 package helpers
 
+// ConverterHelpersTemplate ...
 const ConverterHelpersTemplate = `
 // ConvertMapToAttributeValues ...
 func ConvertMapToAttributeValues(input map[string]interface{}) (map[string]types.AttributeValue, error) {

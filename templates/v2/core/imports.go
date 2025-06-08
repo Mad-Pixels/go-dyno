@@ -1,5 +1,6 @@
 package core
 
+// ImportsTemplate ...
 const ImportsTemplate = `
 import (
 	"context"

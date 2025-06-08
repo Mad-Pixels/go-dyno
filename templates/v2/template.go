@@ -8,6 +8,7 @@ import (
 	"github.com/Mad-Pixels/go-dyno/templates/v2/scan"
 )
 
+// CodeTemplate ...
 const CodeTemplate = `
 package {{.PackageName}}
 

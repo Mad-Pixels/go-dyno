@@ -1,5 +1,6 @@
 package core
 
+// ConstantsTemplate ...
 const ConstantsTemplate = `
 const (
     // TableName ...

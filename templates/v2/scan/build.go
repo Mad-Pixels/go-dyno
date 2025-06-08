@@ -1,5 +1,6 @@
 package scan
 
+// ScanBuilderBuildTemplate ...
 const ScanBuilderBuildTemplate = `
 // BuildScan ...
 func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
