@@ -1,61 +1,22 @@
 package core
 
-// SchemaTemplate ...
+// SchemaTemplate with pre-computed allowed operators
 const SchemaTemplate = `
-// FieldInfo contains metadata about a schema field with pre-computed allowed operators
+// FieldInfo contains metadata about a schema field
 type FieldInfo struct {
     DynamoType       string
     IsKey            bool
     IsHashKey        bool
     IsRangeKey       bool
-    AllowedOperators map[OperatorType]bool // Pre-computed for O(1) validation
+    AllowedOperators map[OperatorType]bool
 }
 
-// SupportsOperator checks if the field supports the given operator in O(1) time
+// SupportsOperator checks if this field supports the given operator
 func (fi FieldInfo) SupportsOperator(op OperatorType) bool {
     return fi.AllowedOperators[op]
 }
 
-// DynamoSchema ...
-type DynamoSchema struct {
-    TableName        string
-    HashKey          string
-    RangeKey         string
-    Attributes       []Attribute
-    CommonAttributes []Attribute
-    SecondaryIndexes []SecondaryIndex
-    // O(1) field lookup with pre-computed operators
-    FieldsMap        map[string]FieldInfo
-}
-
-// Остальные типы без изменений...
-type Attribute struct {
-    Name string
-    Type string
-}
-
-type CompositeKeyPart struct {
-    IsConstant bool
-    Value      string
-}
-
-type SecondaryIndex struct {
-    Name             string
-    HashKey          string
-    HashKeyParts     []CompositeKeyPart
-    RangeKey         string
-    RangeKeyParts    []CompositeKeyPart
-    ProjectionType   string
-    NonKeyAttributes []string
-}
-
-type SchemaItem struct {
-{{- range .AllAttributes}}
-    {{ToSafeName .Name | ToUpperCamelCase}} {{if eq .Type "SS"}}[]string{{else if eq .Type "NS"}}[]int{{else if eq .Type "BS"}}[][]byte{{else}}{{ToGolangBaseType .}}{{end}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
-{{- end}}
-}
-
-// buildAllowedOperators returns pre-computed allowed operators for a DynamoDB type
+// buildAllowedOperators returns the set of allowed operators for a DynamoDB type
 func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
     allowed := make(map[OperatorType]bool)
     
@@ -76,7 +37,7 @@ func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "N": // Number
+    case "N": // Number  
         allowed[EQ] = true
         allowed[NE] = true
         allowed[GT] = true
@@ -95,19 +56,19 @@ func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "SS": // String Set
+    case "SS": // String Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
         allowed[CONTAINS] = true
         allowed[NOT_CONTAINS] = true
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "NS": // Number Set
+    case "NS": // Number Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
         allowed[CONTAINS] = true
         allowed[NOT_CONTAINS] = true
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "BS": // Binary Set
+    case "BS": // Binary Set (rare)
         allowed[CONTAINS] = true
         allowed[NOT_CONTAINS] = true
         allowed[EXISTS] = true
@@ -136,7 +97,45 @@ func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
     return allowed
 }
 
-// TableSchema with pre-computed allowed operators for each field
+// DynamoSchema ...
+type DynamoSchema struct {
+    TableName        string
+    HashKey          string
+    RangeKey         string
+    Attributes       []Attribute
+    CommonAttributes []Attribute
+    SecondaryIndexes []SecondaryIndex
+    // Быстрый поиск полей O(1) с предвычисленными операторами
+    FieldsMap        map[string]FieldInfo
+}
+
+type Attribute struct {
+    Name string
+    Type string
+}
+
+type CompositeKeyPart struct {
+    IsConstant bool
+    Value      string
+}
+
+type SecondaryIndex struct {
+    Name             string
+    HashKey          string
+    HashKeyParts     []CompositeKeyPart
+    RangeKey         string
+    RangeKeyParts    []CompositeKeyPart
+    ProjectionType   string
+    NonKeyAttributes []string
+}
+
+type SchemaItem struct {
+{{- range .AllAttributes}}
+    {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
+{{- end}}
+}
+
+// TableSchema with pre-computed FieldsMap including allowed operators
 var TableSchema = DynamoSchema{
     TableName: "{{.TableName}}",
     HashKey:   "{{.HashKey}}",
@@ -186,7 +185,6 @@ var TableSchema = DynamoSchema{
         {{- end}}
     },
     
-    // Pre-computed FieldsMap with allowed operators for O(1) validation
     FieldsMap: map[string]FieldInfo{
         {{- range .AllAttributes}}
         "{{.Name}}": {

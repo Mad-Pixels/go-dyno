@@ -143,47 +143,10 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
 
 // ValidateOperator checks if operator is valid for the given field using pre-computed cache
 func ValidateOperator(fieldName string, op OperatorType) bool {
-    fieldInfo, exists := TableSchema.FieldsMap[fieldName]
-    if !exists {
-        return false
+    if fi, ok := TableSchema.FieldsMap[fieldName]; ok {
+        return fi.SupportsOperator(op)
     }
-    
-    switch fieldInfo.DynamoType {
-    case "S": // String
-        return op == EQ || op == NE || op == GT || op == LT || op == GTE || op == LTE || 
-               op == BETWEEN || op == CONTAINS || op == NOT_CONTAINS || op == BEGINS_WITH || op == IN || op == NOT_IN ||
-               op == EXISTS || op == NOT_EXISTS
-               
-    case "N": // Number  
-        return op == EQ || op == NE || op == GT || op == LT || op == GTE || op == LTE || 
-               op == BETWEEN || op == IN || op == NOT_IN ||
-               op == EXISTS || op == NOT_EXISTS
-               
-    case "BOOL": // Boolean
-        return op == EQ || op == NE || op == EXISTS || op == NOT_EXISTS
-        
-    case "SS": // String Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
-        return op == CONTAINS || op == NOT_CONTAINS || op == EXISTS || op == NOT_EXISTS
-        
-    case "NS": // Number Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
-        return op == CONTAINS || op == NOT_CONTAINS || op == EXISTS || op == NOT_EXISTS
-        
-    case "BS": // Binary Set (rare)
-        return op == CONTAINS || op == NOT_CONTAINS || op == EXISTS || op == NOT_EXISTS
-        
-    case "L": // List
-        return op == EXISTS || op == NOT_EXISTS
-        
-    case "M": // Map
-        return op == EXISTS || op == NOT_EXISTS
-        
-    case "NULL": // Null
-        return op == EXISTS || op == NOT_EXISTS
-        
-    default:
-        // For unknown types allow only basic operations
-        return op == EQ || op == NE || op == EXISTS || op == NOT_EXISTS
-    }
+    return false
 }
 
 // ValidateValues checks if the number of values is correct for the operator
