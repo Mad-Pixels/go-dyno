@@ -1,7 +1,8 @@
-package v2
+package core
 
-// ImportsTemplate difine imports block in generated file.
-const ImportsTemplate = `import (
+// ImportsTemplate ...
+const ImportsTemplate = `
+import (
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,4 +16,5 @@ const ImportsTemplate = `import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-)`
+)
+`
