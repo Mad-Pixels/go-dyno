@@ -35,8 +35,8 @@ const (
 type ExpressionScope string
 
 const (
-    ScopeKey    ExpressionScope = "KEY"
-    ScopeFilter ExpressionScope = "FILTER"
+    ScopeKey        ExpressionScope = "KEY"
+    ScopeCondition  ExpressionScope = "CONDITION"
 )
 
 // Condition represents a single query or filter condition
@@ -118,28 +118,55 @@ func isKeyOperator(op OperatorType) bool {
     return keyOperators[op]
 }
 
-// buildExpressionInternal unified internal function for building expressions
-func buildExpressionInternal(field string, op OperatorType, values []interface{}, dynamoType string, scope ExpressionScope) (interface{}, error) {
-    // Common validation for both key and filter expressions
+// validateExpressionInput performs common validation for both key and condition expressions
+func validateExpressionInput(field string, op OperatorType, values []interface{}, scope ExpressionScope) (string, error) {
+    // Common validation for both key and condition expressions
     if !ValidateValues(op, values) {
-        return nil, fmt.Errorf("invalid number of values for operator %s", op)
+        return "", fmt.Errorf("invalid number of values for operator %s", op)
+    }
+    
+    // Look up field type automatically from schema
+    fieldInfo, exists := TableSchema.FieldsMap[field]
+    if !exists {
+        return "", fmt.Errorf("field %s not found in schema", field)
     }
     
     // Validate operator compatibility with DynamoDB field type
-    if !ValidateOperator(dynamoType, op) {
-        return nil, fmt.Errorf("operator %s not compatible with DynamoDB type %s", op, dynamoType)
+    if !ValidateOperator(fieldInfo.DynamoType, op) {
+        return "", fmt.Errorf("operator %s not supported for DynamoDB type %s", op, fieldInfo.DynamoType)
     }
     
     // Key expressions have limited operators
-    if scope == ScopeKey && !isKeyOperator(op) {
-        return nil, fmt.Errorf("operator %s not supported for key conditions", op)
+    if scope == ScopeKey {
+        if !fieldInfo.IsKey {
+            return "", fmt.Errorf("field %s is not a key field", field)
+        }
+        if !isKeyOperator(op) {
+            return "", fmt.Errorf("operator %s not supported for key conditions", op)
+        }
     }
     
-    if scope == ScopeKey {
-        return buildKeyExpressionByOperator(field, op, values)
-    } else {
-        return buildFilterExpressionByOperator(field, op, values)
+    return fieldInfo.DynamoType, nil
+}
+
+// buildKeyConditionInternal builds key condition expressions with proper validation
+func buildKeyConditionInternal(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
+    _, err := validateExpressionInput(field, op, values, ScopeKey)
+    if err != nil {
+        return expression.KeyConditionBuilder{}, err
     }
+    
+    return buildKeyExpressionByOperator(field, op, values)
+}
+
+// buildConditionInternal builds filter condition expressions with proper validation  
+func buildConditionInternal(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
+    _, err := validateExpressionInput(field, op, values, ScopeCondition)
+    if err != nil {
+        return expression.ConditionBuilder{}, err
+    }
+    
+    return buildFilterExpressionByOperator(field, op, values)
 }
 
 // buildKeyExpressionByOperator builds key condition expressions
@@ -223,44 +250,48 @@ func buildFilterExpressionByOperator(field string, op OperatorType, values []int
 }
 
 // BuildConditionExpression converts operator to DynamoDB filter expression
+// Automatically looks up field type from TableSchema
 func BuildConditionExpression(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
-    // Default to string type if type info not available - safer fallback
-    return BuildConditionExpressionWithType(field, op, values, "S")
-}
-
-// BuildConditionExpressionWithType converts operator to DynamoDB filter expression with type validation
-func BuildConditionExpressionWithType(field string, op OperatorType, values []interface{}, dynamoType string) (expression.ConditionBuilder, error) {
-    result, err := buildExpressionInternal(field, op, values, dynamoType, ScopeFilter)
-    if err != nil {
-        return expression.ConditionBuilder{}, err
-    }
-    
-    conditionBuilder, ok := result.(expression.ConditionBuilder)
-    if !ok {
-        return expression.ConditionBuilder{}, fmt.Errorf("internal error: expected ConditionBuilder, got %T", result)
-    }
-    
-    return conditionBuilder, nil
+    return buildConditionInternal(field, op, values)
 }
 
 // BuildKeyConditionExpression converts operator to DynamoDB key condition
+// Automatically looks up field type from TableSchema
 func BuildKeyConditionExpression(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
-    // Default to string type if type info not available - safer fallback  
-    return BuildKeyConditionExpressionWithType(field, op, values, "S")
+    return buildKeyConditionInternal(field, op, values)
 }
 
-// BuildKeyConditionExpressionWithType converts operator to DynamoDB key condition with type validation
+// BuildConditionExpressionWithType converts operator to DynamoDB filter expression with explicit type
+// Use this for fields not in TableSchema or to override type validation
+func BuildConditionExpressionWithType(field string, op OperatorType, values []interface{}, dynamoType string) (expression.ConditionBuilder, error) {
+    // Manual validation when type is provided explicitly
+    if !ValidateValues(op, values) {
+        return expression.ConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
+    }
+    
+    if !ValidateOperator(dynamoType, op) {
+        return expression.ConditionBuilder{}, fmt.Errorf("operator %s not supported for DynamoDB type %s", op, dynamoType)
+    }
+    
+    return buildFilterExpressionByOperator(field, op, values)
+}
+
+// BuildKeyConditionExpressionWithType converts operator to DynamoDB key condition with explicit type
+// Use this for fields not in TableSchema or to override type validation
 func BuildKeyConditionExpressionWithType(field string, op OperatorType, values []interface{}, dynamoType string) (expression.KeyConditionBuilder, error) {
-    result, err := buildExpressionInternal(field, op, values, dynamoType, ScopeKey)
-    if err != nil {
-        return expression.KeyConditionBuilder{}, err
+    // Manual validation when type is provided explicitly
+    if !ValidateValues(op, values) {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
     
-    keyConditionBuilder, ok := result.(expression.KeyConditionBuilder)
-    if !ok {
-        return expression.KeyConditionBuilder{}, fmt.Errorf("internal error: expected KeyConditionBuilder, got %T", result)
+    if !ValidateOperator(dynamoType, op) {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for DynamoDB type %s", op, dynamoType)
     }
     
-    return keyConditionBuilder, nil
+    if !isKeyOperator(op) {
+        return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for key conditions", op)
+    }
+    
+    return buildKeyExpressionByOperator(field, op, values)
 }
 `
