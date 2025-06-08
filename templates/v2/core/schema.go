@@ -131,7 +131,7 @@ type SecondaryIndex struct {
 
 type SchemaItem struct {
 {{- range .AllAttributes}}
-    {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .}} ` + "`dynamodbav:\"{{.Name}}\"`" + `
+    {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .}} ` + "`{{ToDynamoDBStructTag .}}`" + `
 {{- end}}
 }
 
