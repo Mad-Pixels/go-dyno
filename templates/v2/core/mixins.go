@@ -18,13 +18,12 @@ func NewFilterMixin() FilterMixin {
     }
 }
 
-// Filter adds a filter condition using the universal operator system with O(1) validation
+// Filter adds a filter condition using the universal operator system
 func (fm *FilterMixin) Filter(field string, op OperatorType, values ...interface{}) {
     if !ValidateValues(op, values) {
         return
     }
 
-    // O(1) validation using pre-computed operators
     if !ValidateOperator(field, op) {
         return
     }
@@ -155,25 +154,22 @@ func NewKeyConditionMixin() KeyConditionMixin {
     }
 }
 
-// With adds a key condition using the universal operator system with O(1) validation
+// With adds a key condition using the universal operator system
 func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...interface{}) {
     if !ValidateValues(op, values) {
         return
     }
 
-    // O(1) field existence check
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
         return
     }
 
-    // O(1) key validation
     if !fieldInfo.IsKey {
         return
     }
 
-    // O(1) operator validation using pre-computed cache
-    if !fieldInfo.SupportsOperator(op) {
+    if !ValidateOperator(field, op) {
         return
     }
 
