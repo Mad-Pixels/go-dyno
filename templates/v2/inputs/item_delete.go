@@ -17,6 +17,12 @@ func DeleteItemInput(item SchemaItem) (*dynamodb.DeleteItemInput, error) {
 
 // DeleteItemInputFromRaw ...
 func DeleteItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (*dynamodb.DeleteItemInput, error) {
+    // All validations at the beginning
+    if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
+        return nil, err
+    }
+    
+    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for delete: %v", err)
@@ -30,6 +36,15 @@ func DeleteItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{})
 
 // DeleteItemInputWithCondition ...
 func DeleteItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, conditionExpression string, expressionAttributeNames map[string]string, expressionAttributeValues map[string]types.AttributeValue) (*dynamodb.DeleteItemInput, error) {
+    // All validations at the beginning
+    if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
+        return nil, err
+    }
+    if err := validateConditionExpression(conditionExpression); err != nil {
+        return nil, err
+    }
+    
+    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for conditional delete: %v", err)
@@ -54,14 +69,16 @@ func DeleteItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interf
 
 // BatchDeleteItemsInput ...
 func BatchDeleteItemsInput(keys []map[string]types.AttributeValue) (*dynamodb.BatchWriteItemInput, error) {
+    // All validations at the beginning
+    if err := validateBatchSize(len(keys), "delete"); err != nil {
+        return nil, err
+    }
+   
     if len(keys) == 0 {
         return &dynamodb.BatchWriteItemInput{}, nil
     }
    
-    if len(keys) > 25 {
-        return nil, fmt.Errorf("batch delete supports maximum 25 items, got %d", len(keys))
-    }
-   
+    // Pure business logic after validation
     writeRequests := make([]types.WriteRequest, 0, len(keys))
     for _, key := range keys {
         writeRequests = append(writeRequests, types.WriteRequest{
@@ -80,10 +97,16 @@ func BatchDeleteItemsInput(keys []map[string]types.AttributeValue) (*dynamodb.Ba
 
 // BatchDeleteItemsInputFromRaw ...
 func BatchDeleteItemsInputFromRaw(items []SchemaItem) (*dynamodb.BatchWriteItemInput, error) {
+    // All validations at the beginning
+    if err := validateBatchSize(len(items), "delete"); err != nil {
+        return nil, err
+    }
+   
     if len(items) == 0 {
         return &dynamodb.BatchWriteItemInput{}, nil
     }
    
+    // Pure business logic after validation
     keys := make([]map[string]types.AttributeValue, 0, len(items))
     for _, item := range items {
         key, err := KeyInput(item)
