@@ -13,7 +13,7 @@ locals {
     for file in local.all_schema_files : file
     if !startswith(file, "invalid-")
   ]
-  
+
   schemas = {
     for file in local.schema_files :
     trimsuffix(file, ".json") => jsondecode(file("${path.root}/../../data/${file}"))
