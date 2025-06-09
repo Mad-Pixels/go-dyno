@@ -294,6 +294,7 @@ func IsFloatType(goType string) bool {
 	return goType == "float32" || goType == "float64"
 }
 
+// Slice ...
 func Slice(s string, start int) string {
 	if start >= len(s) {
 		return ""
