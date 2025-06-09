@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -8,6 +9,47 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// findProjectRoot finds the project root by looking for go.mod file
+func findProjectRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached filesystem root
+			break
+		}
+		dir = parent
+	}
+
+	return "", os.ErrNotExist
+}
+
+// getSchemaPath returns absolute path to schema file in test data directory
+func getSchemaPath(t *testing.T, filename string) string {
+	t.Helper()
+
+	// Find project root dynamically
+	projectRoot, err := findProjectRoot()
+	require.NoError(t, err, "Should find project root")
+
+	// Build absolute path from project root
+	schemaPath := filepath.Join(projectRoot, "tests", "data", filename)
+
+	// Verify file exists
+	_, err = os.Stat(schemaPath)
+	require.NoError(t, err, "Schema file should exist: %s", schemaPath)
+
+	return schemaPath
+}
 
 // TestSchemaValidation tests that invalid JSON schemas are properly rejected
 // during the LoadSchema phase, before any code generation occurs.
@@ -30,34 +72,34 @@ func TestSchemaValidation(t *testing.T) {
 	}{
 		{
 			name:        "valid_schema_should_pass",
-			schemaFile:  "../data/base-string.json",
+			schemaFile:  "base-string.json",
 			expectError: false,
 			description: "Valid schema should load without errors",
 		},
 		{
 			name:          "invalid_string_with_float_subtype",
-			schemaFile:    "../data/invalid-string-with-float.json",
+			schemaFile:    "invalid-string-with-float.json",
 			expectError:   true,
 			errorContains: "float32 is not compatible with DynamoDB type 'S'",
 			description:   "String attribute cannot have float32 subtype",
 		},
 		{
 			name:          "invalid_number_with_string_subtype",
-			schemaFile:    "../data/invalid-number-with-string.json",
+			schemaFile:    "invalid-number-with-string.json",
 			expectError:   true,
 			errorContains: "string is not compatible with DynamoDB type 'N'",
 			description:   "Number attribute cannot have string subtype",
 		},
 		{
 			name:          "invalid_empty_attribute_name",
-			schemaFile:    "../data/invalid-empty-name.json",
+			schemaFile:    "invalid-empty-name.json",
 			expectError:   true,
 			errorContains: "attribute name cannot be empty",
 			description:   "Attribute name cannot be empty",
 		},
 		{
 			name:          "invalid_unknown_dynamodb_type",
-			schemaFile:    "../data/invalid-unknown-type.json",
+			schemaFile:    "invalid-unknown-type.json",
 			expectError:   true,
 			errorContains: "invalid DynamoDB type 'UNKNOWN_TYPE'",
 			description:   "Unknown DynamoDB types should be rejected",
@@ -65,21 +107,19 @@ func TestSchemaValidation(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture loop variable
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Logf("Testing: %s", tc.description)
 
-			// Resolve absolute path to schema file
-			schemaPath, err := filepath.Abs(tc.schemaFile)
-			require.NoError(t, err, "Should resolve schema file path")
+			// Get absolute path to schema file
+			schemaPath := getSchemaPath(t, tc.schemaFile)
 
 			// Attempt to load the schema
 			loadedSchema, err := schema.LoadSchema(schemaPath)
 
 			if tc.expectError {
-				// Should get an error
 				assert.Error(t, err, "Expected validation error for %s", tc.name)
 				assert.Nil(t, loadedSchema, "Schema should be nil on validation error")
 
@@ -90,7 +130,6 @@ func TestSchemaValidation(t *testing.T) {
 
 				t.Logf("✅ Correctly rejected invalid schema: %s", err.Error())
 			} else {
-				// Should succeed
 				assert.NoError(t, err, "Valid schema should load without error")
 				assert.NotNil(t, loadedSchema, "Valid schema should not be nil")
 
@@ -109,7 +148,7 @@ func TestValidationErrorMessages(t *testing.T) {
 	}{
 		{
 			name:       "subtype_compatibility_error",
-			schemaFile: "../data/invalid-string-with-float.json",
+			schemaFile: "invalid-string-with-float.json",
 			expectedMsgs: []string{
 				"invalid attribute",
 				"float32 is not compatible with DynamoDB type 'S'",
@@ -117,14 +156,14 @@ func TestValidationErrorMessages(t *testing.T) {
 		},
 		{
 			name:       "empty_name_error",
-			schemaFile: "../data/invalid-empty-name.json",
+			schemaFile: "invalid-empty-name.json",
 			expectedMsgs: []string{
 				"attribute name cannot be empty",
 			},
 		},
 		{
 			name:       "unknown_type_error",
-			schemaFile: "../data/invalid-unknown-type.json",
+			schemaFile: "invalid-unknown-type.json",
 			expectedMsgs: []string{
 				"invalid DynamoDB type 'UNKNOWN_TYPE'",
 			},
@@ -136,10 +175,9 @@ func TestValidationErrorMessages(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			schemaPath, err := filepath.Abs(tc.schemaFile)
-			require.NoError(t, err, "Should resolve schema path")
+			schemaPath := getSchemaPath(t, tc.schemaFile)
 
-			_, err = schema.LoadSchema(schemaPath)
+			_, err := schema.LoadSchema(schemaPath)
 			require.Error(t, err, "Should get validation error")
 
 			for _, expectedMsg := range tc.expectedMsgs {
