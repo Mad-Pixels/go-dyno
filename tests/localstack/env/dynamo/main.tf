@@ -1,11 +1,11 @@
 locals {
   gsi_indexes = var.secondary_index_list != null ? [
-    for idx in var.secondary_index_list : idx 
+    for idx in var.secondary_index_list : idx
     if lookup(idx, "type", "GSI") == "GSI"
   ] : []
-  
+
   lsi_indexes = var.secondary_index_list != null ? [
-    for idx in var.secondary_index_list : idx 
+    for idx in var.secondary_index_list : idx
     if lookup(idx, "type", "GSI") == "LSI"
   ] : []
 }

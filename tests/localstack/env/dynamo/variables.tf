@@ -38,7 +38,7 @@ variable "secondary_index_list" {
   type = list(object({
     name               = string
     type               = optional(string) # "GSI" или "LSI", default "GSI"
-    hash_key           = optional(string) 
+    hash_key           = optional(string)
     range_key          = optional(string)
     projection_type    = string
     non_key_attributes = optional(list(string))
