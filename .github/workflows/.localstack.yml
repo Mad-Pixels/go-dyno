@@ -16,18 +16,28 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5 
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false 
+      
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum', '**/go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Cache Docker layers
-        uses: actions/cache@v3
+        uses: actions/cache@v4 
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-localstack
+          key: ${{ runner.os }}-buildx-localstack-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-
+            ${{ runner.os }}-buildx-localstack-
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3

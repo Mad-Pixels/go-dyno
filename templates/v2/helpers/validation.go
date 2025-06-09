@@ -99,12 +99,14 @@ func validateSetValues(values interface{}) error {
                 return fmt.Errorf("string set item %d cannot be empty", i)
             }
         }
-    case []int:
-        if len(v) == 0 {
+    case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []float32, []float64:
+        // Use reflection to check length for all numeric types
+        rv := reflect.ValueOf(v)
+        if rv.Len() == 0 {
             return fmt.Errorf("number set cannot be empty")
         }
     default:
-        return fmt.Errorf("unsupported set type: %T, expected []string or []int", values)
+        return fmt.Errorf("unsupported set type: %T, expected []string or numeric slice", values)
     }
     
     return nil

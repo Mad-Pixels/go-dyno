@@ -124,17 +124,20 @@ func MustParseTemplateFormattedToString(tmpl string, vars any) string {
 func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 	t, err := template.New("tmpl").Funcs(
 		template.FuncMap{
-			"Join":                strings.Join,
-			"ToUpper":             strings.ToUpper,
-			"ToUpperCamelCase":    ToUpperCamelCase,
-			"ToLowerCamelCase":    ToLowerCamelCase,
-			"ToGolangBaseType":    ToGolangBaseType,
-			"ToGolangZeroType":    ToGolangZeroType,
-			"ToGolangAttrType":    ToGolangAttrType,
-			"ToSafeName":          ToSafeName,
-			"IsNumericAttr":       IsNumericAttr,
-			"IsIntegerAttr":       IsIntegerAttr,
-			"ToDynamoDBStructTag": ToDynamoDBStructTag,
+			"Join":                   strings.Join,
+			"ToUpper":                strings.ToUpper,
+			"ToUpperCamelCase":       ToUpperCamelCase,
+			"ToLowerCamelCase":       ToLowerCamelCase,
+			"ToGolangBaseType":       ToGolangBaseType,
+			"ToGolangZeroType":       ToGolangZeroType,
+			"ToGolangAttrType":       ToGolangAttrType,
+			"ToSafeName":             ToSafeName,
+			"IsNumericAttr":          IsNumericAttr,
+			"IsIntegerAttr":          IsIntegerAttr,
+			"ToDynamoDBStructTag":    ToDynamoDBStructTag,
+			"GetUsedNumericSetTypes": GetUsedNumericSetTypes,
+			"IsFloatType":            IsFloatType,
+			"Slice":                  Slice,
 		},
 	).
 		Parse(tmpl)

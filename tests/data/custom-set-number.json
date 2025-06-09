@@ -1,0 +1,43 @@
+{
+ "table_name": "custom-set-number",
+ "hash_key": "id",
+ "range_key": "group_id",
+ "attributes": [
+   { 
+     "name": "id", 
+     "type": "S" 
+   },
+   { 
+     "name": "group_id", 
+     "type": "S" 
+   }
+ ],
+ "common_attributes": [
+   { 
+     "name": "int32_scores", 
+     "type": "NS", 
+     "subtype": "int32" 
+   },
+   { 
+     "name": "int64_timestamps", 
+     "type": "NS", 
+     "subtype": "int64" 
+   },
+   { 
+     "name": "float32_rates", 
+     "type": "NS", 
+     "subtype": "float32" 
+   },
+   { 
+     "name": "uint64_counters", 
+     "type": "NS", 
+     "subtype": "uint64" 
+   },
+   { 
+     "name": "int16_values", 
+     "type": "NS", 
+     "subtype": "int16" 
+   }
+ ],
+ "secondary_indexes": []
+}

@@ -4,7 +4,6 @@ package helpers
 const AtomicHelpersTemplate = `
 // IncrementAttribute ...
 func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
-    // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -15,7 +14,6 @@ func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, att
         return nil, err
     }
 
-    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for increment: %v", err)
@@ -36,7 +34,6 @@ func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, att
 
 // AddToSet ...
 func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -47,7 +44,6 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
         return nil, err
     }
 
-    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for add to set: %v", err)
@@ -55,18 +51,22 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
    
     var attributeValue types.AttributeValue
    
+    {{- $nsTypes := GetUsedNumericSetTypes .AllAttributes}}
     switch v := values.(type) {
     case []string:
         attributeValue = &types.AttributeValueMemberSS{Value: v}
-    case []int:
-        numberStrings := make([]string, len(v))
-        for i, num := range v {
-            numberStrings[i] = fmt.Sprintf("%d", num)
-        }
-        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+    {{- if gt (len $nsTypes) 0}}
+    {{- range $nsTypes}}
+    case {{.}}:
+        {{- if IsFloatType (Slice . 2)}}
+        attributeValue = &types.AttributeValueMemberNS{Value: toFloatStrings(v)}
+        {{- else}}
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+        {{- end}}
+    {{- end}}
+    {{- end}}
     default:
-        // This should not happen due to validateSetValues, but keeping for safety
-        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string{{if gt (len $nsTypes) 0}} or numeric slice{{end}}", values)
     }
    
     return &dynamodb.UpdateItemInput{
@@ -84,7 +84,6 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
 
 // RemoveFromSet ...
 func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
-    // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -95,7 +94,6 @@ func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attribut
         return nil, err
     }
     
-    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for remove from set: %v", err)
@@ -103,18 +101,22 @@ func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attribut
    
     var attributeValue types.AttributeValue
    
+    {{- $nsTypes := GetUsedNumericSetTypes .AllAttributes}}
     switch v := values.(type) {
     case []string:
         attributeValue = &types.AttributeValueMemberSS{Value: v}
-    case []int:
-        numberStrings := make([]string, len(v))
-        for i, num := range v {
-            numberStrings[i] = fmt.Sprintf("%d", num)
-        }
-        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+    {{- if gt (len $nsTypes) 0}}
+    {{- range $nsTypes}}
+    case {{.}}:
+        {{- if IsFloatType (Slice . 2)}}
+        attributeValue = &types.AttributeValueMemberNS{Value: toFloatStrings(v)}
+        {{- else}}
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+        {{- end}}
+    {{- end}}
+    {{- end}}
     default:
-        // This should not happen due to validateSetValues, but keeping for safety
-        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string{{if gt (len $nsTypes) 0}} or numeric slice{{end}}", values)
     }
    
     return &dynamodb.UpdateItemInput{

@@ -2,6 +2,36 @@ package helpers
 
 // MarshalingHelpersTemplate ...
 const MarshalingHelpersTemplate = `
+type Signed interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+
+type Unsigned interface {
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
+type Float interface {
+	~float32 | ~float64
+}
+
+// toIntStrings converts any signed or unsigned integer slice to string slice
+func toIntStrings[T Signed | Unsigned](nums []T) []string {
+	out := make([]string, len(nums))
+	for i, n := range nums {
+		out[i] = strconv.FormatInt(int64(n), 10)
+	}
+	return out
+}
+
+// toFloatStrings converts any float slice to string slice
+func toFloatStrings[F Float](nums []F) []string {
+	out := make([]string, len(nums))
+	for i, f := range nums {
+		out[i] = strconv.FormatFloat(float64(f), 'g', -1, 64)
+	}
+	return out
+}
+
 // marshalItemToMap converts SchemaItem to AttributeValue map (internal helper)
 func marshalItemToMap(item SchemaItem) (map[string]types.AttributeValue, error) {
     return attributevalue.MarshalMap(item)
@@ -9,7 +39,7 @@ func marshalItemToMap(item SchemaItem) (map[string]types.AttributeValue, error) 
 
 // extractNonKeyAttributes filters out key attributes from the map
 func extractNonKeyAttributes(allAttributes map[string]types.AttributeValue) map[string]types.AttributeValue {
-    updates := make(map[string]types.AttributeValue, len(allAttributes)-2) // pre-allocate minus keys
+    updates := make(map[string]types.AttributeValue, len(allAttributes)-2)
     
     for attrName, attrValue := range allAttributes {
         if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
@@ -52,14 +82,12 @@ func mergeExpressionAttributes(
     conditionValues map[string]types.AttributeValue,
 ) (map[string]string, map[string]types.AttributeValue) {
     
-    // Merge names
     if conditionNames != nil {
         for key, value := range conditionNames {
             baseNames[key] = value
         }
     }
     
-    // Merge values  
     if conditionValues != nil {
         for key, value := range conditionValues {
             baseValues[key] = value
@@ -75,14 +103,12 @@ func marshalUpdatesWithSchema(updates map[string]interface{}) (map[string]types.
     
     for fieldName, value := range updates {
         if fieldInfo, exists := TableSchema.FieldsMap[fieldName]; exists {
-            // Use schema-aware marshaling for known fields
             av, err := marshalValueByType(value, fieldInfo.DynamoType)
             if err != nil {
                 return nil, fmt.Errorf("failed to marshal field %s: %v", fieldName, err)
             }
             result[fieldName] = av
         } else {
-            // Use default marshaling for unknown fields
             av, err := attributevalue.Marshal(value)
             if err != nil {
                 return nil, fmt.Errorf("failed to marshal field %s: %v", fieldName, err)
@@ -98,19 +124,29 @@ func marshalUpdatesWithSchema(updates map[string]interface{}) (map[string]types.
 func marshalValueByType(value interface{}, dynamoType string) (types.AttributeValue, error) {
     switch dynamoType {
     case "SS":
-        if strSlice, ok := value.([]string); ok {
-            return &types.AttributeValueMemberSS{Value: strSlice}, nil
+        ss, ok := value.([]string)
+        if !ok {
+            return nil, fmt.Errorf("SS: expected []string, got %T", value)
         }
-        return nil, fmt.Errorf("expected []string for SS type, got %T", value)
+        return &types.AttributeValueMemberSS{Value: ss}, nil
     case "NS":
-        if intSlice, ok := value.([]int); ok {
-            numbers := make([]string, len(intSlice))
-            for i, num := range intSlice {
-                numbers[i] = fmt.Sprintf("%d", num)
-            }
-            return &types.AttributeValueMemberNS{Value: numbers}, nil
+        {{- $nsTypes := GetUsedNumericSetTypes .AllAttributes}}
+        {{- if gt (len $nsTypes) 0}}
+        switch v := value.(type) {
+        {{- range $nsTypes}}
+        case {{.}}:
+            {{- if IsFloatType (Slice . 2)}}
+            return &types.AttributeValueMemberNS{Value: toFloatStrings(v)}, nil
+            {{- else}}
+            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
+            {{- end}}
+        {{- end}}
+        default:
+            return nil, fmt.Errorf("NS: expected numeric slice, got %T", value)
         }
-        return nil, fmt.Errorf("expected []int for NS type, got %T", value)
+        {{- else}}
+        return nil, fmt.Errorf("NS: no numeric set types defined in schema")
+        {{- end}}
     default:
         return attributevalue.Marshal(value)
     }

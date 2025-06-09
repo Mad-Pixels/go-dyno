@@ -114,6 +114,9 @@ func ToGolangBaseType(attr common.Attribute) string {
 	case "SS":
 		return "[]string"
 	case "NS":
+		if attr.Subtype != common.SubtypeDefault {
+			return "[]" + attr.Subtype.GoType()
+		}
 		return "[]int"
 	case "BS":
 		return "[][]byte"
@@ -246,4 +249,55 @@ func ToDynamoDBStructTag(attr common.Attribute) string {
 	default:
 		return fmt.Sprintf(`dynamodbav:"%s"`, attr.Name)
 	}
+}
+
+// GetUsedNumericTypes возвращает все используемые числовые типы в схеме
+func GetUsedNumericTypes(attributes []common.Attribute) []string {
+	typesSet := make(map[string]bool)
+
+	for _, attr := range attributes {
+		if attr.Type == "N" && attr.Subtype != common.SubtypeDefault {
+			typesSet[attr.Subtype.GoType()] = true
+		} else if attr.Type == "N" {
+			typesSet["int"] = true // default
+		}
+	}
+
+	var types []string
+	for t := range typesSet {
+		types = append(types, t)
+	}
+	return types
+}
+
+// GetUsedNumericSetTypes возвращает все используемые числовые set типы в схеме
+func GetUsedNumericSetTypes(attributes []common.Attribute) []string {
+	typesSet := make(map[string]bool)
+
+	for _, attr := range attributes {
+		if attr.Type == "NS" && attr.Subtype != common.SubtypeDefault {
+			typesSet["[]"+attr.Subtype.GoType()] = true
+		} else if attr.Type == "NS" {
+			typesSet["[]int"] = true // default
+		}
+	}
+
+	var types []string
+	for t := range typesSet {
+		types = append(types, t)
+	}
+	return types
+}
+
+// IsFloatType проверяет является ли тип float
+func IsFloatType(goType string) bool {
+	return goType == "float32" || goType == "float64"
+}
+
+// Slice ...
+func Slice(s string, start int) string {
+	if start >= len(s) {
+		return ""
+	}
+	return s[start:]
 }
