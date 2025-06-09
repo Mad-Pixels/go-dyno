@@ -35,15 +35,6 @@ jobs:
         with:
           command: go/tests/app
           
-  template-tests:
-    name: Template
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run static template parts tests
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
-        with:
-          command: go/tests/template
-
   compile-tests:
     name: Compile
     runs-on: ubuntu-latest

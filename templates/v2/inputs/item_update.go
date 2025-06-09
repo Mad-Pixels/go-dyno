@@ -50,7 +50,7 @@ func UpdateItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{},
     }
    
     // Use AWS SDK marshaler instead of manual conversion
-    marshaledUpdates, err := attributevalue.MarshalMap(updates)
+    marshaledUpdates, err := marshalUpdatesWithSchema(updates)
     if err != nil {
         return nil, fmt.Errorf("failed to marshal updates: %v", err)
     }

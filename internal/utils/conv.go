@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 
@@ -230,4 +231,19 @@ func toCamelCase(s string) string {
 		}
 	}
 	return res.String()
+}
+
+// ToDynamoDBStructTag returns the appropriate dynamodbav struct tag for the attribute.
+// For NS/SS/BS types it adds the required set tags to ensure proper marshaling.
+func ToDynamoDBStructTag(attr common.Attribute) string {
+	switch attr.Type {
+	case "NS":
+		return fmt.Sprintf(`dynamodbav:"%s,numberset"`, attr.Name)
+	case "SS":
+		return fmt.Sprintf(`dynamodbav:"%s,stringset"`, attr.Name)
+	case "BS":
+		return fmt.Sprintf(`dynamodbav:"%s,binaryset"`, attr.Name)
+	default:
+		return fmt.Sprintf(`dynamodbav:"%s"`, attr.Name)
+	}
 }
