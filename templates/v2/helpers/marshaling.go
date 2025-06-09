@@ -27,7 +27,6 @@ func toIntStrings[T Signed | Unsigned](nums []T) []string {
 func toFloatStrings[F Float](nums []F) []string {
 	out := make([]string, len(nums))
 	for i, f := range nums {
-		// 'g' убирает лишние нули и точку, -1 — максимальная точность
 		out[i] = strconv.FormatFloat(float64(f), 'g', -1, 64)
 	}
 	return out
@@ -40,7 +39,7 @@ func marshalItemToMap(item SchemaItem) (map[string]types.AttributeValue, error) 
 
 // extractNonKeyAttributes filters out key attributes from the map
 func extractNonKeyAttributes(allAttributes map[string]types.AttributeValue) map[string]types.AttributeValue {
-    updates := make(map[string]types.AttributeValue, len(allAttributes)-2) // pre-allocate minus keys
+    updates := make(map[string]types.AttributeValue, len(allAttributes)-2)
     
     for attrName, attrValue := range allAttributes {
         if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
@@ -83,14 +82,12 @@ func mergeExpressionAttributes(
     conditionValues map[string]types.AttributeValue,
 ) (map[string]string, map[string]types.AttributeValue) {
     
-    // Merge names
     if conditionNames != nil {
         for key, value := range conditionNames {
             baseNames[key] = value
         }
     }
     
-    // Merge values  
     if conditionValues != nil {
         for key, value := range conditionValues {
             baseValues[key] = value
@@ -106,14 +103,12 @@ func marshalUpdatesWithSchema(updates map[string]interface{}) (map[string]types.
     
     for fieldName, value := range updates {
         if fieldInfo, exists := TableSchema.FieldsMap[fieldName]; exists {
-            // Use schema-aware marshaling for known fields
             av, err := marshalValueByType(value, fieldInfo.DynamoType)
             if err != nil {
                 return nil, fmt.Errorf("failed to marshal field %s: %v", fieldName, err)
             }
             result[fieldName] = av
         } else {
-            // Use default marshaling for unknown fields
             av, err := attributevalue.Marshal(value)
             if err != nil {
                 return nil, fmt.Errorf("failed to marshal field %s: %v", fieldName, err)
@@ -135,34 +130,23 @@ func marshalValueByType(value interface{}, dynamoType string) (types.AttributeVa
         }
         return &types.AttributeValueMemberSS{Value: ss}, nil
     case "NS":
+        {{- $nsTypes := GetUsedNumericSetTypes .AllAttributes}}
+        {{- if gt (len $nsTypes) 0}}
         switch v := value.(type) {
-        case []int:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []int8:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []int16:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []int32:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []int64:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []uint:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []uint8:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []uint16:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []uint32:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []uint64:
-            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
-        case []float32:
+        {{- range $nsTypes}}
+        case {{.}}:
+            {{- if IsFloatType (Slice . 2)}}
             return &types.AttributeValueMemberNS{Value: toFloatStrings(v)}, nil
-        case []float64:
-            return &types.AttributeValueMemberNS{Value: toFloatStrings(v)}, nil
+            {{- else}}
+            return &types.AttributeValueMemberNS{Value: toIntStrings(v)}, nil
+            {{- end}}
+        {{- end}}
         default:
             return nil, fmt.Errorf("NS: expected numeric slice, got %T", value)
         }
+        {{- else}}
+        return nil, fmt.Errorf("NS: no numeric set types defined in schema")
+        {{- end}}
     default:
         return attributevalue.Marshal(value)
     }
