@@ -1,0 +1,10 @@
+{
+  "table_name": "invalid-empty-name",
+  "hash_key": "id", 
+  "attributes": [
+    { "name": "", "type": "S" },
+    { "name": "valid", "type": "N" }
+  ],
+  "common_attributes": [],
+  "secondary_indexes": []
+}
