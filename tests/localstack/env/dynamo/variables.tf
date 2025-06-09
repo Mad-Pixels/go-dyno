@@ -34,15 +34,16 @@ variable "attributes" {
 }
 
 variable "secondary_index_list" {
-  description = "List of global secondary indexes"
+  description = "List of secondary indexes (both GSI and LSI)"
   type = list(object({
     name               = string
-    hash_key           = string
+    type               = optional(string) # "GSI" или "LSI", default "GSI"
+    hash_key           = optional(string)
     range_key          = optional(string)
     projection_type    = string
     non_key_attributes = optional(list(string))
-    read_capacity      = optional(number)
-    write_capacity     = optional(number)
+    read_capacity      = optional(number) # Только для GSI
+    write_capacity     = optional(number) # Только для GSI
   }))
   default = null
 }

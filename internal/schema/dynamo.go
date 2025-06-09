@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"fmt"
+
 	"github.com/Mad-Pixels/go-dyno/internal/schema/common"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 )
@@ -116,13 +118,98 @@ func (ds DynamoSchema) CommonAttributes() []common.Attribute {
 	return ds.schema.CommonAttributes
 }
 
-// SecondaryIndexes returns all defined GSI/LSI indexes attached to the table.
-//
-// Example:
-//
-//	schema.SecondaryIndexes() → []SecondaryIndex{...}
+// SecondaryIndexes returns all defined secondary indexes (both GSI and LSI)
 func (ds DynamoSchema) SecondaryIndexes() []common.SecondaryIndex {
 	return ds.schema.SecondaryIndexes
+}
+
+// GlobalSecondaryIndexes returns only Global Secondary Indexes
+func (ds DynamoSchema) GlobalSecondaryIndexes() []common.SecondaryIndex {
+	var gsiIndexes []common.SecondaryIndex
+	for _, idx := range ds.schema.SecondaryIndexes {
+		if idx.IsGSI() {
+			gsiIndexes = append(gsiIndexes, idx)
+		}
+	}
+	return gsiIndexes
+}
+
+// LocalSecondaryIndexes returns only Local Secondary Indexes
+func (ds DynamoSchema) LocalSecondaryIndexes() []common.SecondaryIndex {
+	var lsiIndexes []common.SecondaryIndex
+	for _, idx := range ds.schema.SecondaryIndexes {
+		if idx.IsLSI() {
+			lsiIndexes = append(lsiIndexes, idx)
+		}
+	}
+	return lsiIndexes
+}
+
+// HasGSI returns true if the schema has any Global Secondary Indexes
+func (ds DynamoSchema) HasGSI() bool {
+	return len(ds.GlobalSecondaryIndexes()) > 0
+}
+
+// HasLSI returns true if the schema has any Local Secondary Indexes
+func (ds DynamoSchema) HasLSI() bool {
+	return len(ds.LocalSecondaryIndexes()) > 0
+}
+
+// HasSecondaryIndexes returns true if the schema has any secondary indexes
+func (ds DynamoSchema) HasSecondaryIndexes() bool {
+	return len(ds.schema.SecondaryIndexes) > 0
+}
+
+// GetIndexByName returns the secondary index with the given name, or nil if not found
+func (ds DynamoSchema) GetIndexByName(name string) *common.SecondaryIndex {
+	for _, idx := range ds.schema.SecondaryIndexes {
+		if idx.Name == name {
+			return &idx
+		}
+	}
+	return nil
+}
+
+// GetOptimalIndexForQuery returns the best index for a query with the given keys
+// Priority: LSI (cheaper) -> GSI -> nil (use main table)
+func (ds DynamoSchema) GetOptimalIndexForQuery(hashKey, rangeKey string) *common.SecondaryIndex {
+	hasHashKey := hashKey != ""
+	hasRangeKey := rangeKey != ""
+
+	// First, try LSI (they're cheaper and use table's throughput)
+	for _, idx := range ds.LocalSecondaryIndexes() {
+		if idx.SupportsQuery(hasHashKey, hasRangeKey, ds.HashKey()) {
+			// Additional check for LSI: hash key must match table's hash key
+			if hasHashKey && hashKey == ds.HashKey() {
+				return &idx
+			}
+		}
+	}
+
+	// Then, try GSI
+	for _, idx := range ds.GlobalSecondaryIndexes() {
+		if idx.SupportsQuery(hasHashKey, hasRangeKey, ds.HashKey()) {
+			// Additional check for GSI: hash key must match index's hash key
+			if hasHashKey && hashKey == idx.HashKey {
+				return &idx
+			}
+		}
+	}
+
+	// No suitable index found
+	return nil
+}
+
+// ValidateIndexNames ensures all index names are unique
+func (ds DynamoSchema) ValidateIndexNames() error {
+	seen := make(map[string]bool)
+	for _, idx := range ds.schema.SecondaryIndexes {
+		if seen[idx.Name] {
+			return fmt.Errorf("duplicate index name: '%s'", idx.Name)
+		}
+		seen[idx.Name] = true
+	}
+	return nil
 }
 
 // AllAttributes returns the combined list of core and common attributes.

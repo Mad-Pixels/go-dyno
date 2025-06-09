@@ -226,11 +226,6 @@ func BuildKeyConditionExpression(field string, op OperatorType, values []interfa
         return expression.KeyConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
     
-    // Key conditions have limited operators
-    if !IsKeyConditionOperator(op) {
-        return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for key conditions", op)
-    }
-    
     handler := keyOperatorHandlers[op]
     fieldExpr := expression.Key(field)
     result := handler(fieldExpr, values)

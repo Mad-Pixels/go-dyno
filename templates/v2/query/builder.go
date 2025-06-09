@@ -121,15 +121,20 @@ func (qb *QueryBuilder) With(field string, op OperatorType, values ...interface{
 
 // WithEQ adds equality key condition and returns QueryBuilder for chaining
 func (qb *QueryBuilder) WithEQ(field string, value interface{}) *QueryBuilder {
+    fmt.Printf("DEBUG WithEQ: field='%s', value='%v'\n", field, value)
     qb.KeyConditionMixin.WithEQ(field, value)
     qb.Attributes[field] = value
     qb.UsedKeys[field] = true
+    fmt.Printf("DEBUG WithEQ AFTER: UsedKeys[%s]=%v, Attributes[%s]=%v\n", 
+        field, qb.UsedKeys[field], field, qb.Attributes[field])
     return qb
 }
 
 // WithBetween adds range key condition and returns QueryBuilder for chaining
 func (qb *QueryBuilder) WithBetween(field string, start, end interface{}) *QueryBuilder {
     qb.KeyConditionMixin.WithBetween(field, start, end)
+    qb.Attributes[field+"_start"] = start
+    qb.Attributes[field+"_end"] = end
     qb.UsedKeys[field] = true
     return qb
 }
@@ -137,6 +142,7 @@ func (qb *QueryBuilder) WithBetween(field string, start, end interface{}) *Query
 // WithGT adds greater than key condition and returns QueryBuilder for chaining
 func (qb *QueryBuilder) WithGT(field string, value interface{}) *QueryBuilder {
     qb.KeyConditionMixin.WithGT(field, value)
+    qb.Attributes[field] = value 
     qb.UsedKeys[field] = true
     return qb
 }
@@ -144,6 +150,7 @@ func (qb *QueryBuilder) WithGT(field string, value interface{}) *QueryBuilder {
 // WithGTE adds greater than or equal key condition and returns QueryBuilder for chaining
 func (qb *QueryBuilder) WithGTE(field string, value interface{}) *QueryBuilder {
     qb.KeyConditionMixin.WithGTE(field, value)
+    qb.Attributes[field] = value
     qb.UsedKeys[field] = true
     return qb
 }
@@ -151,6 +158,7 @@ func (qb *QueryBuilder) WithGTE(field string, value interface{}) *QueryBuilder {
 // WithLT adds less than key condition and returns QueryBuilder for chaining
 func (qb *QueryBuilder) WithLT(field string, value interface{}) *QueryBuilder {
     qb.KeyConditionMixin.WithLT(field, value)
+    qb.Attributes[field] = value
     qb.UsedKeys[field] = true
     return qb
 }
@@ -158,6 +166,7 @@ func (qb *QueryBuilder) WithLT(field string, value interface{}) *QueryBuilder {
 // WithLTE adds less than or equal key condition and returns QueryBuilder for chaining
 func (qb *QueryBuilder) WithLTE(field string, value interface{}) *QueryBuilder {
     qb.KeyConditionMixin.WithLTE(field, value)
+    qb.Attributes[field] = value
     qb.UsedKeys[field] = true
     return qb
 }
