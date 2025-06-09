@@ -59,14 +59,31 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
     case []string:
         attributeValue = &types.AttributeValueMemberSS{Value: v}
     case []int:
-        numberStrings := make([]string, len(v))
-        for i, num := range v {
-            numberStrings[i] = fmt.Sprintf("%d", num)
-        }
-        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int8:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int16:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int32:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int64:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint8:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint16:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint32:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint64:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []float32:
+        attributeValue = &types.AttributeValueMemberNS{Value: toFloatStrings(v)}
+    case []float64:
+        attributeValue = &types.AttributeValueMemberNS{Value: toFloatStrings(v)}
     default:
-        // This should not happen due to validateSetValues, but keeping for safety
-        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or numeric slice", values)
     }
    
     return &dynamodb.UpdateItemInput{
@@ -107,14 +124,31 @@ func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attribut
     case []string:
         attributeValue = &types.AttributeValueMemberSS{Value: v}
     case []int:
-        numberStrings := make([]string, len(v))
-        for i, num := range v {
-            numberStrings[i] = fmt.Sprintf("%d", num)
-        }
-        attributeValue = &types.AttributeValueMemberNS{Value: numberStrings}
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int8:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int16:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int32:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []int64:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint8:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint16:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint32:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []uint64:
+        attributeValue = &types.AttributeValueMemberNS{Value: toIntStrings(v)}
+    case []float32:
+        attributeValue = &types.AttributeValueMemberNS{Value: toFloatStrings(v)}
+    case []float64:
+        attributeValue = &types.AttributeValueMemberNS{Value: toFloatStrings(v)}
     default:
-        // This should not happen due to validateSetValues, but keeping for safety
-        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or []int", values)
+        return nil, fmt.Errorf("unsupported type for set operation: %T, expected []string or numeric slice", values)
     }
    
     return &dynamodb.UpdateItemInput{

@@ -224,9 +224,9 @@ func (s AttributeSubtype) Validate(dynamoType string) error {
 		if !s.IsNumeric() {
 			return fmt.Errorf("subtype %s is not compatible with DynamoDB type 'N'", s.String())
 		}
-	case "B":
-		if s != SubtypeBool && !s.IsInteger() {
-			return fmt.Errorf("subtype %s is not compatible with DynamoDB type 'B'", s.String())
+	case "NS":
+		if !s.IsNumeric() {
+			return fmt.Errorf("subtype %s is not compatible with DynamoDB type 'NS'", s.String())
 		}
 	default:
 		return fmt.Errorf("unknown DynamoDB type: %s", dynamoType)

@@ -114,6 +114,9 @@ func ToGolangBaseType(attr common.Attribute) string {
 	case "SS":
 		return "[]string"
 	case "NS":
+		if attr.Subtype != common.SubtypeDefault {
+			return "[]" + attr.Subtype.GoType()
+		}
 		return "[]int"
 	case "BS":
 		return "[][]byte"
