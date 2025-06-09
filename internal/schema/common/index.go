@@ -133,7 +133,7 @@ func (si SecondaryIndex) Validate(tableHashKey, tableRangeKey string) error {
 }
 
 // validateLSI performs LSI-specific validation
-func (si SecondaryIndex) validateLSI(tableHashKey, tableRangeKey string) error {
+func (si SecondaryIndex) validateLSI(_, tableRangeKey string) error {
 	// Убираем эту проверку - hash_key устанавливается программно
 	// if si.HashKey != "" {
 	//     return fmt.Errorf("LSI '%s' cannot specify hash_key (automatically uses table's hash key '%s')", si.Name, tableHashKey)
