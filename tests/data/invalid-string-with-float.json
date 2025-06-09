@@ -1,0 +1,13 @@
+{
+  "table_name": "invalid-string-with-float",
+  "hash_key": "id",
+  "range_key": "category",
+  "attributes": [
+    { "name": "id", "type": "S" },
+    { "name": "category", "type": "S", "subtype": "float32" }
+  ],
+  "common_attributes": [
+    { "name": "price", "type": "N" }
+  ],
+  "secondary_indexes": []
+}

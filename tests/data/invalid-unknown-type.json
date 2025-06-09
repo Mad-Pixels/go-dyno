@@ -1,0 +1,10 @@
+{
+  "table_name": "invalid-unknown-type",
+  "hash_key": "id",
+  "attributes": [
+    { "name": "id", "type": "S" },
+    { "name": "weird", "type": "UNKNOWN_TYPE" }
+  ],
+  "common_attributes": [],
+  "secondary_indexes": []
+}

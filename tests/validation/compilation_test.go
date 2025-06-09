@@ -14,7 +14,7 @@ import (
 // TestGeneratedCodeCompilation validates that complete DynamoDB code generation produces compilable Go code.
 //
 // Test process:
-//  1. Reads JSON schema files from .tmpl/ directory
+//  1. Reads JSON schema files from .tmpl/ directory (skipping files with 'invalid-' prefix)
 //  2. Generates complete Go code using DynamoDB templates
 //  3. Creates temporary module with proper dependencies
 //  4. Runs "go build" to ensure compilation succeeds
@@ -28,6 +28,11 @@ func TestGeneratedCodeCompilation(t *testing.T) {
 	for _, schemaFile := range schemaFiles {
 		schemaFile := schemaFile
 		schemaName := strings.TrimSuffix(filepath.Base(schemaFile), ".json")
+
+		if strings.HasPrefix(schemaName, "invalid-") {
+			t.Logf("Skipping invalid schema for compilation test: %s", schemaName)
+			continue
+		}
 
 		t.Run(schemaName, func(t *testing.T) {
 			t.Parallel()

@@ -1,0 +1,10 @@
+{
+  "table_name": "invalid-number-with-string", 
+  "hash_key": "id",
+  "attributes": [
+    { "name": "id", "type": "S" },
+    { "name": "count", "type": "N", "subtype": "string" }
+  ],
+  "common_attributes": [],
+  "secondary_indexes": []
+}

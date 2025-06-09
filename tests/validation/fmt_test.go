@@ -14,7 +14,7 @@ import (
 // TestGeneratedCodeFormatting validates that complete DynamoDB code generation produces properly formatted Go code.
 //
 // Test process:
-//  1. Reads JSON schema files from .tmpl/ directory
+//  1. Reads JSON schema files from .tmpl/ directory (skipping files with 'invalid-' prefix)
 //  2. Generates complete Go code using DynamoDB templates
 //  3. Runs formatting validation (go fmt, goimports, gofumpt)
 //
@@ -27,6 +27,11 @@ func TestGeneratedCodeFormatting(t *testing.T) {
 	for _, schemaFile := range schemaFiles {
 		schemaFile := schemaFile
 		schemaName := strings.TrimSuffix(filepath.Base(schemaFile), ".json")
+
+		if strings.HasPrefix(schemaName, "invalid-") {
+			t.Logf("Skipping invalid schema for compilation test: %s", schemaName)
+			continue
+		}
 
 		t.Run(schemaName, func(t *testing.T) {
 			t.Parallel()

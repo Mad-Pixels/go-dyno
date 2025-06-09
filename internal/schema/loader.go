@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Mad-Pixels/go-dyno/internal/schema/common"
@@ -30,6 +31,17 @@ func LoadSchema(path string) (*DynamoSchema, error) {
 	if err := utils.ReadAndParseJSON(path, &schema.schema); err != nil {
 		return nil, err
 	}
+	for _, attr := range schema.schema.Attributes {
+		if err := attr.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid attribute in 'attributes': %v", err)
+		}
+	}
+	for _, attr := range schema.schema.CommonAttributes {
+		if err := attr.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid attribute in 'common_attributes': %v", err)
+		}
+	}
+
 	for i := range schema.schema.SecondaryIndexes {
 		idx := &schema.schema.SecondaryIndexes[i]
 
