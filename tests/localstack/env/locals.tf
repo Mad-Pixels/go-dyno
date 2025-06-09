@@ -1,5 +1,5 @@
 locals {
-  project     = "applingo"
+  project     = "testing"
   provisioner = "infra"
 
   tags = {
@@ -7,7 +7,13 @@ locals {
     "Test" = "true"
   }
 
-  schema_files = fileset("${path.root}/../../data", "*.json")
+  # Exclude schemas with "invalid-" prefix
+  all_schema_files = fileset("${path.root}/../../data", "*.json")
+  schema_files = [
+    for file in local.all_schema_files : file
+    if !startswith(file, "invalid-")
+  ]
+  
   schemas = {
     for file in local.schema_files :
     trimsuffix(file, ".json") => jsondecode(file("${path.root}/../../data/${file}"))
