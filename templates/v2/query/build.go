@@ -5,6 +5,8 @@ const QueryBuilderBuildTemplate = `
 // Build ...
 func (qb *QueryBuilder) Build() (string, expression.KeyConditionBuilder, *expression.ConditionBuilder, map[string]types.AttributeValue, error) {
     var filterCond *expression.ConditionBuilder
+    fmt.Printf("DEBUG Build START: UsedKeys=%+v, Attributes=%+v\n", qb.UsedKeys, qb.Attributes)
+
 
     sortedIndexes := make([]SecondaryIndex, len(TableSchema.SecondaryIndexes))
     copy(sortedIndexes, TableSchema.SecondaryIndexes)
@@ -94,6 +96,14 @@ func (qb *QueryBuilder) calculateIndexParts(idx SecondaryIndex) int {
 }
 
 func (qb *QueryBuilder) buildHashKeyCondition(idx SecondaryIndex) (*expression.KeyConditionBuilder, bool) {
+    fmt.Printf("DEBUG buildHashKeyCondition: idx.Name='%s', idx.HashKey='%s'\n", idx.Name, idx.HashKey)
+    fmt.Printf("DEBUG UsedKeys[%s]=%v, Attributes[%s]=%v\n", 
+        idx.HashKey, qb.UsedKeys[idx.HashKey], idx.HashKey, qb.Attributes[idx.HashKey])
+    fmt.Printf("DEBUG DETAILED: idx.HashKey='%s' (len=%d)\n", idx.HashKey, len(idx.HashKey))
+    fmt.Printf("DEBUG DETAILED: idx.HashKey != '' = %v\n", idx.HashKey != "")
+    fmt.Printf("DEBUG DETAILED: qb.UsedKeys[%s] = %v\n", idx.HashKey, qb.UsedKeys[idx.HashKey])
+    fmt.Printf("DEBUG DETAILED: FULL CONDITION = %v\n", idx.HashKey != "" && qb.UsedKeys[idx.HashKey])
+    
     if idx.HashKeyParts != nil {
         if qb.hasAllKeys(idx.HashKeyParts) {
             cond := qb.buildCompositeKeyCondition(idx.HashKeyParts)
@@ -117,13 +127,15 @@ func (qb *QueryBuilder) buildRangeKeyCondition(idx SecondaryIndex) (*expression.
             if cond, exists := qb.KeyConditions[idx.RangeKey]; exists {
                 return &cond, true
             } else {
-                return nil, true
+                cond := expression.Key(idx.RangeKey).Equal(expression.Value(qb.Attributes[idx.RangeKey]))
+                return &cond, true
             }
         } else {
-            return nil, true
+            return nil, true  // Range key есть, но не используется - это OK
         }
     } else {
-        return nil, true
+        // У индекса НЕТ range_key - это нормально для GSI
+        return nil, true  // ← ИСПРАВИТЬ: вернуть true вместо false
     }
     return nil, false
 }

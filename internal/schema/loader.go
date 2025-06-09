@@ -8,47 +8,212 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 )
 
-// LoadSchema loads a DynamoDB table schema from a JSON file and parses it into a DynamoSchema structure.
-// It automatically parses composite keys in secondary indexes, splitting them into individual parts
-// for proper query building and validation.
-//
-// The function performs the following operations:
+// LoadSchema loads a DynamoDB table schema from a JSON file and validates it comprehensively.
+// It performs the following operations:
 // 1. Reads and parses the JSON schema file
-// 2. Identifies composite keys (containing "#" separator) in secondary indexes
-// 3. Splits composite keys into constituent parts, marking each as constant or attribute reference
-// 4. Returns a fully initialized DynamoSchema ready for code generation
+// 2. Validates all attributes for correctness
+// 3. Validates and processes secondary indexes (both GSI and LSI)
+// 4. Ensures DynamoDB constraints are met (LSI limits, unique names, etc.)
+// 5. Parses composite keys for advanced query capabilities
+// 6. Returns a fully validated DynamoSchema ready for code generation
 //
 // Example:
 //
-//	schema, err := schema.LoadSchema("schemas/user_activity.json")
+//	schema, err := schema.LoadSchema("schemas/user_posts.json")
 //	if err != nil {
-//	    log.Fatal(err)
+//	    log.Fatal(err) // Schema validation failed
 //	}
-//	// schema.SecondaryIndexes will have HashKeyParts and RangeKeyParts populated
+//	// schema is now ready for Terraform and code generation
 func LoadSchema(path string) (*DynamoSchema, error) {
 	var schema DynamoSchema
 
+	// Load and parse JSON
 	if err := utils.ReadAndParseJSON(path, &schema.schema); err != nil {
+		return nil, fmt.Errorf("failed to parse schema file '%s': %v", path, err)
+	}
+
+	// Validate basic table structure
+	if err := validateTableStructure(&schema); err != nil {
+		return nil, fmt.Errorf("invalid table structure: %v", err)
+	}
+
+	// Validate all attributes
+	if err := validateAttributes(&schema); err != nil {
 		return nil, err
 	}
+
+	// Validate and process secondary indexes
+	if err := validateAndProcessIndexes(&schema); err != nil {
+		return nil, err
+	}
+
+	return &schema, nil
+}
+
+// validateTableStructure validates basic table properties
+func validateTableStructure(schema *DynamoSchema) error {
+	if schema.schema.TableName == "" {
+		return fmt.Errorf("table_name cannot be empty")
+	}
+
+	if schema.schema.HashKey == "" {
+		return fmt.Errorf("hash_key cannot be empty")
+	}
+
+	// range_key is optional, so no validation needed
+
+	return nil
+}
+
+// validateAttributes validates all table attributes
+func validateAttributes(schema *DynamoSchema) error {
+	// Validate primary attributes
 	for _, attr := range schema.schema.Attributes {
 		if err := attr.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid attribute in 'attributes': %v", err)
+			return fmt.Errorf("invalid attribute in 'attributes': %v", err)
 		}
 	}
+
+	// Validate common attributes
 	for _, attr := range schema.schema.CommonAttributes {
 		if err := attr.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid attribute in 'common_attributes': %v", err)
+			return fmt.Errorf("invalid attribute in 'common_attributes': %v", err)
 		}
 	}
+
+	// Ensure hash_key and range_key are defined in attributes
+	allAttributes := schema.AllAttributes()
+	if !isAttributeDefined(schema.schema.HashKey, allAttributes) {
+		return fmt.Errorf("hash_key '%s' is not defined in attributes", schema.schema.HashKey)
+	}
+
+	if schema.schema.RangeKey != "" && !isAttributeDefined(schema.schema.RangeKey, allAttributes) {
+		return fmt.Errorf("range_key '%s' is not defined in attributes", schema.schema.RangeKey)
+	}
+
+	return nil
+}
+
+// validateAndProcessIndexes validates and processes all secondary indexes
+func validateAndProcessIndexes(schema *DynamoSchema) error {
+	if len(schema.schema.SecondaryIndexes) == 0 {
+		return nil // No indexes to validate
+	}
+
+	// Check for duplicate index names
+	if err := schema.ValidateIndexNames(); err != nil {
+		return err
+	}
+
+	// Count LSI indexes (DynamoDB limit is 10)
+	lsiCount := 0
+	allAttributes := schema.AllAttributes()
 
 	for i := range schema.schema.SecondaryIndexes {
 		idx := &schema.schema.SecondaryIndexes[i]
 
-		idx.HashKeyParts = parseCompositeKeys(idx.HashKey, schema.AllAttributes())
-		idx.RangeKeyParts = parseCompositeKeys(idx.RangeKey, schema.AllAttributes())
+		// Set default type to GSI for backward compatibility
+		if idx.Type == "" {
+			idx.Type = common.GSI
+		}
+
+		if idx.IsLSI() {
+			idx.HashKey = schema.schema.HashKey // Автоматически устанавливаем hash_key для LSI
+		}
+
+		// Validate the index
+		if err := idx.Validate(schema.schema.HashKey, schema.schema.RangeKey); err != nil {
+			return fmt.Errorf("invalid secondary index '%s': %v", idx.Name, err)
+		}
+
+		if idx.IsLSI() {
+			idx.HashKey = schema.schema.HashKey // ← ВОТ КЛЮЧЕВАЯ СТРОКА!
+		}
+
+		// Validate that referenced attributes exist
+		if err := validateIndexAttributes(idx, allAttributes); err != nil {
+			return fmt.Errorf("index '%s' references undefined attributes: %v", idx.Name, err)
+		}
+
+		// Count and validate LSI limits
+		if idx.IsLSI() {
+			lsiCount++
+			if lsiCount > 10 {
+				return fmt.Errorf("too many LSI indexes: %d (DynamoDB limit is 10)", lsiCount)
+			}
+		}
+
+		// Parse composite keys
+		if err := parseIndexCompositeKeys(idx, allAttributes); err != nil {
+			return fmt.Errorf("failed to parse composite keys for index '%s': %v", idx.Name, err)
+		}
 	}
-	return &schema, nil
+
+	return nil
+}
+
+// validateIndexAttributes ensures all attributes referenced by the index are defined
+func validateIndexAttributes(idx *common.SecondaryIndex, allAttributes []common.Attribute) error {
+	// Validate hash_key (only for GSI)
+	if idx.IsGSI() && idx.HashKey != "" {
+		if !isAttributeDefined(idx.HashKey, allAttributes) && !isCompositeKey(idx.HashKey) {
+			return fmt.Errorf("hash_key '%s' is not defined", idx.HashKey)
+		}
+	}
+
+	// Validate range_key
+	if idx.RangeKey != "" {
+		if !isAttributeDefined(idx.RangeKey, allAttributes) && !isCompositeKey(idx.RangeKey) {
+			return fmt.Errorf("range_key '%s' is not defined", idx.RangeKey)
+		}
+	}
+
+	// Validate non_key_attributes
+	for _, attr := range idx.NonKeyAttributes {
+		if !isAttributeDefined(attr, allAttributes) {
+			return fmt.Errorf("non_key_attribute '%s' is not defined", attr)
+		}
+	}
+
+	return nil
+}
+
+// parseIndexCompositeKeys parses composite keys for the index
+func parseIndexCompositeKeys(idx *common.SecondaryIndex, allAttributes []common.Attribute) error {
+	// Parse hash key composite parts (only for GSI)
+	if idx.IsGSI() && isCompositeKey(idx.HashKey) {
+		parts := parseCompositeKeys(idx.HashKey, allAttributes)
+		if len(parts) == 0 {
+			return fmt.Errorf("failed to parse composite hash_key '%s'", idx.HashKey)
+		}
+		idx.HashKeyParts = parts
+	}
+
+	// Parse range key composite parts
+	if isCompositeKey(idx.RangeKey) {
+		parts := parseCompositeKeys(idx.RangeKey, allAttributes)
+		if len(parts) == 0 {
+			return fmt.Errorf("failed to parse composite range_key '%s'", idx.RangeKey)
+		}
+		idx.RangeKeyParts = parts
+	}
+
+	return nil
+}
+
+// isAttributeDefined checks if an attribute name is defined in the attribute list
+func isAttributeDefined(name string, attributes []common.Attribute) bool {
+	for _, attr := range attributes {
+		if attr.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+// isCompositeKey returns true if the key contains the composite separator '#'
+func isCompositeKey(key string) bool {
+	return strings.Contains(key, "#")
 }
 
 // parseCompositeKeys splits a composite key string into its constituent parts.
