@@ -157,6 +157,27 @@ func RemovePath(path string) error {
 	return nil
 }
 
+// AddFileExt ensures that the given file path has the specified extension.
+// If the file already has an extension, it will be replaced with the new one.
+// The extension should include the dot, e.g. ".go" or ".json".
+//
+// Example:
+//
+//	utils.AddFileExt("model", ".go")       → "model.go"
+//	utils.AddFileExt("config.json", ".yml") → "config.yml"
+func AddFileExt(path string, ext string) string {
+	if ext == "" || ext[0] != '.' {
+		ext = "." + ext
+	}
+	base := filepath.Base(path)
+	dir := filepath.Dir(path)
+	name := base
+	if currentExt := filepath.Ext(base); currentExt != "" {
+		name = base[:len(base)-len(currentExt)]
+	}
+	return filepath.Join(dir, name+ext)
+}
+
 func statPath(path string) (exist bool, isDir bool, err error) {
 	info, err := os.Stat(path)
 	if err != nil {

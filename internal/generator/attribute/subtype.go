@@ -1,17 +1,18 @@
-package common
+package attribute
 
 import (
 	"encoding/json"
-	"fmt"
+
+	"github.com/Mad-Pixels/go-dyno/internal/logger"
 )
 
-// AttributeSubtype defines the specific Go type for DynamoDB attributes.
-type AttributeSubtype int
+// attributeSubtype defines the specific Go type for DynamoDB attributes.
+type attributeSubtype int
 
 //revive:disable:exported
 const (
 	// Default (zero value) - use automatic mapping.
-	SubtypeDefault AttributeSubtype = iota
+	SubtypeDefault attributeSubtype = iota
 
 	// String subtypes.
 	SubtypeString
@@ -34,9 +35,14 @@ const (
 	SubtypeBool
 )
 
-// String returns the string representation of AttributeSubtype.
-// JSON marshal/unmarshal (equal with JSON schema).
-func (s AttributeSubtype) String() string {
+const (
+	dynamoTypeString    = "S"
+	dynamoTypeNumber    = "N"
+	dynamoTypeNumberSet = "NS"
+)
+
+// String returns attributeSubtype as string type.
+func (s attributeSubtype) String() string {
 	switch s {
 	// String subtypes
 	case SubtypeString:
@@ -79,9 +85,7 @@ func (s AttributeSubtype) String() string {
 }
 
 // GoType returns the Go type string for code generation.
-// Represent in template generation.
-// type SchemaItem struct { Price *big.Int }
-func (s AttributeSubtype) GoType() string {
+func (s attributeSubtype) GoType() string {
 	switch s {
 	// String subtypes
 	case SubtypeString:
@@ -124,12 +128,12 @@ func (s AttributeSubtype) GoType() string {
 }
 
 // MarshalJSON converts AttributeSubtype to JSON string
-func (s AttributeSubtype) MarshalJSON() ([]byte, error) {
+func (s attributeSubtype) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.String())
 }
 
 // UnmarshalJSON converts JSON string to AttributeSubtype
-func (s *AttributeSubtype) UnmarshalJSON(data []byte) error {
+func (s *attributeSubtype) UnmarshalJSON(data []byte) error {
 	var str string
 	if err := json.Unmarshal(data, &str); err != nil {
 		return err
@@ -177,7 +181,7 @@ func (s *AttributeSubtype) UnmarshalJSON(data []byte) error {
 }
 
 // IsNumeric returns true if the subtype represents a numeric Go type.
-func (s AttributeSubtype) IsNumeric() bool {
+func (s attributeSubtype) IsNumeric() bool {
 	switch s {
 	case SubtypeInt, SubtypeInt8, SubtypeInt16, SubtypeInt32, SubtypeInt64,
 		SubtypeUint, SubtypeUint8, SubtypeUint16, SubtypeUint32, SubtypeUint64,
@@ -188,18 +192,8 @@ func (s AttributeSubtype) IsNumeric() bool {
 	}
 }
 
-// IsUnsigned returns true if the subtype represents an unsigned integer type.
-func (s AttributeSubtype) IsUnsigned() bool {
-	switch s {
-	case SubtypeUint, SubtypeUint8, SubtypeUint16, SubtypeUint32, SubtypeUint64:
-		return true
-	default:
-		return false
-	}
-}
-
 // IsInteger returns true if the subtype represents an integer type.
-func (s AttributeSubtype) IsInteger() bool {
+func (s attributeSubtype) IsInteger() bool {
 	switch s {
 	case SubtypeInt, SubtypeInt8, SubtypeInt16, SubtypeInt32, SubtypeInt64,
 		SubtypeUint, SubtypeUint8, SubtypeUint16, SubtypeUint32, SubtypeUint64:
@@ -209,8 +203,28 @@ func (s AttributeSubtype) IsInteger() bool {
 	}
 }
 
-// Validate checks if the subtype is compatible with the given DynamoDB type.
-func (s AttributeSubtype) Validate(dynamoType string) error {
+// IsUnsigned returns true if the subtype represents an unsigned integer type.
+func (s attributeSubtype) IsUnsigned() bool {
+	switch s {
+	case SubtypeUint, SubtypeUint8, SubtypeUint16, SubtypeUint32, SubtypeUint64:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsBool returns ture if the subtype is Boolean type.
+func (s attributeSubtype) IsBool() bool {
+	return s == SubtypeBool
+}
+
+// IsDefault returns true if default subtype.
+func (s attributeSubtype) IsDefault() bool {
+	return s == SubtypeDefault
+}
+
+// Validate checks whether the subtype is valid for the specified DynamoDB type.
+func (s attributeSubtype) Validate(dynamoType string) error {
 	if s == SubtypeDefault {
 		return nil
 	}
@@ -218,24 +232,31 @@ func (s AttributeSubtype) Validate(dynamoType string) error {
 	switch dynamoType {
 	case "S":
 		if s != SubtypeString {
-			return fmt.Errorf("subtype %s is not compatible with DynamoDB type 'S'", s.String())
+			return logger.NewFailure("incompatible subtype", nil).
+				With("DynamoDB type", dynamoTypeString).
+				With("Subtype", s.String())
 		}
 	case "N":
 		if !s.IsNumeric() {
-			return fmt.Errorf("subtype %s is not compatible with DynamoDB type 'N'", s.String())
+			return logger.NewFailure("incompatible subtype", nil).
+				With("DynamoDB type", dynamoTypeNumber).
+				With("Subtype", s.String())
 		}
 	case "NS":
 		if !s.IsNumeric() {
-			return fmt.Errorf("subtype %s is not compatible with DynamoDB type 'NS'", s.String())
+			return logger.NewFailure("incompatible subtype", nil).
+				With("DynamoDB type", dynamoTypeNumberSet).
+				With("Subtype", s.String())
 		}
 	default:
-		return fmt.Errorf("unknown DynamoDB type: %s", dynamoType)
+		return logger.NewFailure("incompatible subtype", nil).
+			With("DynamoDB type", dynamoType)
 	}
 	return nil
 }
 
-// ZeroValue return GoLang zero value which equal current type.
-func (s AttributeSubtype) ZeroValue() string {
+// ZeroValue returns the Go zero value corresponding to the current subtype.
+func (s attributeSubtype) ZeroValue() string {
 	switch s {
 	case SubtypeString:
 		return `""`

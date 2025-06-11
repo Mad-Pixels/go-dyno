@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Mad-Pixels/go-dyno/internal/schema"
+	"github.com/Mad-Pixels/go-dyno/internal/generator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -117,7 +117,7 @@ func TestSchemaValidation(t *testing.T) {
 			schemaPath := getSchemaPath(t, tc.schemaFile)
 
 			// Attempt to load the schema
-			loadedSchema, err := schema.LoadSchema(schemaPath)
+			loadedSchema, err := generator.Load(schemaPath)
 
 			if tc.expectError {
 				assert.Error(t, err, "Expected validation error for %s", tc.name)
@@ -177,7 +177,7 @@ func TestValidationErrorMessages(t *testing.T) {
 
 			schemaPath := getSchemaPath(t, tc.schemaFile)
 
-			_, err := schema.LoadSchema(schemaPath)
+			_, err := generator.Load(schemaPath)
 			require.Error(t, err, "Should get validation error")
 
 			for _, expectedMsg := range tc.expectedMsgs {

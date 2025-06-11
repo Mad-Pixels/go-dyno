@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Mad-Pixels/go-dyno/internal/schema"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/generator"
+	"github.com/Mad-Pixels/go-dyno/internal/templ"
 	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +37,7 @@ func TestGeneratedCodeCompilation(t *testing.T) {
 		t.Run(schemaName, func(t *testing.T) {
 			t.Parallel()
 
-			dynamoSchema, err := schema.LoadSchema(schemaFile)
+			dynamoSchema, err := generator.Load(schemaFile)
 			require.NoError(t, err, "Failed to load schema: %s", schemaFile)
 
 			templateMap := v2.TemplateMap{
@@ -51,7 +51,7 @@ func TestGeneratedCodeCompilation(t *testing.T) {
 				SecondaryIndexes: dynamoSchema.SecondaryIndexes(),
 			}
 
-			generatedCode := utils.MustParseTemplateFormattedToString(v2.CodeTemplate, templateMap)
+			generatedCode := templ.MustParseTemplateFormattedToString(v2.CodeTemplate, templateMap)
 			require.NotEmpty(t, generatedCode, "Generated code is empty")
 
 			CodeCompiles(t, generatedCode, dynamoSchema.PackageName())
