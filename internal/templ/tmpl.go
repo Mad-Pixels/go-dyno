@@ -9,6 +9,7 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/tmp"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	templatefunc "github.com/Mad-Pixels/go-dyno/internal/utils/template_func"
 	"github.com/rs/zerolog"
 	"golang.org/x/tools/imports"
 	"mvdan.cc/gofumpt/format"
@@ -128,18 +129,18 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 		template.FuncMap{
 			"Join":                   strings.Join,
 			"ToUpper":                strings.ToUpper,
-			"ToUpperCamelCase":       utils.ToUpperCamelCase,
-			"ToLowerCamelCase":       utils.ToLowerCamelCase,
+			"ToUpperCamelCase":       templatefunc.ToUpperCamelCase,
+			"ToLowerCamelCase":       templatefunc.ToLowerCamelCase,
 			"ToGolangBaseType":       tmp.ToGolangBaseType,
 			"ToGolangZeroType":       tmp.ToGolangZeroType,
 			"ToGolangAttrType":       tmp.ToGolangAttrType,
-			"ToSafeName":             utils.ToSafeName,
+			"ToSafeName":             templatefunc.ToSafeName,
 			"IsNumericAttr":          tmp.IsNumericAttr,
 			"IsIntegerAttr":          tmp.IsIntegerAttr,
 			"ToDynamoDBStructTag":    tmp.ToDynamoDBStructTag,
 			"GetUsedNumericSetTypes": tmp.GetUsedNumericSetTypes,
 			"IsFloatType":            utils.IsFloatType,
-			"Slice":                  utils.Slice,
+			"Slice":                  templatefunc.TrimLeftN,
 		},
 	).
 		Parse(tmpl)
