@@ -8,6 +8,16 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 )
 
+// Validate performs comprehensive schema validation.
+//
+// This includes:
+//   - Validation of all attributes
+//   - Verification that hash/range keys are defined
+//   - Validation of index names and definitions
+//   - Enforcement of LSI limits
+//   - Parsing of composite key definitions
+//
+// Returns an error if any invalid configuration is found.
 func (s *Schema) Validate() error {
 	for _, attr := range s.AllAttributes() {
 		if err := attr.Validate(); err != nil {
@@ -20,7 +30,7 @@ func (s *Schema) Validate() error {
 			With("key", s.HashKey())
 	}
 	if rk := s.RangeKey(); rk != "" && !isAttributeDefined(rk, s.AllAttributes()) {
-		return logger.NewFailure("range_ket is not defined in attributes", nil).
+		return logger.NewFailure("range_key is not defined in attributes", nil).
 			With("key", rk)
 	}
 	if err := s.ValidateIndexNames(); err != nil {
@@ -105,11 +115,34 @@ func parseIndexCompositeKeys(idx *index.Index, attrs []attribute.Attribute) erro
 			idx.HashKeyParts[j] = index.CompositeKey{IsConstant: !isAttributeDefined(p, attrs), Value: p}
 		}
 	}
+
+	if idx.IsLSI() && strings.Contains(idx.HashKey, "#") {
+		parts := strings.Split(idx.HashKey, "#")
+		for _, p := range parts {
+			if !isAttributeDefined(p, attrs) {
+				return logger.NewFailure("invalid composite part in LSI hash_key", nil).
+					With("key", p)
+			}
+		}
+		idx.HashKeyParts = make([]index.CompositeKey, len(parts))
+		for j, p := range parts {
+			idx.HashKeyParts[j] = index.CompositeKey{IsConstant: !isAttributeDefined(p, attrs), Value: p}
+		}
+	}
+
 	if strings.Contains(idx.RangeKey, "#") {
 		parts := strings.Split(idx.RangeKey, "#")
 		for _, p := range parts {
 			if !isAttributeDefined(p, attrs) {
-				return logger.NewFailure("invalid composite part in range_key", nil).
+				indexType := "range_key"
+
+				if idx.IsLSI() {
+					indexType = "LSI range_key"
+				} else if idx.IsGSI() {
+					indexType = "GSI range_key"
+				}
+
+				return logger.NewFailure("invalid composite part in "+indexType, nil).
 					With("key", p)
 			}
 		}

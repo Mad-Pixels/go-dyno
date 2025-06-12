@@ -1,3 +1,16 @@
+// Package attribute defines the structure, validation, and code generation logic
+// for DynamoDB attributes used in schema definitions.
+//
+// It provides:
+//   - Attribute representations with type/subtype mapping (e.g., "N" → int, float64, etc.)
+//   - Go type resolution for each attribute
+//   - Validation of DynamoDB types and their compatibility with Go subtypes
+//   - Utility methods for zero-value generation and code rendering
+//
+// Subtypes allow fine-grained control over how DynamoDB data maps to Go code,
+// supporting scalar types, numeric variations, and boolean types.
+//
+// This package is used internally during schema parsing and code generation.
 package attribute
 
 import (
@@ -6,7 +19,6 @@ import (
 )
 
 var (
-	// validTypes lists all supported DynamoDB types
 	validTypes = map[string]bool{
 		// Scalar types
 		"S":    true,
@@ -51,6 +63,20 @@ func (a Attribute) GoType() string {
 		return "int"
 	case "B":
 		return "bool"
+	case "SS":
+		return "[]string"
+	case "NS":
+		return "[]int"
+	case "BS":
+		return "[][]byte"
+	case "BOOL":
+		return "bool"
+	case "L":
+		return "[]any"
+	case "M":
+		return "map[string]any"
+	case "NULL":
+		return "any"
 	default:
 		return "any"
 	}
@@ -67,8 +93,10 @@ func (a Attribute) ZeroValue() string {
 		return `""`
 	case "N":
 		return "0"
-	case "B":
+	case "B", "BOOL":
 		return "false"
+	case "SS", "NS", "BS", "L", "M", "NULL":
+		return "nil"
 	default:
 		return "nil"
 	}

@@ -1,3 +1,12 @@
+// Package index defines the structure and validation logic for DynamoDB secondary indexes,
+// including Global Secondary Indexes (GSI) and Local Secondary Indexes (LSI).
+//
+// It provides utilities for:
+//   - Representing index metadata (keys, projection, capacity)
+//   - Validating index configuration
+//   - Handling composite key parts (e.g., user#type)
+//
+// This package is used internally during schema parsing and code generation.
 package index
 
 import (
