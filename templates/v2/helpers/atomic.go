@@ -3,7 +3,7 @@ package helpers
 // AtomicHelpersTemplate ...
 const AtomicHelpersTemplate = `
 // IncrementAttribute ...
-func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
+func IncrementAttribute(hashKeyValue any, rangeKeyValue any, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -33,7 +33,7 @@ func IncrementAttribute(hashKeyValue interface{}, rangeKeyValue interface{}, att
 }
 
 // AddToSet ...
-func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
+func AddToSet(hashKeyValue any, rangeKeyValue any, attributeName string, values any) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -83,7 +83,7 @@ func AddToSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName
 }
 
 // RemoveFromSet ...
-func RemoveFromSet(hashKeyValue interface{}, rangeKeyValue interface{}, attributeName string, values interface{}) (*dynamodb.UpdateItemInput, error) {
+func RemoveFromSet(hashKeyValue any, rangeKeyValue any, attributeName string, values any) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }

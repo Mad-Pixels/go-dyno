@@ -4,12 +4,12 @@ package inputs
 const KeyInputsTemplate = `
 // KeyInput creates key from SchemaItem with validation
 func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
-    var hashKeyValue interface{}
+    var hashKeyValue any
     {{range .AllAttributes}}{{if eq .Name $.HashKey}}
     hashKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
     {{end}}{{end}}
     
-    var rangeKeyValue interface{}
+    var rangeKeyValue any
     {{if .RangeKey}}{{range .AllAttributes}}{{if eq .Name $.RangeKey}}
     rangeKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
     {{end}}{{end}}{{end}}
@@ -40,7 +40,7 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
 }
 
 // KeyInputFromRaw creates key from raw values (assumes validation already done)
-func KeyInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (map[string]types.AttributeValue, error) {
+func KeyInputFromRaw(hashKeyValue any, rangeKeyValue any) (map[string]types.AttributeValue, error) {
     // Pure business logic - validation should be done by caller
     key := make(map[string]types.AttributeValue)
    

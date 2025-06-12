@@ -3,7 +3,7 @@ package helpers
 // ValidationHelpersTemplate ...
 const ValidationHelpersTemplate = `
 // validateKeyPart checks if key part (hash or range) value is valid
-func validateKeyPart(partName string, value interface{}) error {
+func validateKeyPart(partName string, value any) error {
     if value == nil {
         // Only hash key cannot be nil, range key can be nil
         if partName == "hash" {
@@ -29,12 +29,12 @@ func validateKeyPart(partName string, value interface{}) error {
 }
 
 // validateHashKey checks if hash key value is valid
-func validateHashKey(value interface{}) error {
+func validateHashKey(value any) error {
     return validateKeyPart("hash", value)
 }
 
 // validateRangeKey checks if range key value is valid (nil is allowed)
-func validateRangeKey(value interface{}) error {
+func validateRangeKey(value any) error {
     return validateKeyPart("range", value)
 }
 
@@ -52,7 +52,7 @@ func validateAttributeName(name string) error {
 }
 
 // validateUpdatesMap checks if updates map is valid
-func validateUpdatesMap(updates map[string]interface{}) error {
+func validateUpdatesMap(updates map[string]any) error {
     if len(updates) == 0 {
         return fmt.Errorf("updates map cannot be empty")
     }
@@ -84,7 +84,7 @@ func validateBatchSize(size int, operation string) error {
 }
 
 // validateSetValues checks if set values are valid for AddToSet/RemoveFromSet
-func validateSetValues(values interface{}) error {
+func validateSetValues(values any) error {
     if values == nil {
         return fmt.Errorf("set values cannot be nil")
     }
@@ -133,7 +133,7 @@ func validateIncrementValue(value int) error {
 }
 
 // validateKeyInputs validates both hash and range key inputs for operations
-func validateKeyInputs(hashKeyValue, rangeKeyValue interface{}) error {
+func validateKeyInputs(hashKeyValue, rangeKeyValue any) error {
     if err := validateHashKey(hashKeyValue); err != nil {
         return fmt.Errorf("invalid hash key: %v", err)
     }

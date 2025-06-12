@@ -6,7 +6,10 @@
 // generated code work with AWS-SDK-V2 version.
 package v2
 
-import "github.com/Mad-Pixels/go-dyno/internal/schema/common"
+import (
+	"github.com/Mad-Pixels/go-dyno/internal/generator/attribute"
+	"github.com/Mad-Pixels/go-dyno/internal/generator/index"
+)
 
 // TemplateMap defines the full set of metadata used to generate DynamoDB-related code.
 // It acts as the main input structure for the Go code template engine.
@@ -24,14 +27,14 @@ type TemplateMap struct {
 	RangeKey string
 
 	// Attributes are the table-specific attributes defined in the schema.
-	Attributes []common.Attribute
+	Attributes []attribute.Attribute
 
 	// CommonAttributes are shared attributes used across multiple tables.
-	CommonAttributes []common.Attribute
+	CommonAttributes []attribute.Attribute
 
 	// AllAttributes is a union of Attributes and CommonAttributes, used in template rendering.
-	AllAttributes []common.Attribute
+	AllAttributes []attribute.Attribute
 
 	// SecondaryIndexes defines all global and local secondary indexes for the table.
-	SecondaryIndexes []common.SecondaryIndex
+	SecondaryIndexes []index.Index
 }

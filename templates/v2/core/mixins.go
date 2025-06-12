@@ -6,7 +6,7 @@ const MixinsTemplate = `
 type FilterMixin struct {
     FilterConditions  []expression.ConditionBuilder
     UsedKeys          map[string]bool
-    Attributes        map[string]interface{}
+    Attributes        map[string]any
 }
 
 // NewFilterMixin creates a new FilterMixin
@@ -14,12 +14,12 @@ func NewFilterMixin() FilterMixin {
     return FilterMixin{
         FilterConditions: make([]expression.ConditionBuilder, 0),
         UsedKeys:         make(map[string]bool),
-        Attributes:       make(map[string]interface{}),
+        Attributes:       make(map[string]any),
     }
 }
 
 // Filter adds a filter condition using the universal operator system
-func (fm *FilterMixin) Filter(field string, op OperatorType, values ...interface{}) {
+func (fm *FilterMixin) Filter(field string, op OperatorType, values ...any) {
     if !ValidateValues(op, values) {
         return
     }
@@ -42,47 +42,47 @@ func (fm *FilterMixin) Filter(field string, op OperatorType, values ...interface
 }
 
 // FilterEQ is a convenience method for equality filters
-func (fm *FilterMixin) FilterEQ(field string, value interface{}) {
+func (fm *FilterMixin) FilterEQ(field string, value any) {
     fm.Filter(field, EQ, value)
 }
 
 // FilterContains is a convenience method for contains filters
-func (fm *FilterMixin) FilterContains(field string, value interface{}) {
+func (fm *FilterMixin) FilterContains(field string, value any) {
     fm.Filter(field, CONTAINS, value)
 }
 
 // FilterNotContains is a convenience method for not contains filters
-func (fm *FilterMixin) FilterNotContains(field string, value interface{}) {
+func (fm *FilterMixin) FilterNotContains(field string, value any) {
     fm.Filter(field, NOT_CONTAINS, value)
 }
 
 // FilterBeginsWith is a convenience method for begins_with filters
-func (fm *FilterMixin) FilterBeginsWith(field string, value interface{}) {
+func (fm *FilterMixin) FilterBeginsWith(field string, value any) {
     fm.Filter(field, BEGINS_WITH, value)
 }
 
 // FilterBetween is a convenience method for range filters
-func (fm *FilterMixin) FilterBetween(field string, start, end interface{}) {
+func (fm *FilterMixin) FilterBetween(field string, start, end any) {
     fm.Filter(field, BETWEEN, start, end)
 }
 
 // FilterGT is a convenience method for greater than filters
-func (fm *FilterMixin) FilterGT(field string, value interface{}) {
+func (fm *FilterMixin) FilterGT(field string, value any) {
     fm.Filter(field, GT, value)
 }
 
 // FilterLT is a convenience method for less than filters
-func (fm *FilterMixin) FilterLT(field string, value interface{}) {
+func (fm *FilterMixin) FilterLT(field string, value any) {
     fm.Filter(field, LT, value)
 }
 
 // FilterGTE is a convenience method for greater than or equal filters
-func (fm *FilterMixin) FilterGTE(field string, value interface{}) {
+func (fm *FilterMixin) FilterGTE(field string, value any) {
     fm.Filter(field, GTE, value)
 }
 
 // FilterLTE is a convenience method for less than or equal filters
-func (fm *FilterMixin) FilterLTE(field string, value interface{}) {
+func (fm *FilterMixin) FilterLTE(field string, value any) {
     fm.Filter(field, LTE, value)
 }
 
@@ -97,13 +97,13 @@ func (fm *FilterMixin) FilterNotExists(field string) {
 }
 
 // FilterNE is a convenience method for not equal filters
-func (fm *FilterMixin) FilterNE(field string, value interface{}) {
+func (fm *FilterMixin) FilterNE(field string, value any) {
     fm.Filter(field, NE, value)
 }
 
 // FilterIn is a convenience method for IN filters (for scalar values only)
 // For checking membership in DynamoDB Sets (SS/NS), use FilterContains instead
-func (fm *FilterMixin) FilterIn(field string, values ...interface{}) {
+func (fm *FilterMixin) FilterIn(field string, values ...any) {
     if len(values) == 0 {
         return
     }
@@ -112,7 +112,7 @@ func (fm *FilterMixin) FilterIn(field string, values ...interface{}) {
 
 // FilterNotIn is a convenience method for NOT_IN filters (for scalar values only)
 // For checking non-membership in DynamoDB Sets (SS/NS), use FilterNotContains instead
-func (fm *FilterMixin) FilterNotIn(field string, values ...interface{}) {
+func (fm *FilterMixin) FilterNotIn(field string, values ...any) {
     if len(values) == 0 {
         return
     }
@@ -155,7 +155,7 @@ func NewKeyConditionMixin() KeyConditionMixin {
 }
 
 // With adds a key condition using the universal operator system
-func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...interface{}) {
+func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...any) {
     if !ValidateValues(op, values) {
         return
     }
@@ -182,32 +182,32 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...inte
 }
 
 // WithEQ is a convenience method for equality key conditions
-func (kcm *KeyConditionMixin) WithEQ(field string, value interface{}) {
+func (kcm *KeyConditionMixin) WithEQ(field string, value any) {
     kcm.With(field, EQ, value)
 }
 
 // WithBetween is a convenience method for range key conditions
-func (kcm *KeyConditionMixin) WithBetween(field string, start, end interface{}) {
+func (kcm *KeyConditionMixin) WithBetween(field string, start, end any) {
     kcm.With(field, BETWEEN, start, end)
 }
 
 // WithGT is a convenience method for greater than key conditions
-func (kcm *KeyConditionMixin) WithGT(field string, value interface{}) {
+func (kcm *KeyConditionMixin) WithGT(field string, value any) {
     kcm.With(field, GT, value)
 }
 
 // WithGTE is a convenience method for greater than or equal key conditions
-func (kcm *KeyConditionMixin) WithGTE(field string, value interface{}) {
+func (kcm *KeyConditionMixin) WithGTE(field string, value any) {
     kcm.With(field, GTE, value)
 }
 
 // WithLT is a convenience method for less than key conditions
-func (kcm *KeyConditionMixin) WithLT(field string, value interface{}) {
+func (kcm *KeyConditionMixin) WithLT(field string, value any) {
     kcm.With(field, LT, value)
 }
 
 // WithLTE is a convenience method for less than or equal key conditions
-func (kcm *KeyConditionMixin) WithLTE(field string, value interface{}) {
+func (kcm *KeyConditionMixin) WithLTE(field string, value any) {
     kcm.With(field, LTE, value)
 }
 

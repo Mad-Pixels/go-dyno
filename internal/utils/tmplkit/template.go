@@ -1,4 +1,4 @@
-package utils
+package tmplkit
 
 import (
 	"bytes"
@@ -137,7 +137,7 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 			"ToDynamoDBStructTag":    ToDynamoDBStructTag,
 			"GetUsedNumericSetTypes": GetUsedNumericSetTypes,
 			"IsFloatType":            IsFloatType,
-			"Slice":                  Slice,
+			"Slice":                  TrimLeftN,
 		},
 	).
 		Parse(tmpl)

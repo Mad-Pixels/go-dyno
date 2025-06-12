@@ -16,7 +16,7 @@ func DeleteItemInput(item SchemaItem) (*dynamodb.DeleteItemInput, error) {
 }
 
 // DeleteItemInputFromRaw ...
-func DeleteItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}) (*dynamodb.DeleteItemInput, error) {
+func DeleteItemInputFromRaw(hashKeyValue any, rangeKeyValue any) (*dynamodb.DeleteItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
@@ -35,7 +35,7 @@ func DeleteItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{})
 }
 
 // DeleteItemInputWithCondition ...
-func DeleteItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, conditionExpression string, expressionAttributeNames map[string]string, expressionAttributeValues map[string]types.AttributeValue) (*dynamodb.DeleteItemInput, error) {
+func DeleteItemInputWithCondition(hashKeyValue any, rangeKeyValue any, conditionExpression string, expressionAttributeNames map[string]string, expressionAttributeValues map[string]types.AttributeValue) (*dynamodb.DeleteItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err

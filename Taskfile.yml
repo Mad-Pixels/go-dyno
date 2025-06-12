@@ -148,7 +148,7 @@ tasks:
       - rm -rf tests/localstack/generated 
       - mkdir -p tests/localstack/generated 
       - |
-        for schema in tests/data/*.json; do 
+        for schema in tests/fixtures/*.json; do 
           go run ./cmd/dyno gen \
             -c "${schema}" \
             -d "tests/localstack/generated"

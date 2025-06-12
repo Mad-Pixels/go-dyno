@@ -1,4 +1,4 @@
-package utils
+package fs
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 //
 // Example:
 //
-//	data, err := utils.ReadFile("config.json")
+//	data, err := fs.ReadFile("config.json")
 func ReadFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -28,7 +28,7 @@ func ReadFile(path string) ([]byte, error) {
 // Example:
 //
 //	var cfg Config
-//	err := utils.ReadAndParseJSON("config.json", &cfg)
+//	err := fs.ReadAndParseJSON("config.json", &cfg)
 func ReadAndParseJSON(path string, obj any) error {
 	b, err := ReadFile(path)
 	if err != nil {
@@ -42,12 +42,35 @@ func ReadAndParseJSON(path string, obj any) error {
 	return nil
 }
 
+// WriteToFile writes data to a file, creating it if necessary.
+// Overwrites any existing content.
+//
+// Example:
+//
+//	err := fs.WriteToFile("data.json", []byte(`{"key": "value"}`))
+func WriteToFile(path string, data []byte) error {
+	if err := IsFileOrCreate(path); err != nil {
+		return err
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return logger.NewFailure("couldn't open a file", err).
+			With("path", path)
+	}
+	defer file.Close()
+	if _, err := file.Write(data); err != nil {
+		return logger.NewFailure("couldn't write to file", err).
+			With("path", path)
+	}
+	return nil
+}
+
 // IsFileOrError checks if the given path exists and is a file.
 // Returns a descriptive error if the path does not exist or is a directory.
 //
 // Example:
 //
-//	err := utils.IsFileOrError("data.json")
+//	err := fs.IsFileOrError("data.json")
 func IsFileOrError(path string) error {
 	exist, isDir, err := statPath(path)
 	if err != nil {
@@ -70,7 +93,7 @@ func IsFileOrError(path string) error {
 //
 // Example:
 //
-//	err := utils.IsFileOrCreate("output/result.txt")
+//	err := fs.IsFileOrCreate("output/result.txt")
 func IsFileOrCreate(path string) error {
 	exist, isDir, err := statPath(path)
 	if err != nil {
@@ -93,67 +116,6 @@ func IsFileOrCreate(path string) error {
 			With("path", path)
 	}
 	defer file.Close()
-	return nil
-}
-
-// WriteToFile writes data to a file, creating it if necessary.
-// Overwrites any existing content.
-//
-// Example:
-//
-//	err := utils.WriteToFile("data.json", []byte(`{"key": "value"}`))
-func WriteToFile(path string, data []byte) error {
-	if err := IsFileOrCreate(path); err != nil {
-		return err
-	}
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		return logger.NewFailure("couldn't open a file", err).
-			With("path", path)
-	}
-	defer file.Close()
-	if _, err := file.Write(data); err != nil {
-		return logger.NewFailure("couldn't write to file", err).
-			With("path", path)
-	}
-	return nil
-}
-
-// IsDirOrCreate checks if the given path exists and is a directory.
-// If it does not exist, it creates the directory (and all parent directories).
-//
-// Example:
-//
-//	err := utils.IsDirOrCreate("generated/output")
-func IsDirOrCreate(path string) error {
-	exist, isDir, err := statPath(path)
-	if err != nil {
-		return logger.NewFailure("failed to stat path", err).
-			With("path", path)
-	}
-	if exist && !isDir {
-		return logger.NewFailure("path already exist and it's not a directory", nil).
-			With("path", path)
-	}
-	if exist {
-		return nil
-	}
-	if err := os.MkdirAll(path, 0o755); err != nil {
-		return logger.NewFailure("failed to create a dictionary", err).With("path", path)
-	}
-	return nil
-}
-
-// RemovePath removes a file or directory at the specified path recursively.
-//
-// Example:
-//
-//	err := utils.RemovePath("tmp/build")
-func RemovePath(path string) error {
-	if err := os.RemoveAll(path); err != nil {
-		return logger.NewFailure("failed to remove path", err).
-			With("path", path)
-	}
 	return nil
 }
 

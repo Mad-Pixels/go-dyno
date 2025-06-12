@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Mad-Pixels/go-dyno/internal/schema"
+	"github.com/Mad-Pixels/go-dyno/internal/generator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func getSchemaPath(t *testing.T, filename string) string {
 	require.NoError(t, err, "Should find project root")
 
 	// Build absolute path from project root
-	schemaPath := filepath.Join(projectRoot, "tests", "data", filename)
+	schemaPath := filepath.Join(projectRoot, "tests", "fixtures", filename)
 
 	// Verify file exists
 	_, err = os.Stat(schemaPath)
@@ -80,14 +80,14 @@ func TestSchemaValidation(t *testing.T) {
 			name:          "invalid_string_with_float_subtype",
 			schemaFile:    "invalid-string-with-float.json",
 			expectError:   true,
-			errorContains: "float32 is not compatible with DynamoDB type 'S'",
+			errorContains: "incompatible subtype",
 			description:   "String attribute cannot have float32 subtype",
 		},
 		{
 			name:          "invalid_number_with_string_subtype",
 			schemaFile:    "invalid-number-with-string.json",
 			expectError:   true,
-			errorContains: "string is not compatible with DynamoDB type 'N'",
+			errorContains: "incompatible subtype",
 			description:   "Number attribute cannot have string subtype",
 		},
 		{
@@ -101,7 +101,7 @@ func TestSchemaValidation(t *testing.T) {
 			name:          "invalid_unknown_dynamodb_type",
 			schemaFile:    "invalid-unknown-type.json",
 			expectError:   true,
-			errorContains: "invalid DynamoDB type 'UNKNOWN_TYPE'",
+			errorContains: "invalid attribute type",
 			description:   "Unknown DynamoDB types should be rejected",
 		},
 	}
@@ -117,7 +117,7 @@ func TestSchemaValidation(t *testing.T) {
 			schemaPath := getSchemaPath(t, tc.schemaFile)
 
 			// Attempt to load the schema
-			loadedSchema, err := schema.LoadSchema(schemaPath)
+			loadedSchema, err := generator.Load(schemaPath)
 
 			if tc.expectError {
 				assert.Error(t, err, "Expected validation error for %s", tc.name)
@@ -150,8 +150,7 @@ func TestValidationErrorMessages(t *testing.T) {
 			name:       "subtype_compatibility_error",
 			schemaFile: "invalid-string-with-float.json",
 			expectedMsgs: []string{
-				"invalid attribute",
-				"float32 is not compatible with DynamoDB type 'S'",
+				"incompatible subtype",
 			},
 		},
 		{
@@ -165,7 +164,7 @@ func TestValidationErrorMessages(t *testing.T) {
 			name:       "unknown_type_error",
 			schemaFile: "invalid-unknown-type.json",
 			expectedMsgs: []string{
-				"invalid DynamoDB type 'UNKNOWN_TYPE'",
+				"invalid attribute type",
 			},
 		},
 	}
@@ -177,7 +176,7 @@ func TestValidationErrorMessages(t *testing.T) {
 
 			schemaPath := getSchemaPath(t, tc.schemaFile)
 
-			_, err := schema.LoadSchema(schemaPath)
+			_, err := generator.Load(schemaPath)
 			require.Error(t, err, "Should get validation error")
 
 			for _, expectedMsg := range tc.expectedMsgs {
