@@ -47,7 +47,7 @@ func (s *Schema) Validate() error {
 		if idx.IsLSI() {
 			idx.HashKey = s.HashKey()
 		}
-		if err := idx.Validate(s.HashKey(), s.RangeKey()); err != nil {
+		if err := idx.Validate(s.RangeKey()); err != nil {
 			return err
 		}
 

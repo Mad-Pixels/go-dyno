@@ -131,21 +131,18 @@ func (s Schema) ValidateIndexNames() error {
 //  1. LSI if hash key matches main table and range key is present
 //  2. GSI if hash key matches a GSI
 //  3. nil (fallback to primary table)
-func (s Schema) GetOptimalIndexForQuery(hashKey, rangeKey string) *index.Index {
-	var (
-		hasHashKey  = hashKey != ""
-		hasRangeKey = rangeKey != ""
-	)
+func (s Schema) GetOptimalIndexForQuery(hashKey string) *index.Index {
+	var hasHashKey = hashKey != ""
 
 	for _, idx := range s.LocalSecondaryIndexes() {
-		if idx.SupportsQuery(hasHashKey, hasRangeKey, s.HashKey()) {
+		if idx.SupportsQuery(s.HashKey()) {
 			if hasHashKey && hashKey == s.HashKey() {
 				return &idx
 			}
 		}
 	}
 	for _, idx := range s.GlobalSecondaryIndexes() {
-		if idx.SupportsQuery(hasHashKey, hasRangeKey, s.HashKey()) {
+		if idx.SupportsQuery(s.HashKey()) {
 			if hasHashKey && hashKey == idx.HashKey {
 				return &idx
 			}

@@ -1,3 +1,4 @@
+// Package tmplkit ...
 package tmplkit
 
 import (

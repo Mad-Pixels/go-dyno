@@ -16,14 +16,14 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
 )
 
-// IndexType defines the type of secondary index
-type IndexType string
+// Type defines the type of secondary index.
+type Type string
 
 const (
 	// GSI represents a Global Secondary Index
-	GSI IndexType = "GSI"
+	GSI Type = "GSI"
 	// LSI represents a Local Secondary Index
-	LSI IndexType = "LSI"
+	LSI Type = "LSI"
 )
 
 var (
@@ -42,8 +42,8 @@ var (
 )
 
 // String returns the string representation of IndexType
-func (it IndexType) String() string {
-	return string(it)
+func (t Type) String() string {
+	return string(t)
 }
 
 // Index represents either a Global Secondary Index (GSI) or Local Secondary Index (LSI)
@@ -53,7 +53,7 @@ type Index struct {
 
 	// Type specifies whether this is a "GSI" or "LSI"
 	// If empty, defaults to "GSI" for backward compatibility
-	Type IndexType `json:"type,omitempty"`
+	Type Type `json:"type,omitempty"`
 
 	// HashKey is the partition key for GSI only
 	// For LSI, this field is ignored as LSI uses table's hash key
@@ -83,7 +83,7 @@ type Index struct {
 }
 
 // SupportsQuery returns true if this index can be used for the given key pattern.
-func (i Index) SupportsQuery(hasHashKey, hasRangeKey bool, tableHashKey string) bool {
+func (i Index) SupportsQuery(tableHashKey string) bool {
 	return i.GetEffectiveHashKey(tableHashKey) != ""
 }
 
@@ -116,12 +116,12 @@ func (i Index) GetEffectiveHashKey(tableHashKey string) string {
 }
 
 // HasCompositeHashKey returns true if the hash key is composite (contains #)
-func (si Index) HasCompositeHashKey() bool {
-	return len(si.HashKeyParts) > 0
+func (i Index) HasCompositeHashKey() bool {
+	return len(i.HashKeyParts) > 0
 }
 
 // Validate performs comprehensive validation of the secondary index configuration.
-func (i Index) Validate(tableHashKey, tableRangeKey string) error {
+func (i Index) Validate(tableRangeKey string) error {
 	if !validIndexesTypes[strings.ToUpper(string(i.Type))] {
 		return logger.NewFailure("invalid index", nil).
 			With("name", i.Name).
