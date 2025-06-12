@@ -62,7 +62,7 @@ func (a Attribute) GoType() string {
 	case "N":
 		return "int"
 	case "B":
-		return "bool"
+		return "[]byte"
 	case "SS":
 		return "[]string"
 	case "NS":
