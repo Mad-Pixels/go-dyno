@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 )
 
 // Type defines the type of secondary index.
@@ -125,12 +125,12 @@ func (i Index) Validate(tableRangeKey string) error {
 	if !validIndexesTypes[strings.ToUpper(string(i.Type))] {
 		return logger.NewFailure("invalid index", nil).
 			With("name", i.Name).
-			With("available", utils.AvailableKeys(validIndexesTypes))
+			With("available", conv.AvailableKeys(validIndexesTypes))
 	}
 	if !validProjectionTypes[strings.ToUpper(i.ProjectionType)] {
 		return logger.NewFailure("invalid projection type", nil).
 			With("type", i.ProjectionType).
-			With("available", utils.AvailableKeys(validProjectionTypes))
+			With("available", conv.AvailableKeys(validProjectionTypes))
 	}
 
 	if strings.ToUpper(i.ProjectionType) == "INCLUDE" && len(i.NonKeyAttributes) == 0 {

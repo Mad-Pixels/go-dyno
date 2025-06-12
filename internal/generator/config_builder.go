@@ -2,7 +2,7 @@ package generator
 
 import (
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
 )
 
@@ -34,11 +34,11 @@ func (cb *ConfigBuilder) Build() (*Config, error) {
 	}
 
 	if cb.config.packageName != nil {
-		safe := utils.ToSafeName(*cb.config.packageName)
+		safe := conv.ToSafeName(*cb.config.packageName)
 		cb.config.packageName = &safe
 	}
 	if cb.config.fileName != nil {
-		safe := fs.AddFileExt(utils.ToSafeName(*cb.config.fileName), ".go")
+		safe := fs.AddFileExt(conv.ToSafeName(*cb.config.fileName), ".go")
 		cb.config.fileName = &safe
 	}
 

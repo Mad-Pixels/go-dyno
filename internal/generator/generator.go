@@ -24,7 +24,7 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/generator/schema"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
-	"github.com/Mad-Pixels/go-dyno/internal/utils/tmplkit"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/tmpl"
 	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 )
 
@@ -86,8 +86,7 @@ func Render(spec *schema.Schema) (string, error) {
 		AllAttributes:    spec.AllAttributes(),
 		SecondaryIndexes: spec.SecondaryIndexes(),
 	}
-	r := tmplkit.MustParseTemplateFormattedToString(v2.CodeTemplate, tmplMap)
-	return r, nil
+	return tmpl.MustParseTemplateFormattedToString(v2.CodeTemplate, tmplMap), nil
 }
 
 // Generate performs the full code generation pipeline based on the given configuration.

@@ -12,7 +12,7 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/generator/attribute"
 	"github.com/Mad-Pixels/go-dyno/internal/generator/index"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
 )
 
@@ -48,7 +48,7 @@ func (s Schema) RangeKey() string {
 
 // PackageName returns a Go-safe lowercase package name derived from the table name.
 func (s Schema) PackageName() string {
-	return utils.ToLowerInlineCase(s.raw.TableName)
+	return conv.ToLowerInlineCase(s.raw.TableName)
 }
 
 // Filename returns the default Go filename for generated code based on the table name.

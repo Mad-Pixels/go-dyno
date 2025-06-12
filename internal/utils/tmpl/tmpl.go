@@ -1,4 +1,16 @@
-package tmplkit
+// Package tmpl provides utility functions for rendering Go text templates with
+// built-in helpers for code generation.
+//
+// It supports:
+//   - Safe rendering of templates with panic-on-error semantics
+//   - Automatic formatting using gofumpt and goimports for production-ready Go code
+//   - Common template functions such as Join, CamelCase conversion, DynamoDB struct tags,
+//     Go type resolution for attributes, and more
+//
+// Typical use cases include:
+//   - Generating Go source code from schema definitions
+//   - Producing templates with dynamic attribute, type, and tag handling
+package tmpl
 
 import (
 	"bytes"
@@ -6,7 +18,9 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Mad-Pixels/go-dyno/internal/generator/attribute"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/rs/zerolog"
 	"golang.org/x/tools/imports"
 	"mvdan.cc/gofumpt/format"
@@ -126,18 +140,18 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 		template.FuncMap{
 			"Join":                   strings.Join,
 			"ToUpper":                strings.ToUpper,
-			"ToUpperCamelCase":       ToUpperCamelCase,
-			"ToLowerCamelCase":       ToLowerCamelCase,
-			"ToGolangBaseType":       ToGolangBaseType,
-			"ToGolangZeroType":       ToGolangZeroType,
-			"ToGolangAttrType":       ToGolangAttrType,
-			"ToSafeName":             ToSafeName,
-			"IsNumericAttr":          IsNumericAttr,
-			"IsIntegerAttr":          IsIntegerAttr,
-			"ToDynamoDBStructTag":    ToDynamoDBStructTag,
-			"GetUsedNumericSetTypes": GetUsedNumericSetTypes,
-			"IsFloatType":            IsFloatType,
-			"Slice":                  TrimLeftN,
+			"ToUpperCamelCase":       conv.ToUpperCamelCase,
+			"ToLowerCamelCase":       conv.ToLowerCamelCase,
+			"ToGolangBaseType":       attribute.ToGolangBaseType,
+			"ToGolangZeroType":       attribute.ToGolangZeroType,
+			"ToGolangAttrType":       attribute.ToGolangAttrType,
+			"ToSafeName":             conv.ToSafeName,
+			"IsNumericAttr":          attribute.IsNumericAttr,
+			"IsIntegerAttr":          attribute.IsIntegerAttr,
+			"ToDynamoDBStructTag":    attribute.ToDynamoDBStructTag,
+			"GetUsedNumericSetTypes": attribute.GetUsedNumericSetTypes,
+			"IsFloatType":            conv.IsFloatType,
+			"Slice":                  conv.TrimLeftN,
 		},
 	).
 		Parse(tmpl)
