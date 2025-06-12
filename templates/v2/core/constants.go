@@ -7,12 +7,12 @@ const (
     TableName = "{{.TableName}}"
    
     {{range .SecondaryIndexes}}
-    // Index{{.Name}} is the {{if .IsGSI}}GSI{{else}}LSI{{end}} index name for alternative queries.
-    Index{{.Name}} = "{{.Name}}"
+    // Index{{ToSafeName .Name | ToUpperCamelCase}} is the "{{.Name}}" {{if eq .HashKey $.HashKey}}LSI{{else}}GSI{{end}} index.
+    Index{{ToSafeName .Name | ToUpperCamelCase}} = "{{.Name}}"
     {{- end}}
 
     {{range .AllAttributes}}
-    // Column{{ToSafeName .Name | ToUpperCamelCase}} is the attribute name for "{{.Name}}" field.
+    // Column{{ToSafeName .Name | ToUpperCamelCase}} is the "{{.Name}}" attribute name.
     Column{{ToSafeName .Name | ToUpperCamelCase}} = "{{.Name}}"
     {{- end}}
 )

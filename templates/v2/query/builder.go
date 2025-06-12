@@ -1,6 +1,6 @@
 package query
 
-// QueryBuilderTemplate provides the main QueryBuilder struct with mixin composition
+// QueryBuilderTemplate provides the main QueryBuilder struct with universal index methods
 const QueryBuilderTemplate = `
 // QueryBuilder provides a fluent interface for building type-safe DynamoDB queries.
 // Combines FilterMixin, PaginationMixin, and KeyConditionMixin for comprehensive query building.
@@ -246,75 +246,218 @@ func (qb *QueryBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeVal
     return qb
 }
 
-{{range .SecondaryIndexes}}
-{{if gt (len .HashKeyParts) 0}}
-{{- $hasNonConstant := false -}}
-{{- range .HashKeyParts -}}{{- if not .IsConstant -}}{{- $hasNonConstant = true -}}{{- end -}}{{- end -}}
-{{- if $hasNonConstant}}
-// WithIndexHashKey sets composite hash key for the index.
-// Automatically builds the composite key from the provided components.
-// Example: query.WithIndexHashKey(value1, value2)
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{range $i, $part := .HashKeyParts}}{{if not $part.IsConstant}}{{if $i}}, {{end}}{{$part.Value | ToLowerCamelCase}} {{ToGolangAttrType $part.Value $.AllAttributes}}{{end}}{{end}}) *QueryBuilder {
-    {{range .HashKeyParts}}{{if not .IsConstant}}
-    qb.Attributes["{{.Value}}"] = {{.Value | ToLowerCamelCase}}
-    qb.UsedKeys["{{.Value}}"] = true
-    {{end}}{{end}}
+// WithIndexHashKey sets hash key for any index by name.
+// Automatically handles both simple and composite keys based on schema metadata.
+// For composite keys, pass values in the order they appear in the schema.
+// Example: query.WithIndexHashKey("user-status-index", "user123")
+// Example: query.WithIndexHashKey("tenant-user-index", "tenant1", "user123") // composite
+func (qb *QueryBuilder) WithIndexHashKey(indexName string, values ...any) *QueryBuilder {
+    index := qb.getIndexByName(indexName)
+    if index == nil {
+        return qb
+    }
     
-    compositeValue := qb.buildCompositeKeyValue([]CompositeKeyPart{
-        {{range .HashKeyParts}}
-        {{if .IsConstant}}
-        {IsConstant: true, Value: "{{.Value}}"},
-        {{else}}
-        {IsConstant: false, Value: "{{.Value}}"},
-        {{end}}
-        {{end}}
-    })
+    if index.HashKeyParts != nil {
+        // Composite key
+        nonConstantParts := qb.getNonConstantParts(index.HashKeyParts)
+        if len(values) != len(nonConstantParts) {
+            return qb // Wrong number of values
+        }
+        qb.setCompositeKey(index.HashKey, index.HashKeyParts, values)
+    } else {
+        // Simple key
+        if len(values) != 1 {
+            return qb
+        }
+        qb.Attributes[index.HashKey] = values[0]
+        qb.UsedKeys[index.HashKey] = true
+        qb.KeyConditions[index.HashKey] = expression.Key(index.HashKey).Equal(expression.Value(values[0]))
+    }
     
-    qb.Attributes["{{.HashKey}}"] = compositeValue
-    qb.UsedKeys["{{.HashKey}}"] = true
-    qb.KeyConditions["{{.HashKey}}"] = expression.Key("{{.HashKey}}").Equal(expression.Value(compositeValue))
     return qb
 }
-{{end}}
-{{else if .HashKey}}
-// WithIndexHashKey sets hash key for the index.
-// Provides type-safe access to the index partition key.
-// Example: query.WithIndexHashKey(value)
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}HashKey({{.HashKey | ToLowerCamelCase}} {{ToGolangAttrType .HashKey $.AllAttributes}}) *QueryBuilder {
-    qb.Attributes["{{.HashKey}}"] = {{.HashKey | ToLowerCamelCase}}
-    qb.UsedKeys["{{.HashKey}}"] = true
-    qb.KeyConditions["{{.HashKey}}"] = expression.Key("{{.HashKey}}").Equal(expression.Value({{.HashKey | ToLowerCamelCase}}))
-    return qb
-}
-{{end}}
-{{end}}
 
-{{range .SecondaryIndexes}}
-{{if gt (len .RangeKeyParts) 0}}
-{{- $hasNonConstant := false -}}
-{{- range .RangeKeyParts -}}{{- if not .IsConstant -}}{{- $hasNonConstant = true -}}{{- end -}}{{- end -}}
-{{- if $hasNonConstant}}
-// WithIndexRangeKey sets composite range key for the index.
-// Automatically builds the composite key from the provided components.
-// Example: query.WithIndexRangeKey(value1, value2)
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{range $i, $part := .RangeKeyParts}}{{if not $part.IsConstant}}{{if $i}}, {{end}}{{$part.Value | ToLowerCamelCase}} {{ToGolangAttrType $part.Value $.AllAttributes}}{{end}}{{end}}) *QueryBuilder {
-    {{range .RangeKeyParts}}{{if not .IsConstant}}
-    qb.Attributes["{{.Value}}"] = {{.Value | ToLowerCamelCase}}
-    qb.UsedKeys["{{.Value}}"] = true
-    {{end}}{{end}}
+// WithIndexRangeKey sets range key for any index by name.
+// Automatically handles both simple and composite keys based on schema metadata.
+// For composite keys, pass values in the order they appear in the schema.
+// Example: query.WithIndexRangeKey("user-status-index", "active")
+// Example: query.WithIndexRangeKey("date-type-index", "2023-01-01", "ORDER") // composite
+func (qb *QueryBuilder) WithIndexRangeKey(indexName string, values ...any) *QueryBuilder {
+    index := qb.getIndexByName(indexName)
+    if index == nil || index.RangeKey == "" {
+        return qb
+    }
+    
+    if index.RangeKeyParts != nil {
+        // Composite key
+        nonConstantParts := qb.getNonConstantParts(index.RangeKeyParts)
+        if len(values) != len(nonConstantParts) {
+            return qb
+        }
+        qb.setCompositeKey(index.RangeKey, index.RangeKeyParts, values)
+    } else {
+        // Simple key
+        if len(values) != 1 {
+            return qb
+        }
+        qb.Attributes[index.RangeKey] = values[0]
+        qb.UsedKeys[index.RangeKey] = true
+        qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).Equal(expression.Value(values[0]))
+    }
+    
     return qb
 }
-{{end}}
-{{else if .RangeKey}}
-// WithIndexRangeKey sets range key for the index.
-// Provides type-safe access to the index sort key.
-// Example: query.WithIndexRangeKey(value)
-func (qb *QueryBuilder) With{{ToUpperCamelCase .Name}}RangeKey({{.RangeKey | ToLowerCamelCase}} {{ToGolangAttrType .RangeKey $.AllAttributes}}) *QueryBuilder {
-    qb.Attributes["{{.RangeKey}}"] = {{.RangeKey | ToLowerCamelCase}}
-    qb.UsedKeys["{{.RangeKey}}"] = true
-    qb.KeyConditions["{{.RangeKey}}"] = expression.Key("{{.RangeKey}}").Equal(expression.Value({{.RangeKey | ToLowerCamelCase}}))
+
+// WithIndexRangeKeyBetween sets range key condition for any index with BETWEEN operator.
+// Only works with simple range keys, not composite ones.
+// Example: query.WithIndexRangeKeyBetween("date-index", startDate, endDate)
+func (qb *QueryBuilder) WithIndexRangeKeyBetween(indexName string, start, end any) *QueryBuilder {
+    index := qb.getIndexByName(indexName)
+    if index == nil || index.RangeKey == "" || index.RangeKeyParts != nil {
+        return qb // Only works with simple range keys
+    }
+    
+    qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).Between(expression.Value(start), expression.Value(end))
+    qb.UsedKeys[index.RangeKey] = true
+    qb.Attributes[index.RangeKey+"_start"] = start
+    qb.Attributes[index.RangeKey+"_end"] = end
+    
     return qb
 }
-{{end}}
-{{end}}
+
+// WithIndexRangeKeyGT sets range key condition for any index with GT operator.
+// Only works with simple range keys, not composite ones.
+// Example: query.WithIndexRangeKeyGT("score-index", 100)
+func (qb *QueryBuilder) WithIndexRangeKeyGT(indexName string, value any) *QueryBuilder {
+    index := qb.getIndexByName(indexName)
+    if index == nil || index.RangeKey == "" || index.RangeKeyParts != nil {
+        return qb
+    }
+    
+    qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).GreaterThan(expression.Value(value))
+    qb.UsedKeys[index.RangeKey] = true
+    qb.Attributes[index.RangeKey] = value
+    
+    return qb
+}
+
+// WithIndexRangeKeyLT sets range key condition for any index with LT operator.
+// Only works with simple range keys, not composite ones.
+// Example: query.WithIndexRangeKeyLT("timestamp-index", cutoffTime)
+func (qb *QueryBuilder) WithIndexRangeKeyLT(indexName string, value any) *QueryBuilder {
+    index := qb.getIndexByName(indexName)
+    if index == nil || index.RangeKey == "" || index.RangeKeyParts != nil {
+        return qb
+    }
+    
+    qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).LessThan(expression.Value(value))
+    qb.UsedKeys[index.RangeKey] = true
+    qb.Attributes[index.RangeKey] = value
+    
+    return qb
+}
+
+// HELPER METHODS for universal index access
+
+// getIndexByName finds index by name in schema metadata.
+func (qb *QueryBuilder) getIndexByName(indexName string) *SecondaryIndex {
+    for i := range TableSchema.SecondaryIndexes {
+        if TableSchema.SecondaryIndexes[i].Name == indexName {
+            return &TableSchema.SecondaryIndexes[i]
+        }
+    }
+    return nil
+}
+
+// getNonConstantParts returns only non-constant parts of composite key.
+func (qb *QueryBuilder) getNonConstantParts(parts []CompositeKeyPart) []CompositeKeyPart {
+    var result []CompositeKeyPart
+    for _, part := range parts {
+        if !part.IsConstant {
+            result = append(result, part)
+        }
+    }
+    return result
+}
+
+// setCompositeKey builds and sets composite key from parts and values.
+func (qb *QueryBuilder) setCompositeKey(keyName string, parts []CompositeKeyPart, values []any) {
+    nonConstantParts := qb.getNonConstantParts(parts)
+    
+    // Map values to their respective attributes
+    for i, part := range nonConstantParts {
+        if i < len(values) {
+            qb.Attributes[part.Value] = values[i]
+            qb.UsedKeys[part.Value] = true
+        }
+    }
+    
+    // Build composite value
+    compositeValue := qb.buildCompositeKeyValue(parts)
+    qb.Attributes[keyName] = compositeValue
+    qb.UsedKeys[keyName] = true
+    qb.KeyConditions[keyName] = expression.Key(keyName).Equal(expression.Value(compositeValue))
+}
+
+// SCHEMA INTROSPECTION METHODS
+
+// GetIndexNames returns all available index names.
+func GetIndexNames() []string {
+    names := make([]string, len(TableSchema.SecondaryIndexes))
+    for i, index := range TableSchema.SecondaryIndexes {
+        names[i] = index.Name
+    }
+    return names
+}
+
+// GetIndexInfo returns detailed information about an index.
+func GetIndexInfo(indexName string) *IndexInfo {
+    for _, index := range TableSchema.SecondaryIndexes {
+        if index.Name == indexName {
+            return &IndexInfo{
+                Name:              index.Name,
+                Type:              getIndexType(index),
+                HashKey:           index.HashKey,
+                RangeKey:          index.RangeKey,
+                IsHashComposite:   len(index.HashKeyParts) > 0,
+                IsRangeComposite:  len(index.RangeKeyParts) > 0,
+                HashKeyParts:      countNonConstantParts(index.HashKeyParts),
+                RangeKeyParts:     countNonConstantParts(index.RangeKeyParts),
+                ProjectionType:    index.ProjectionType,
+            }
+        }
+    }
+    return nil
+}
+
+// IndexInfo provides metadata about a table index.
+type IndexInfo struct {
+    Name              string   // Index name
+    Type              string   // "GSI" or "LSI"
+    HashKey           string   // Hash key attribute name
+    RangeKey          string   // Range key attribute name (empty if none)
+    IsHashComposite   bool     // Whether hash key is composite
+    IsRangeComposite  bool     // Whether range key is composite
+    HashKeyParts      int      // Number of non-constant hash key parts
+    RangeKeyParts     int      // Number of non-constant range key parts
+    ProjectionType    string   // "ALL", "KEYS_ONLY", or "INCLUDE"
+}
+
+func getIndexType(index SecondaryIndex) string {
+    // GSI has different hash key than main table, LSI has same hash key
+    if index.HashKey != TableSchema.HashKey {
+        return "GSI"
+    }
+    return "LSI"
+}
+
+func countNonConstantParts(parts []CompositeKeyPart) int {
+    count := 0
+    for _, part := range parts {
+        if !part.IsConstant {
+            count++
+        }
+    }
+    return count
+}
 `
