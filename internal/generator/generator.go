@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/Mad-Pixels/go-dyno/internal/generator/schema"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/tmplkit"
 	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 )
@@ -28,7 +28,7 @@ func Generate(config *Config) error {
 	}
 
 	g := filepath.Join(config.outputDir, spec.PackageName(), spec.Filename())
-	if err := utils.IsFileOrCreate(g); err != nil {
+	if err := fs.IsFileOrCreate(g); err != nil {
 		return err
 	}
 
@@ -44,7 +44,7 @@ func Generate(config *Config) error {
 	}
 
 	res := tmplkit.MustParseTemplateFormattedToString(v2.CodeTemplate, schemaMap)
-	if err := utils.WriteToFile(g, []byte(res)); err != nil {
+	if err := fs.WriteToFile(g, []byte(res)); err != nil {
 		return err
 	}
 

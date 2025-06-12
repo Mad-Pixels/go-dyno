@@ -5,6 +5,7 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/generator/index"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
 )
 
 type Schema struct {
@@ -14,7 +15,7 @@ type Schema struct {
 func NewSchema(path string) (*Schema, error) {
 	var spec Schema
 
-	if err := utils.ReadAndParseJSON(path, &spec.raw); err != nil {
+	if err := fs.ReadAndParseJSON(path, &spec.raw); err != nil {
 		return nil, err
 	}
 	return &spec, nil
@@ -37,7 +38,7 @@ func (s Schema) PackageName() string {
 }
 
 func (s Schema) Filename() string {
-	return utils.AddFileExt(s.PackageName(), ".go")
+	return fs.AddFileExt(s.PackageName(), ".go")
 }
 
 func (s Schema) Attributes() []attribute.Attribute {

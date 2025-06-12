@@ -3,6 +3,7 @@ package generator
 import (
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/fs"
 )
 
 // ConfigBuilder provides an interface for building generator config objects.
@@ -25,10 +26,10 @@ func NewConfigBuilder(schemaPath, outputDir string) *ConfigBuilder {
 func (cb *ConfigBuilder) Build() (*Config, error) {
 	var err error
 
-	if err = utils.IsFileOrError(cb.config.schemaPath); err != nil {
+	if err = fs.IsFileOrError(cb.config.schemaPath); err != nil {
 		return nil, err
 	}
-	if err = utils.IsDirOrCreate(cb.config.outputDir); err != nil {
+	if err = fs.IsDirOrCreate(cb.config.outputDir); err != nil {
 		return nil, err
 	}
 
@@ -37,7 +38,7 @@ func (cb *ConfigBuilder) Build() (*Config, error) {
 		cb.config.packageName = &safe
 	}
 	if cb.config.fileName != nil {
-		safe := utils.AddFileExt(utils.ToSafeName(*cb.config.fileName), ".go")
+		safe := fs.AddFileExt(utils.ToSafeName(*cb.config.fileName), ".go")
 		cb.config.fileName = &safe
 	}
 
