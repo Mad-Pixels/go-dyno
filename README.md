@@ -8,22 +8,21 @@
 
 # MadPixels: GoDyno
 
-**GoDyno** — CLI code generator for AWS DynamoDB that creates type-safe Go code from JSON schemas.  
+GoDyno — a CLI tool for generating type-safe Go code from DynamoDB JSON schemas.  
+Seamlessly integrate your AWS DynamoDB infrastructure with your Go codebase.
 
-
-**One schema** for both **Terraform** infrastructure and **Go** code!  
-No runtime dependencies — just clean **generated** code.
+One JSON Schema → Terraform + Go code
 
 <table>
 <tr>
 <td width="66%">
 
 **Key Features:**  
-✅ **Code generator** — output becomes part of your project, zero dependencies  
-✅ **Type-safe** — compile-time validation with full IDE autocompletion  
-✅ **Single source of truth** — same JSON schema for Terraform and Go  
-✅ **Production ready** — optimized queries with automatic index selection  
-✅ **AWS SDK v2** compatible with composite key support
+✅ **Code Generation:** Produces clean, dependency-free Go code directly into your project.  
+✅ **Type Safety:** Ensures compile-time checks and full IDE autocompletion.  
+✅ **Unified Schema:** Maintains a single source of truth—use one JSON schema for both Terraform and Go.  
+✅ **Production Ready:** Generates optimized queries with intelligent automatic index selection.  
+✅ **AWS SDK v2 Compatibility:** Full support for AWS SDK v2, including handling composite keys.
   
 [Documentation](https://go-dyno.madpixels.io/)
 
