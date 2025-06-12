@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Mad-Pixels/go-dyno/internal/generator"
-	"github.com/Mad-Pixels/go-dyno/internal/templ"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/tmplkit"
 	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -51,7 +51,7 @@ func TestGeneratedCodeCompilation(t *testing.T) {
 				SecondaryIndexes: dynamoSchema.SecondaryIndexes(),
 			}
 
-			generatedCode := templ.MustParseTemplateFormattedToString(v2.CodeTemplate, templateMap)
+			generatedCode := tmplkit.MustParseTemplateFormattedToString(v2.CodeTemplate, templateMap)
 			require.NotEmpty(t, generatedCode, "Generated code is empty")
 
 			CodeCompiles(t, generatedCode, dynamoSchema.PackageName())
