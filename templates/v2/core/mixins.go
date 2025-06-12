@@ -2,14 +2,15 @@ package core
 
 // MixinsTemplate defines common components for QueryBuilder and ScanBuilder
 const MixinsTemplate = `
-// FilterMixin contains common filtering logic for Query and Scan
+// FilterMixin provides common filtering logic for Query and Scan operations.
+// Supports all DynamoDB filter operators with type validation.
 type FilterMixin struct {
     FilterConditions  []expression.ConditionBuilder
     UsedKeys          map[string]bool
     Attributes        map[string]any
 }
 
-// NewFilterMixin creates a new FilterMixin
+// NewFilterMixin creates a new FilterMixin instance with initialized maps.
 func NewFilterMixin() FilterMixin {
     return FilterMixin{
         FilterConditions: make([]expression.ConditionBuilder, 0),
@@ -18,7 +19,8 @@ func NewFilterMixin() FilterMixin {
     }
 }
 
-// Filter adds a filter condition using the universal operator system
+// Filter adds a filter condition using the universal operator system.
+// Validates operator compatibility and value types before adding.
 func (fm *FilterMixin) Filter(field string, op OperatorType, values ...any) {
     if !ValidateValues(op, values) {
         return
@@ -41,68 +43,74 @@ func (fm *FilterMixin) Filter(field string, op OperatorType, values ...any) {
     }
 }
 
-// FilterEQ is a convenience method for equality filters
+// FilterEQ adds equality filter condition.
+// Example: .FilterEQ("status", "active")
 func (fm *FilterMixin) FilterEQ(field string, value any) {
     fm.Filter(field, EQ, value)
 }
 
-// FilterContains is a convenience method for contains filters
+// FilterContains adds contains filter for strings or sets.
+// Example: .FilterContains("tags", "important")
 func (fm *FilterMixin) FilterContains(field string, value any) {
     fm.Filter(field, CONTAINS, value)
 }
 
-// FilterNotContains is a convenience method for not contains filters
+// FilterNotContains adds not contains filter for strings or sets.
 func (fm *FilterMixin) FilterNotContains(field string, value any) {
     fm.Filter(field, NOT_CONTAINS, value)
 }
 
-// FilterBeginsWith is a convenience method for begins_with filters
+// FilterBeginsWith adds begins_with filter for strings.
+// Example: .FilterBeginsWith("email", "admin@")
 func (fm *FilterMixin) FilterBeginsWith(field string, value any) {
     fm.Filter(field, BEGINS_WITH, value)
 }
 
-// FilterBetween is a convenience method for range filters
+// FilterBetween adds range filter for comparable values.
+// Example: .FilterBetween("price", 10, 100)
 func (fm *FilterMixin) FilterBetween(field string, start, end any) {
     fm.Filter(field, BETWEEN, start, end)
 }
 
-// FilterGT is a convenience method for greater than filters
+// FilterGT adds greater than filter.
 func (fm *FilterMixin) FilterGT(field string, value any) {
     fm.Filter(field, GT, value)
 }
 
-// FilterLT is a convenience method for less than filters
+// FilterLT adds less than filter.
 func (fm *FilterMixin) FilterLT(field string, value any) {
     fm.Filter(field, LT, value)
 }
 
-// FilterGTE is a convenience method for greater than or equal filters
+// FilterGTE adds greater than or equal filter.
 func (fm *FilterMixin) FilterGTE(field string, value any) {
     fm.Filter(field, GTE, value)
 }
 
-// FilterLTE is a convenience method for less than or equal filters
+// FilterLTE adds less than or equal filter.
 func (fm *FilterMixin) FilterLTE(field string, value any) {
     fm.Filter(field, LTE, value)
 }
 
-// FilterExists is a convenience method for attribute exists filters
+// FilterExists checks if attribute exists.
+// Example: .FilterExists("optional_field")
 func (fm *FilterMixin) FilterExists(field string) {
     fm.Filter(field, EXISTS)
 }
 
-// FilterNotExists is a convenience method for attribute not exists filters
+// FilterNotExists checks if attribute does not exist.
 func (fm *FilterMixin) FilterNotExists(field string) {
     fm.Filter(field, NOT_EXISTS)
 }
 
-// FilterNE is a convenience method for not equal filters
+// FilterNE adds not equal filter.
 func (fm *FilterMixin) FilterNE(field string, value any) {
     fm.Filter(field, NE, value)
 }
 
-// FilterIn is a convenience method for IN filters (for scalar values only)
-// For checking membership in DynamoDB Sets (SS/NS), use FilterContains instead
+// FilterIn adds IN filter for scalar values.
+// For DynamoDB Sets (SS/NS), use FilterContains instead.
+// Example: .FilterIn("category", "books", "electronics")
 func (fm *FilterMixin) FilterIn(field string, values ...any) {
     if len(values) == 0 {
         return
@@ -110,8 +118,8 @@ func (fm *FilterMixin) FilterIn(field string, values ...any) {
     fm.Filter(field, IN, values...)
 }
 
-// FilterNotIn is a convenience method for NOT_IN filters (for scalar values only)
-// For checking non-membership in DynamoDB Sets (SS/NS), use FilterNotContains instead
+// FilterNotIn adds NOT_IN filter for scalar values.
+// For DynamoDB Sets (SS/NS), use FilterNotContains instead.
 func (fm *FilterMixin) FilterNotIn(field string, values ...any) {
     if len(values) == 0 {
         return
@@ -119,42 +127,47 @@ func (fm *FilterMixin) FilterNotIn(field string, values ...any) {
     fm.Filter(field, NOT_IN, values...)
 }
 
-// PaginationMixin contains common pagination logic
+// PaginationMixin provides pagination support for Query and Scan operations.
 type PaginationMixin struct {
     LimitValue        *int
     ExclusiveStartKey map[string]types.AttributeValue
 }
 
-// NewPaginationMixin creates a new PaginationMixin
+// NewPaginationMixin creates a new PaginationMixin instance.
 func NewPaginationMixin() PaginationMixin {
     return PaginationMixin{}
 }
 
-// Limit sets the maximum number of items to return
+// Limit sets the maximum number of items to return in one request.
+// Example: .Limit(25)
 func (pm *PaginationMixin) Limit(limit int) {
     pm.LimitValue = &limit
 }
 
-// StartFrom sets the exclusive start key for pagination
+// StartFrom sets the exclusive start key for pagination.
+// Use LastEvaluatedKey from previous response for next page.
+// Example: .StartFrom(previousResponse.LastEvaluatedKey)
 func (pm *PaginationMixin) StartFrom(lastEvaluatedKey map[string]types.AttributeValue) {
     pm.ExclusiveStartKey = lastEvaluatedKey
 }
 
-// KeyConditionMixin contains logic for key conditions (Query only)
+// KeyConditionMixin provides key condition logic for Query operations only.
+// Supports partition key and sort key conditions with automatic index selection.
 type KeyConditionMixin struct {
     KeyConditions    map[string]expression.KeyConditionBuilder
     SortDescending   bool
     PreferredSortKey string
 }
 
-// NewKeyConditionMixin creates a new KeyConditionMixin
+// NewKeyConditionMixin creates a new KeyConditionMixin instance.
 func NewKeyConditionMixin() KeyConditionMixin {
     return KeyConditionMixin{
         KeyConditions: make(map[string]expression.KeyConditionBuilder),
     }
 }
 
-// With adds a key condition using the universal operator system
+// With adds a key condition using the universal operator system.
+// Only valid for partition and sort key attributes.
 func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...any) {
     if !ValidateValues(op, values) {
         return
@@ -181,47 +194,52 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...any)
     kcm.KeyConditions[field] = keyCond
 }
 
-// WithEQ is a convenience method for equality key conditions
+// WithEQ adds equality key condition.
+// Required for partition key, optional for sort key.
+// Example: .WithEQ("user_id", "123")
 func (kcm *KeyConditionMixin) WithEQ(field string, value any) {
     kcm.With(field, EQ, value)
 }
 
-// WithBetween is a convenience method for range key conditions
+// WithBetween adds range key condition for sort keys.
+// Example: .WithBetween("created_at", start_time, end_time)
 func (kcm *KeyConditionMixin) WithBetween(field string, start, end any) {
     kcm.With(field, BETWEEN, start, end)
 }
 
-// WithGT is a convenience method for greater than key conditions
+// WithGT adds greater than key condition for sort keys.
 func (kcm *KeyConditionMixin) WithGT(field string, value any) {
     kcm.With(field, GT, value)
 }
 
-// WithGTE is a convenience method for greater than or equal key conditions
+// WithGTE adds greater than or equal key condition for sort keys.
 func (kcm *KeyConditionMixin) WithGTE(field string, value any) {
     kcm.With(field, GTE, value)
 }
 
-// WithLT is a convenience method for less than key conditions
+// WithLT adds less than key condition for sort keys.
 func (kcm *KeyConditionMixin) WithLT(field string, value any) {
     kcm.With(field, LT, value)
 }
 
-// WithLTE is a convenience method for less than or equal key conditions
+// WithLTE adds less than or equal key condition for sort keys.
 func (kcm *KeyConditionMixin) WithLTE(field string, value any) {
     kcm.With(field, LTE, value)
 }
 
-// WithPreferredSortKey sets the preferred sort key for index selection
+// WithPreferredSortKey sets preferred sort key for index selection.
+// Useful when multiple indexes match the query pattern.
 func (kcm *KeyConditionMixin) WithPreferredSortKey(key string) {
     kcm.PreferredSortKey = key
 }
 
-// OrderByDesc sets descending sort order
+// OrderByDesc sets descending sort order for results.
+// Only affects sort key ordering, not filter results.
 func (kcm *KeyConditionMixin) OrderByDesc() {
     kcm.SortDescending = true
 }
 
-// OrderByAsc sets ascending sort order
+// OrderByAsc sets ascending sort order for results (default).
 func (kcm *KeyConditionMixin) OrderByAsc() {
     kcm.SortDescending = false
 }
