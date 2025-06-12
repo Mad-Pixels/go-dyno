@@ -98,7 +98,7 @@ func mergeExpressionAttributes(
 }
 
 // marshalUpdatesWithSchema marshals updates map considering field types from schema
-func marshalUpdatesWithSchema(updates map[string]interface{}) (map[string]types.AttributeValue, error) {
+func marshalUpdatesWithSchema(updates map[string]any) (map[string]types.AttributeValue, error) {
     result := make(map[string]types.AttributeValue, len(updates))
     
     for fieldName, value := range updates {
@@ -121,7 +121,7 @@ func marshalUpdatesWithSchema(updates map[string]interface{}) (map[string]types.
 }
 
 // marshalValueByType marshals value according to specific DynamoDB type
-func marshalValueByType(value interface{}, dynamoType string) (types.AttributeValue, error) {
+func marshalValueByType(value any, dynamoType string) (types.AttributeValue, error) {
     switch dynamoType {
     case "SS":
         ss, ok := value.([]string)

@@ -34,7 +34,7 @@ func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
 }
 
 // UpdateItemInputFromRaw creates update request from raw values
-func UpdateItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}) (*dynamodb.UpdateItemInput, error) {
+func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[string]any) (*dynamodb.UpdateItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
@@ -68,7 +68,7 @@ func UpdateItemInputFromRaw(hashKeyValue interface{}, rangeKeyValue interface{},
 }
 
 // UpdateItemInputWithCondition creates conditional update request
-func UpdateItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interface{}, updates map[string]interface{}, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
+func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates map[string]any, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
@@ -100,7 +100,7 @@ func UpdateItemInputWithCondition(hashKeyValue interface{}, rangeKeyValue interf
 }
 
 // UpdateItemInputWithExpression creates update with expression builder
-func UpdateItemInputWithExpression(hashKeyValue interface{}, rangeKeyValue interface{}, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
+func UpdateItemInputWithExpression(hashKeyValue any, rangeKeyValue any, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err

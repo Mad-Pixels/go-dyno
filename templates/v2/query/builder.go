@@ -20,61 +20,61 @@ func NewQueryBuilder() *QueryBuilder {
 }
 
 // Filter adds a filter condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) Filter(field string, op OperatorType, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) Filter(field string, op OperatorType, values ...any) *QueryBuilder {
     qb.FilterMixin.Filter(field, op, values...)
     return qb
 }
 
 // FilterEQ adds equality filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterEQ(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterEQ(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterEQ(field, value)
     return qb
 }
 
 // FilterContains adds contains filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterContains(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterContains(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterContains(field, value)
     return qb
 }
 
 // FilterNotContains adds not contains filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterNotContains(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterNotContains(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterNotContains(field, value)
     return qb
 }
 
 // FilterBeginsWith adds begins_with filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterBeginsWith(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterBeginsWith(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterBeginsWith(field, value)
     return qb
 }
 
 // FilterBetween adds range filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterBetween(field string, start, end interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterBetween(field string, start, end any) *QueryBuilder {
     qb.FilterMixin.FilterBetween(field, start, end)
     return qb
 }
 
 // FilterGT adds greater than filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterGT(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterGT(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterGT(field, value)
     return qb
 }
 
 // FilterLT adds less than filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterLT(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterLT(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterLT(field, value)
     return qb
 }
 
 // FilterGTE adds greater than or equal filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterGTE(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterGTE(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterGTE(field, value)
     return qb
 }
 
 // FilterLTE adds less than or equal filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterLTE(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterLTE(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterLTE(field, value)
     return qb
 }
@@ -92,25 +92,25 @@ func (qb *QueryBuilder) FilterNotExists(field string) *QueryBuilder {
 }
 
 // FilterNE adds not equal filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterNE(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterNE(field string, value any) *QueryBuilder {
     qb.FilterMixin.FilterNE(field, value)
     return qb
 }
 
 // FilterIn adds IN filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterIn(field string, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterIn(field string, values ...any) *QueryBuilder {
     qb.FilterMixin.FilterIn(field, values...)
     return qb
 }
 
 // FilterNotIn adds NOT_IN filter and returns QueryBuilder for chaining
-func (qb *QueryBuilder) FilterNotIn(field string, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) FilterNotIn(field string, values ...any) *QueryBuilder {
     qb.FilterMixin.FilterNotIn(field, values...)
     return qb
 }
 
 // With adds key condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) With(field string, op OperatorType, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) With(field string, op OperatorType, values ...any) *QueryBuilder {
     qb.KeyConditionMixin.With(field, op, values...)
     if op == EQ && len(values) == 1 {
         qb.Attributes[field] = values[0]
@@ -120,7 +120,7 @@ func (qb *QueryBuilder) With(field string, op OperatorType, values ...interface{
 }
 
 // WithEQ adds equality key condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) WithEQ(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithEQ(field string, value any) *QueryBuilder {
     fmt.Printf("DEBUG WithEQ: field='%s', value='%v'\n", field, value)
     qb.KeyConditionMixin.WithEQ(field, value)
     qb.Attributes[field] = value
@@ -131,7 +131,7 @@ func (qb *QueryBuilder) WithEQ(field string, value interface{}) *QueryBuilder {
 }
 
 // WithBetween adds range key condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) WithBetween(field string, start, end interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithBetween(field string, start, end any) *QueryBuilder {
     qb.KeyConditionMixin.WithBetween(field, start, end)
     qb.Attributes[field+"_start"] = start
     qb.Attributes[field+"_end"] = end
@@ -140,7 +140,7 @@ func (qb *QueryBuilder) WithBetween(field string, start, end interface{}) *Query
 }
 
 // WithGT adds greater than key condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) WithGT(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithGT(field string, value any) *QueryBuilder {
     qb.KeyConditionMixin.WithGT(field, value)
     qb.Attributes[field] = value 
     qb.UsedKeys[field] = true
@@ -148,7 +148,7 @@ func (qb *QueryBuilder) WithGT(field string, value interface{}) *QueryBuilder {
 }
 
 // WithGTE adds greater than or equal key condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) WithGTE(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithGTE(field string, value any) *QueryBuilder {
     qb.KeyConditionMixin.WithGTE(field, value)
     qb.Attributes[field] = value
     qb.UsedKeys[field] = true
@@ -156,7 +156,7 @@ func (qb *QueryBuilder) WithGTE(field string, value interface{}) *QueryBuilder {
 }
 
 // WithLT adds less than key condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) WithLT(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithLT(field string, value any) *QueryBuilder {
     qb.KeyConditionMixin.WithLT(field, value)
     qb.Attributes[field] = value
     qb.UsedKeys[field] = true
@@ -164,7 +164,7 @@ func (qb *QueryBuilder) WithLT(field string, value interface{}) *QueryBuilder {
 }
 
 // WithLTE adds less than or equal key condition and returns QueryBuilder for chaining
-func (qb *QueryBuilder) WithLTE(field string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithLTE(field string, value any) *QueryBuilder {
     qb.KeyConditionMixin.WithLTE(field, value)
     qb.Attributes[field] = value
     qb.UsedKeys[field] = true

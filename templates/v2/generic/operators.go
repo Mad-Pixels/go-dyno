@@ -43,32 +43,32 @@ const (
 type Condition struct {
     Field     string
     Operator  OperatorType
-    Values    []interface{}
+    Values    []any
     Type      ConditionType
 }
 
 // Type-safe handler functions for different expression types
-type KeyOperatorHandler func(expression.KeyBuilder, []interface{}) expression.KeyConditionBuilder
-type ConditionOperatorHandler func(expression.NameBuilder, []interface{}) expression.ConditionBuilder
+type KeyOperatorHandler func(expression.KeyBuilder, []any) expression.KeyConditionBuilder
+type ConditionOperatorHandler func(expression.NameBuilder, []any) expression.ConditionBuilder
 
 // Package-level constants for O(1) handler lookup - initialized once
 var keyOperatorHandlers = map[OperatorType]KeyOperatorHandler{
-    EQ: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+    EQ: func(field expression.KeyBuilder, values []any) expression.KeyConditionBuilder {
         return field.Equal(expression.Value(values[0]))
     },
-    GT: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+    GT: func(field expression.KeyBuilder, values []any) expression.KeyConditionBuilder {
         return field.GreaterThan(expression.Value(values[0]))
     },
-    LT: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+    LT: func(field expression.KeyBuilder, values []any) expression.KeyConditionBuilder {
         return field.LessThan(expression.Value(values[0]))
     },
-    GTE: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+    GTE: func(field expression.KeyBuilder, values []any) expression.KeyConditionBuilder {
         return field.GreaterThanEqual(expression.Value(values[0]))
     },
-    LTE: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+    LTE: func(field expression.KeyBuilder, values []any) expression.KeyConditionBuilder {
         return field.LessThanEqual(expression.Value(values[0]))
     },
-    BETWEEN: func(field expression.KeyBuilder, values []interface{}) expression.KeyConditionBuilder {
+    BETWEEN: func(field expression.KeyBuilder, values []any) expression.KeyConditionBuilder {
         return field.Between(expression.Value(values[0]), expression.Value(values[1]))
     },
 }
@@ -85,39 +85,39 @@ var allowedKeyConditionOperators = map[OperatorType]bool{
 
 var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
     // Basic operators (same as for keys, but with NameBuilder)
-    EQ: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    EQ: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.Equal(expression.Value(values[0]))
     },
-    NE: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    NE: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.NotEqual(expression.Value(values[0]))
     },
-    GT: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    GT: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.GreaterThan(expression.Value(values[0]))
     },
-    LT: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    LT: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.LessThan(expression.Value(values[0]))
     },
-    GTE: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    GTE: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.GreaterThanEqual(expression.Value(values[0]))
     },
-    LTE: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    LTE: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.LessThanEqual(expression.Value(values[0]))
     },
-    BETWEEN: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    BETWEEN: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.Between(expression.Value(values[0]), expression.Value(values[1]))
     },
     
     // Filter-only operators
-    CONTAINS: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    CONTAINS: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.Contains(fmt.Sprintf("%v", values[0]))
     },
-    NOT_CONTAINS: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    NOT_CONTAINS: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return expression.Not(field.Contains(fmt.Sprintf("%v", values[0])))
     },
-    BEGINS_WITH: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    BEGINS_WITH: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.BeginsWith(fmt.Sprintf("%v", values[0]))
     },
-    IN: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    IN: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         if len(values) == 0 {
             return expression.AttributeNotExists(field)
         }
@@ -130,7 +130,7 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
         }
         return field.In(operands[0], operands[1:]...)
     },
-    NOT_IN: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    NOT_IN: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         if len(values) == 0 {
             return expression.AttributeExists(field)
         }
@@ -143,16 +143,16 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
         }
         return expression.Not(field.In(operands[0], operands[1:]...))
     },
-    EXISTS: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    EXISTS: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return expression.AttributeExists(field)
     },
-    NOT_EXISTS: func(field expression.NameBuilder, values []interface{}) expression.ConditionBuilder {
+    NOT_EXISTS: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return expression.AttributeNotExists(field)
     },
 }
 
 // ValidateValues checks if the number of values is correct for the operator
-func ValidateValues(op OperatorType, values []interface{}) bool {
+func ValidateValues(op OperatorType, values []any) bool {
     switch op {
     case EQ, NE, GT, LT, GTE, LTE, CONTAINS, NOT_CONTAINS, BEGINS_WITH:
         return len(values) == 1
@@ -181,7 +181,7 @@ func ValidateOperator(fieldName string, op OperatorType) bool {
 }
 
 // BuildConditionExpression converts operator to DynamoDB filter expression
-func BuildConditionExpression(field string, op OperatorType, values []interface{}) (expression.ConditionBuilder, error) {
+func BuildConditionExpression(field string, op OperatorType, values []any) (expression.ConditionBuilder, error) {
     // Check if field exists in schema
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
@@ -205,7 +205,7 @@ func BuildConditionExpression(field string, op OperatorType, values []interface{
 }
 
 // BuildKeyConditionExpression converts operator to DynamoDB key condition
-func BuildKeyConditionExpression(field string, op OperatorType, values []interface{}) (expression.KeyConditionBuilder, error) {
+func BuildKeyConditionExpression(field string, op OperatorType, values []any) (expression.KeyConditionBuilder, error) {
     // Check if field exists in schema
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {

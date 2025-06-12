@@ -26,61 +26,61 @@ func NewScanBuilder() *ScanBuilder {
 }
 
 // Filter adds a filter condition and returns ScanBuilder for chaining
-func (sb *ScanBuilder) Filter(field string, op OperatorType, values ...interface{}) *ScanBuilder {
+func (sb *ScanBuilder) Filter(field string, op OperatorType, values ...any) *ScanBuilder {
     sb.FilterMixin.Filter(field, op, values...)
     return sb
 }
 
 // FilterEQ adds equality filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterEQ(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterEQ(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterEQ(field, value)
     return sb
 }
 
 // FilterContains adds contains filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterContains(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterContains(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterContains(field, value)
     return sb
 }
 
 // FilterNotContains adds not contains filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterNotContains(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterNotContains(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterNotContains(field, value)
     return sb
 }
 
 // FilterBeginsWith adds begins_with filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterBeginsWith(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterBeginsWith(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterBeginsWith(field, value)
     return sb
 }
 
 // FilterBetween adds range filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterBetween(field string, start, end interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterBetween(field string, start, end any) *ScanBuilder {
     sb.FilterMixin.FilterBetween(field, start, end)
     return sb
 }
 
 // FilterGT adds greater than filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterGT(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterGT(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterGT(field, value)
     return sb
 }
 
 // FilterLT adds less than filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterLT(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterLT(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterLT(field, value)
     return sb
 }
 
 // FilterGTE adds greater than or equal filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterGTE(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterGTE(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterGTE(field, value)
     return sb
 }
 
 // FilterLTE adds less than or equal filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterLTE(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterLTE(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterLTE(field, value)
     return sb
 }
@@ -98,19 +98,19 @@ func (sb *ScanBuilder) FilterNotExists(field string) *ScanBuilder {
 }
 
 // FilterNE adds not equal filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterNE(field string, value interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterNE(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterNE(field, value)
     return sb
 }
 
 // FilterIn adds IN filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterIn(field string, values ...interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterIn(field string, values ...any) *ScanBuilder {
     sb.FilterMixin.FilterIn(field, values...)
     return sb
 }
 
 // FilterNotIn adds NOT_IN filter and returns ScanBuilder for chaining
-func (sb *ScanBuilder) FilterNotIn(field string, values ...interface{}) *ScanBuilder {
+func (sb *ScanBuilder) FilterNotIn(field string, values ...any) *ScanBuilder {
     sb.FilterMixin.FilterNotIn(field, values...)
     return sb
 }
