@@ -8,7 +8,7 @@ locals {
   }
 
   # Exclude schemas with "invalid-" prefix
-  all_schema_files = fileset("${path.root}/../../data", "*.json")
+  all_schema_files = fileset("${path.root}/../../fixtures", "*.json")
   schema_files = [
     for file in local.all_schema_files : file
     if !startswith(file, "invalid-")
@@ -16,6 +16,6 @@ locals {
 
   schemas = {
     for file in local.schema_files :
-    trimsuffix(file, ".json") => jsondecode(file("${path.root}/../../data/${file}"))
+    trimsuffix(file, ".json") => jsondecode(file("${path.root}/../../fixtures/${file}"))
   }
 }
