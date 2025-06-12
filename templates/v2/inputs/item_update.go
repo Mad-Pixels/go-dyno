@@ -1,8 +1,11 @@
 package inputs
 
-// UpdateInputsTemplate ...
+// UpdateInputsTemplate provides input builders for DynamoDB update operations
 const UpdateInputsTemplate = `
-// UpdateItemInput creates update request from SchemaItem
+// UpdateItemInput creates an UpdateItemInput from a complete SchemaItem.
+// Automatically extracts the key and updates all non-key attributes.
+// Use when you want to update an entire item with new values.
+// Example: input, err := UpdateItemInput(modifiedUserItem)
 func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
     key, err := KeyInput(item)
     if err != nil {
@@ -33,7 +36,10 @@ func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
     }, nil
 }
 
-// UpdateItemInputFromRaw creates update request from raw values
+// UpdateItemInputFromRaw creates an UpdateItemInput from raw key values and update map.
+// More efficient for partial updates when you only want to modify specific attributes.
+// Use when you know exactly which fields to update without loading the full item.
+// Example: UpdateItemInputFromRaw("user123", nil, map[string]any{"status": "active", "last_login": time.Now()})
 func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[string]any) (*dynamodb.UpdateItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
@@ -49,7 +55,7 @@ func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[str
         return nil, fmt.Errorf("failed to create key for update: %v", err)
     }
    
-    // Use AWS SDK marshaler instead of manual conversion
+    // Use schema-aware marshaling for proper type handling
     marshaledUpdates, err := marshalUpdatesWithSchema(updates)
     if err != nil {
         return nil, fmt.Errorf("failed to marshal updates: %v", err)
@@ -67,7 +73,10 @@ func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[str
     }, nil
 }
 
-// UpdateItemInputWithCondition creates conditional update request
+// UpdateItemInputWithCondition creates a conditional UpdateItemInput.
+// Updates the item only if the condition expression evaluates to true.
+// Enables optimistic locking and prevents race conditions in concurrent updates.
+// Example: UpdateItemInputWithCondition("user123", nil, updates, "version = :v", nil, map[string]types.AttributeValue{":v": &types.AttributeValueMemberN{Value: "1"}})
 func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates map[string]any, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
@@ -88,7 +97,7 @@ func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates m
    
     updateInput.ConditionExpression = aws.String(conditionExpression)
    
-    // Use helper to merge expression attributes
+    // Use helper to merge expression attributes safely
     updateInput.ExpressionAttributeNames, updateInput.ExpressionAttributeValues = mergeExpressionAttributes(
         updateInput.ExpressionAttributeNames,
         updateInput.ExpressionAttributeValues,
@@ -99,7 +108,13 @@ func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates m
     return updateInput, nil
 }
 
-// UpdateItemInputWithExpression creates update with expression builder
+// UpdateItemInputWithExpression creates an UpdateItemInput using DynamoDB expression builders.
+// Provides maximum flexibility for complex update operations (SET, ADD, REMOVE, DELETE).
+// Use for advanced scenarios like atomic increments, list operations, or complex conditions.
+// Example: 
+//   updateExpr := expression.Set(expression.Name("counter"), expression.Name("counter").Plus(expression.Value(1)))
+//   condExpr := expression.Name("version").Equal(expression.Value(currentVersion))
+//   input, err := UpdateItemInputWithExpression("user123", nil, updateExpr, &condExpr)
 func UpdateItemInputWithExpression(hashKeyValue any, rangeKeyValue any, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
     // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {

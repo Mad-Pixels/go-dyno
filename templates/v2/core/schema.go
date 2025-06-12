@@ -2,7 +2,8 @@ package core
 
 // SchemaTemplate with pre-computed allowed operators
 const SchemaTemplate = `
-// FieldInfo contains metadata about a schema field
+// FieldInfo contains metadata about a schema field with operator validation.
+// Provides O(1) lookup for supported DynamoDB operations per field type.
 type FieldInfo struct {
     DynamoType       string
     IsKey            bool
@@ -11,17 +12,20 @@ type FieldInfo struct {
     AllowedOperators map[OperatorType]bool
 }
 
-// SupportsOperator checks if this field supports the given operator
+// SupportsOperator checks if this field supports the given operator.
+// Returns false for invalid operator/type combinations.
+// Example: stringField.SupportsOperator(BEGINS_WITH) -> true
 func (fi FieldInfo) SupportsOperator(op OperatorType) bool {
     return fi.AllowedOperators[op]
 }
 
-// buildAllowedOperators returns the set of allowed operators for a DynamoDB type
+// buildAllowedOperators returns the set of allowed operators for a DynamoDB type.
+// Implements DynamoDB operator compatibility rules for each data type.
 func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
     allowed := make(map[OperatorType]bool)
     
     switch dynamoType {
-    case "S": // String
+    case "S": // String - supports all comparison and string operations
         allowed[EQ] = true
         allowed[NE] = true
         allowed[GT] = true
@@ -37,7 +41,7 @@ func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "N": // Number  
+    case "N": // Number - supports comparison operations, no string functions
         allowed[EQ] = true
         allowed[NE] = true
         allowed[GT] = true
@@ -50,44 +54,44 @@ func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "BOOL": // Boolean
+    case "BOOL": // Boolean - only equality and existence checks
         allowed[EQ] = true
         allowed[NE] = true
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "SS": // String Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
+    case "SS": // String Set - membership operations only, not IN/NOT_IN
         allowed[CONTAINS] = true
         allowed[NOT_CONTAINS] = true
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "NS": // Number Set - only CONTAINS/NOT_CONTAINS, not IN/NOT_IN
+    case "NS": // Number Set - membership operations only, not IN/NOT_IN
         allowed[CONTAINS] = true
         allowed[NOT_CONTAINS] = true
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "BS": // Binary Set (rare)
+    case "BS": // Binary Set - membership operations only
         allowed[CONTAINS] = true
         allowed[NOT_CONTAINS] = true
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "L": // List
+    case "L": // List - only existence checks
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "M": // Map
+    case "M": // Map - only existence checks
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
-    case "NULL": // Null
+    case "NULL": // Null - only existence checks
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
         
     default:
-        // For unknown types allow only basic operations
+        // Unknown types - basic operations only
         allowed[EQ] = true
         allowed[NE] = true
         allowed[EXISTS] = true
@@ -97,7 +101,8 @@ func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
     return allowed
 }
 
-// DynamoSchema ...
+// DynamoSchema represents the complete table schema with indexes and metadata.
+// Provides fast field lookup with O(1) access to operator validation.
 type DynamoSchema struct {
     TableName        string
     HashKey          string
@@ -105,37 +110,45 @@ type DynamoSchema struct {
     Attributes       []Attribute
     CommonAttributes []Attribute
     SecondaryIndexes []SecondaryIndex
-    // Быстрый поиск полей O(1) с предвычисленными операторами
+    // FieldsMap provides O(1) field lookup with pre-computed operators
     FieldsMap        map[string]FieldInfo
 }
 
+// Attribute represents a DynamoDB table attribute with its type.
 type Attribute struct {
-    Name string
-    Type string
+    Name string  // Attribute name
+    Type string  // DynamoDB type (S, N, BOOL, SS, NS, etc.)
 }
 
+// CompositeKeyPart represents a part of a composite key structure.
+// Used for complex key patterns in GSI/LSI definitions.
 type CompositeKeyPart struct {
-    IsConstant bool
-    Value      string
+    IsConstant bool    // true if this part is a constant value
+    Value      string  // the constant value or attribute name
 }
 
+// SecondaryIndex represents a GSI or LSI with optional composite keys.
+// Supports both simple and composite key structures for advanced access patterns.
 type SecondaryIndex struct {
     Name             string
     HashKey          string
-    HashKeyParts     []CompositeKeyPart
+    HashKeyParts     []CompositeKeyPart  // for composite hash keys
     RangeKey         string
-    RangeKeyParts    []CompositeKeyPart
-    ProjectionType   string
-    NonKeyAttributes []string
+    RangeKeyParts    []CompositeKeyPart  // for composite range keys
+    ProjectionType   string              // ALL, KEYS_ONLY, or INCLUDE
+    NonKeyAttributes []string            // projected attributes for INCLUDE
 }
 
+// SchemaItem represents a single DynamoDB item with all table attributes.
+// All fields are properly tagged for AWS SDK marshaling/unmarshaling.
 type SchemaItem struct {
 {{- range .AllAttributes}}
     {{ToSafeName .Name | ToUpperCamelCase}} {{ToGolangBaseType .}} ` + "`{{ToDynamoDBStructTag .}}`" + `
 {{- end}}
 }
 
-// TableSchema with pre-computed FieldsMap including allowed operators
+// TableSchema contains the complete schema definition with pre-computed metadata.
+// Used throughout the generated code for validation and operator checking.
 var TableSchema = DynamoSchema{
     TableName: "{{.TableName}}",
     HashKey:   "{{.HashKey}}",
@@ -185,6 +198,7 @@ var TableSchema = DynamoSchema{
         {{- end}}
     },
     
+    // FieldsMap provides fast field metadata lookup with operator validation
     FieldsMap: map[string]FieldInfo{
         {{- range .AllAttributes}}
         "{{.Name}}": {

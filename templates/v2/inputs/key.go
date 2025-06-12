@@ -1,8 +1,12 @@
 package inputs
 
-// KeyInputsTemplate ...
+// KeyInputsTemplate provides key extraction utilities for DynamoDB operations
 const KeyInputsTemplate = `
-// KeyInput creates key from SchemaItem with validation
+// KeyInput creates a DynamoDB key map from a SchemaItem with full validation.
+// Extracts the primary key (hash + range) from the item and validates values.
+// Use when you have a complete item and need to create a key for operations.
+// Handles both simple (hash only) and composite (hash + range) keys automatically.
+// Example: keyMap, err := KeyInput(userItem)
 func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     var hashKeyValue any
     {{range .AllAttributes}}{{if eq .Name $.HashKey}}
@@ -28,6 +32,7 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     }
     key[TableSchema.HashKey] = hashKeyAV
    
+    {{if .RangeKey}}
     if TableSchema.RangeKey != "" && rangeKeyValue != nil {
         rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)
         if err != nil {
@@ -35,11 +40,16 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
         }
         key[TableSchema.RangeKey] = rangeKeyAV
     }
+    {{end}}
    
     return key, nil
 }
 
-// KeyInputFromRaw creates key from raw values (assumes validation already done)
+// KeyInputFromRaw creates a DynamoDB key map from raw key values without validation.
+// More efficient than KeyInput when you already have validated key values.
+// Assumes validation has been done by the caller - use with caution.
+// Handles both simple (hash only) and composite (hash + range) keys automatically.
+// Example: keyMap, err := KeyInputFromRaw("user123", "session456")
 func KeyInputFromRaw(hashKeyValue any, rangeKeyValue any) (map[string]types.AttributeValue, error) {
     // Pure business logic - validation should be done by caller
     key := make(map[string]types.AttributeValue)
@@ -50,6 +60,7 @@ func KeyInputFromRaw(hashKeyValue any, rangeKeyValue any) (map[string]types.Attr
     }
     key[TableSchema.HashKey] = hashKeyAV
    
+    {{if .RangeKey}}
     if TableSchema.RangeKey != "" && rangeKeyValue != nil {
         rangeKeyAV, err := attributevalue.Marshal(rangeKeyValue)
         if err != nil {
@@ -57,6 +68,7 @@ func KeyInputFromRaw(hashKeyValue any, rangeKeyValue any) (map[string]types.Attr
         }
         key[TableSchema.RangeKey] = rangeKeyAV
     }
+    {{end}}
    
     return key, nil
 }

@@ -1,6 +1,6 @@
 package core
 
-// ImportsTemplate ...
+// ImportsTemplate define imports.
 const ImportsTemplate = `
 import (
 	"context"

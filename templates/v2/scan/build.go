@@ -1,13 +1,17 @@
 package scan
 
-// ScanBuilderBuildTemplate ...
+// ScanBuilderBuildTemplate provides scan execution functionality for ScanBuilder
 const ScanBuilderBuildTemplate = `
-// BuildScan ...
+// BuildScan constructs the final DynamoDB ScanInput with all configured options.
+// Combines filter conditions, projection attributes, pagination, and parallel scan settings.
+// Handles expression building and attribute mapping automatically.
+// Example: input, err := scanBuilder.BuildScan()
 func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
     input := &dynamodb.ScanInput{
         TableName: aws.String(TableName),
     }
     
+    // Set index name if scanning a secondary index
     if sb.IndexName != "" {
         input.IndexName = aws.String(sb.IndexName)
     }
@@ -15,6 +19,7 @@ func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
     var exprBuilder expression.Builder
     hasExpression := false
     
+    // Build filter expression from all filter conditions
     if len(sb.FilterConditions) > 0 {
         combinedFilter := sb.FilterConditions[0]
         for _, condition := range sb.FilterConditions[1:] {
@@ -24,6 +29,7 @@ func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
         hasExpression = true
     }
     
+    // Build projection expression for attribute selection
     if len(sb.ProjectionAttributes) > 0 {
         var projectionBuilder expression.ProjectionBuilder
         for i, attr := range sb.ProjectionAttributes {
@@ -37,6 +43,7 @@ func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
         hasExpression = true
     }
     
+    // Build and apply expressions if any were configured
     if hasExpression {
         expr, err := exprBuilder.Build()
         if err != nil {
@@ -60,14 +67,17 @@ func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
         }
     }
     
+    // Apply pagination limit
     if sb.LimitValue != nil {
         input.Limit = aws.Int32(int32(*sb.LimitValue))
     }
     
+    // Set pagination start key for continuing from previous scan
     if sb.ExclusiveStartKey != nil {
         input.ExclusiveStartKey = sb.ExclusiveStartKey
     }
     
+    // Configure parallel scan if enabled
     if sb.ParallelScanConfig != nil {
         input.Segment = aws.Int32(int32(sb.ParallelScanConfig.Segment))
         input.TotalSegments = aws.Int32(int32(sb.ParallelScanConfig.TotalSegments))
@@ -76,7 +86,10 @@ func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
     return input, nil
 }
 
-// Execute ...
+// Execute runs the scan against DynamoDB and returns strongly-typed results.
+// Handles the complete scan lifecycle: build input, execute, unmarshal results.
+// Returns all items that match the filter conditions as SchemaItem structs.
+// Example: items, err := scanBuilder.Execute(ctx, dynamoClient)
 func (sb *ScanBuilder) Execute(ctx context.Context, client *dynamodb.Client) ([]SchemaItem, error) {
     input, err := sb.BuildScan()
     if err != nil {

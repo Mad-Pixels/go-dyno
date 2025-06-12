@@ -1,9 +1,11 @@
 package helpers
 
-// StreamHelpersTemplate ...
+// StreamHelpersTemplate provides utilities for processing DynamoDB Stream events
 const StreamHelpersTemplate = `
-// ExtractFromDynamoDBStreamEvent extracts SchemaItem from DynamoDB stream event
-// Converts stream AttributeValues to DynamoDB types and uses AWS SDK unmarshaler
+// ExtractFromDynamoDBStreamEvent extracts SchemaItem from DynamoDB stream event.
+// Converts Lambda stream AttributeValues to DynamoDB SDK types for safe unmarshaling.
+// Used for INSERT and MODIFY events to get the new item state.
+// Example: item, err := ExtractFromDynamoDBStreamEvent(record)
 func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*SchemaItem, error) {
     if dbEvent.Change.NewImage == nil {
         return nil, fmt.Errorf("new image is nil in the event")
@@ -20,8 +22,10 @@ func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Schema
     return &item, nil
 }
 
-// ExtractOldFromDynamoDBStreamEvent extracts old SchemaItem from DynamoDB stream event
-// Converts stream AttributeValues to DynamoDB types and uses AWS SDK unmarshaler
+// ExtractOldFromDynamoDBStreamEvent extracts old SchemaItem from DynamoDB stream event.
+// Converts Lambda stream AttributeValues to DynamoDB SDK types for safe unmarshaling.
+// Used for MODIFY and REMOVE events to get the previous item state.
+// Example: oldItem, err := ExtractOldFromDynamoDBStreamEvent(record)
 func ExtractOldFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*SchemaItem, error) {
     if dbEvent.Change.OldImage == nil {
         return nil, fmt.Errorf("old image is nil in the event")
@@ -38,7 +42,8 @@ func ExtractOldFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Sch
     return &item, nil
 }
 
-// toDynamoMap converts events.DynamoDBAttributeValue to types.AttributeValue
+// toDynamoMap converts Lambda events.DynamoDBAttributeValue to SDK types.AttributeValue.
+// Required because Lambda and DynamoDB SDK use different attribute value types.
 func toDynamoMap(streamAttrs map[string]events.DynamoDBAttributeValue) map[string]types.AttributeValue {
     dynamoAttrs := make(map[string]types.AttributeValue, len(streamAttrs))
     
@@ -49,7 +54,8 @@ func toDynamoMap(streamAttrs map[string]events.DynamoDBAttributeValue) map[strin
     return dynamoAttrs
 }
 
-// toDynamoAttr converts single events.DynamoDBAttributeValue to types.AttributeValue
+// toDynamoAttr converts single Lambda AttributeValue to SDK AttributeValue.
+// Handles all DynamoDB data types including nested Lists and Maps.
 func toDynamoAttr(streamAttr events.DynamoDBAttributeValue) types.AttributeValue {
     // Use DataType to properly identify the attribute type
     switch streamAttr.DataType() {
@@ -87,7 +93,10 @@ func toDynamoAttr(streamAttr events.DynamoDBAttributeValue) types.AttributeValue
     }
 }
 
-// IsFieldModified checks if a specific field was modified in a MODIFY event
+// IsFieldModified checks if a specific field was modified in a MODIFY event.
+// Compares old and new values to detect actual changes, not just updates.
+// Returns false for INSERT/REMOVE events or if images are missing.
+// Example: if IsFieldModified(record, "status") { ... }
 func IsFieldModified(dbEvent events.DynamoDBEventRecord, fieldName string) bool {
     if dbEvent.EventName != "MODIFY" {
         return false
@@ -118,7 +127,8 @@ func IsFieldModified(dbEvent events.DynamoDBEventRecord, fieldName string) bool 
     return false
 }
 
-// streamAttributeValuesEqual compares two stream AttributeValues for equality
+// streamAttributeValuesEqual compares two stream AttributeValues for equality.
+// Handles all DynamoDB data types with proper set comparison for SS/NS.
 func streamAttributeValuesEqual(a, b events.DynamoDBAttributeValue) bool {
     // First check if data types are the same
     if a.DataType() != b.DataType() {
@@ -172,7 +182,9 @@ func streamAttributeValuesEqual(a, b events.DynamoDBAttributeValue) bool {
     }
 }
 
-// GetBoolFieldChanged checks if a boolean field changed from false to true
+// GetBoolFieldChanged checks if a boolean field changed from false to true.
+// Useful for detecting state transitions like activation flags.
+// Example: if GetBoolFieldChanged(record, "is_verified") { sendWelcomeEmail() }
 func GetBoolFieldChanged(dbEvent events.DynamoDBEventRecord, fieldName string) bool {
     if dbEvent.EventName != "MODIFY" {
         return false
@@ -195,7 +207,9 @@ func GetBoolFieldChanged(dbEvent events.DynamoDBEventRecord, fieldName string) b
     return !oldValue && newValue
 }
 
-// ExtractBothFromDynamoDBStreamEvent extracts both old and new items from stream event
+// ExtractBothFromDynamoDBStreamEvent extracts both old and new items from stream event.
+// Returns nil for missing images (e.g., oldItem is nil for INSERT events).
+// Useful for MODIFY events where you need to compare before/after states.
 func ExtractBothFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*SchemaItem, *SchemaItem, error) {
     var oldItem, newItem *SchemaItem
     var err error
@@ -217,7 +231,15 @@ func ExtractBothFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Sc
     return oldItem, newItem, nil
 }
 
-// CreateTriggerHandler creates a handler function for DynamoDB stream events
+// CreateTriggerHandler creates a type-safe handler function for DynamoDB stream events.
+// Provides callback-based event processing with automatic type conversion.
+// Pass nil for events you don't want to handle.
+// Example:
+//   handler := CreateTriggerHandler(
+//       func(ctx context.Context, item *SchemaItem) error { /* INSERT */ },
+//       func(ctx context.Context, old, new *SchemaItem) error { /* MODIFY */ },
+//       func(ctx context.Context, keys map[string]events.DynamoDBAttributeValue) error { /* REMOVE */ },
+//   )
 func CreateTriggerHandler(
     onInsert func(context.Context, *SchemaItem) error,
     onModify func(context.Context, *SchemaItem, *SchemaItem) error,
