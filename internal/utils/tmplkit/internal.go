@@ -1,4 +1,4 @@
-package templatefunc
+package tmplkit
 
 import (
 	"strings"

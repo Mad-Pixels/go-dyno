@@ -7,9 +7,7 @@ import (
 	"text/template"
 
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
-	"github.com/Mad-Pixels/go-dyno/internal/tmp"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
-	templatefunc "github.com/Mad-Pixels/go-dyno/internal/utils/template_func"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/tmplkit"
 	"github.com/rs/zerolog"
 	"golang.org/x/tools/imports"
 	"mvdan.cc/gofumpt/format"
@@ -129,18 +127,18 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 		template.FuncMap{
 			"Join":                   strings.Join,
 			"ToUpper":                strings.ToUpper,
-			"ToUpperCamelCase":       templatefunc.ToUpperCamelCase,
-			"ToLowerCamelCase":       templatefunc.ToLowerCamelCase,
-			"ToGolangBaseType":       tmp.ToGolangBaseType,
-			"ToGolangZeroType":       tmp.ToGolangZeroType,
-			"ToGolangAttrType":       tmp.ToGolangAttrType,
-			"ToSafeName":             templatefunc.ToSafeName,
-			"IsNumericAttr":          tmp.IsNumericAttr,
-			"IsIntegerAttr":          tmp.IsIntegerAttr,
-			"ToDynamoDBStructTag":    tmp.ToDynamoDBStructTag,
-			"GetUsedNumericSetTypes": tmp.GetUsedNumericSetTypes,
-			"IsFloatType":            utils.IsFloatType,
-			"Slice":                  templatefunc.TrimLeftN,
+			"ToUpperCamelCase":       tmplkit.ToUpperCamelCase,
+			"ToLowerCamelCase":       tmplkit.ToLowerCamelCase,
+			"ToGolangBaseType":       tmplkit.ToGolangBaseType,
+			"ToGolangZeroType":       tmplkit.ToGolangZeroType,
+			"ToGolangAttrType":       tmplkit.ToGolangAttrType,
+			"ToSafeName":             tmplkit.ToSafeName,
+			"IsNumericAttr":          tmplkit.IsNumericAttr,
+			"IsIntegerAttr":          tmplkit.IsIntegerAttr,
+			"ToDynamoDBStructTag":    tmplkit.ToDynamoDBStructTag,
+			"GetUsedNumericSetTypes": tmplkit.GetUsedNumericSetTypes,
+			"IsFloatType":            tmplkit.IsFloatType,
+			"Slice":                  tmplkit.TrimLeftN,
 		},
 	).
 		Parse(tmpl)
