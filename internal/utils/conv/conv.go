@@ -1,4 +1,16 @@
-package tmplkit
+// Package conv provides string transformation and sanitization utilities
+// used in code generation and template rendering.
+//
+// It includes helpers to:
+//   - Convert arbitrary strings to safe Go identifiers (e.g. ToSafeName)
+//   - Transform strings to CamelCase, snake_case variants
+//   - Normalize and validate type names for Go and DynamoDB
+//   - Handle reserved Go keywords and fix invalid characters
+//   - Perform partial slicing and type detection for code templates
+//
+// This package is primarily used to ensure all identifiers generated from schema inputs
+// are valid, readable, and collision-free in generated Go code.
+package conv
 
 import (
 	"strings"

@@ -15,7 +15,7 @@ package attribute
 
 import (
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
-	"github.com/Mad-Pixels/go-dyno/internal/utils"
+	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 )
 
 var (
@@ -111,7 +111,7 @@ func (a Attribute) Validate() error {
 		return logger.NewFailure("invalid attribute type", nil).
 			With("name", a.Name).
 			With("type", a.Type).
-			With("available", utils.AvailableKeys(validTypes))
+			With("available", conv.AvailableKeys(validTypes))
 	}
 	return a.Subtype.Validate(a.Type)
 }
