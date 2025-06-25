@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./.media/logo.png" alt="GoDyno Logo" />
   <br>
-  <h1 align="center">GoDyno</h3>
+  <h3 align="center">GoDyno</h3>
   <em>Type-safe DynamoDB code generation</em>
 </div>
 
@@ -21,6 +21,6 @@
 ### Documentation
 Learn how to get started, explore advanced features, and check examples in our [full project Documentation](https://go-dyno.madpixels.io/).
 
-# Contributing
+### Contributing
 We're open to any new ideas and contributions.
 Found a bug? Have an idea? We welcome pull requests and issues.
