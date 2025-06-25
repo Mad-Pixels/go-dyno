@@ -1,8 +1,7 @@
 <div align="center">
   <img src="./.media/logo.png" alt="GoDyno Logo" />
   <br>
-  <h3 align="center">GoDyno</h3>
-  <em>Type-safe DynamoDB code generation</em>
+  <h3 align="center">Type-safe DynamoDB code generation</h3>
 </div>
 
 ---
