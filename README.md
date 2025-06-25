@@ -1,43 +1,26 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Mad-Pixels/.github/raw/main/profile/banner.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Mad-Pixels/.github/raw/main/profile/banner.png">
-  <img
-    alt="MadPixels"
-    src="https://github.com/Mad-Pixels/.github/raw/main/profile/banner.png">
-</picture>
+<div align="center">
+  <img src="./.media/logo.png" alt="GoDyno Logo" />
+  <br>
+  <h1 align="center">GoDyno</h3>
+  <em>Type-safe DynamoDB code generation</em>
+</div>
 
-# MadPixels: GoDyno
+---
 
-GoDyno — a CLI tool for generating type-safe Go code from DynamoDB JSON schemas.  
-Seamlessly integrate your AWS DynamoDB infrastructure with your Go codebase.
+[![Go Version](https://img.shields.io/github/go-mod/go-version/Mad-Pixels/go-dyno?style=flat-square&logo=go&logoColor=white)](https://golang.org/) [![License](https://img.shields.io/github/license/Mad-Pixels/go-dyno?style=flat-square)](LICENSE) [![Latest Release](https://img.shields.io/github/v/release/Mad-Pixels/go-dyno?style=flat-square&logo=github)](https://github.com/Mad-Pixels/go-dyno/releases/latest)
 
-One JSON Schema → Terraform + Go code
+`GoDyno` is a cli-tool for generating type-safe Go code from JSON schemas for DynamoDB.
 
-<table>
-<tr>
-<td width="66%">
+### Why GoDyno?
+- **Code Generation:** Produces clean, dependency-free Go code directly into your project.
+- **Type Safety:** Ensures compile-time checks and full IDE autocompletion. 
+- **Unified Schema:** Maintains a single source of truth—use one JSON schema for both Terraform and Go.
+- **Production Ready:** Generates optimized queries with intelligent automatic index selection.
+- **AWS SDK v2 Compatibility:** Full support for AWS SDK v2, including handling composite keys.
 
-**Key Features:**  
-✅ **Code Generation:** Produces clean, dependency-free Go code directly into your project.  
-✅ **Type Safety:** Ensures compile-time checks and full IDE autocompletion.  
-✅ **Unified Schema:** Maintains a single source of truth—use one JSON schema for both Terraform and Go.  
-✅ **Production Ready:** Generates optimized queries with intelligent automatic index selection.  
-✅ **AWS SDK v2 Compatibility:** Full support for AWS SDK v2, including handling composite keys.
-  
-[Documentation](https://go-dyno.madpixels.io/)
-
-</td>
-<td width="34%" align="center">
-
-![GoDyno Logo](./.media/logo.png)
-<br>
-<em>Type-safe DynamoDB<br>code generation</em>
-</td>
-</tr>
-</table>
+### Documentation
+Learn how to get started, explore advanced features, and check examples in our [full project Documentation](https://go-dyno.madpixels.io/).
 
 # Contributing
-We're open to any new ideas and contributions. We also have some rules and taboos here, so please read this page and our [Code of Conduct](/CODE_OF_CONDUCT.md) carefully.
-
-## I want to report an issue
-If you've found an issue and want to report it, please check our [Issues](https://github.com/Mad-Pixels/go-dyno/issues) page.
+We're open to any new ideas and contributions.
+Found a bug? Have an idea? We welcome pull requests and issues.
