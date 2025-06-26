@@ -169,14 +169,16 @@ jobs:
 
   update-docs:
     name: Update docs
-    needs: [publish-release]
+    needs: [publish-release, generate-changelog]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger
         run: |
+          CHANGELOG_B64=$(echo '${{ needs.generate-changelog.outputs.changelog }}' | base64 -w 0)
+          
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
             -H "Content-Type: application/json" \
             https://api.github.com/repos/Mad-Pixels/go-dyno-docs/actions/workflows/update_docs.yml/dispatches \
-            -d "{\"ref\":\"main\", \"inputs\": {\"version\": \"${{ github.ref_name }}\"}}"
+            -d "{\"ref\":\"main\", \"inputs\": {\"version\": \"${{ github.ref_name }}\", \"changelog_b64\": \"$CHANGELOG_B64\"}}"
