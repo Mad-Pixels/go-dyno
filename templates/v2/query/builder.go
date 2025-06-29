@@ -258,14 +258,12 @@ func (qb *QueryBuilder) WithIndexHashKey(indexName string, values ...any) *Query
     }
     
     if index.HashKeyParts != nil {
-        // Composite key
         nonConstantParts := qb.getNonConstantParts(index.HashKeyParts)
         if len(values) != len(nonConstantParts) {
-            return qb // Wrong number of values
+            return qb
         }
         qb.setCompositeKey(index.HashKey, index.HashKeyParts, values)
     } else {
-        // Simple key
         if len(values) != 1 {
             return qb
         }
@@ -273,7 +271,6 @@ func (qb *QueryBuilder) WithIndexHashKey(indexName string, values ...any) *Query
         qb.UsedKeys[index.HashKey] = true
         qb.KeyConditions[index.HashKey] = expression.Key(index.HashKey).Equal(expression.Value(values[0]))
     }
-    
     return qb
 }
 
@@ -289,14 +286,12 @@ func (qb *QueryBuilder) WithIndexRangeKey(indexName string, values ...any) *Quer
     }
     
     if index.RangeKeyParts != nil {
-        // Composite key
         nonConstantParts := qb.getNonConstantParts(index.RangeKeyParts)
         if len(values) != len(nonConstantParts) {
             return qb
         }
         qb.setCompositeKey(index.RangeKey, index.RangeKeyParts, values)
     } else {
-        // Simple key
         if len(values) != 1 {
             return qb
         }
@@ -304,7 +299,6 @@ func (qb *QueryBuilder) WithIndexRangeKey(indexName string, values ...any) *Quer
         qb.UsedKeys[index.RangeKey] = true
         qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).Equal(expression.Value(values[0]))
     }
-    
     return qb
 }
 
@@ -314,14 +308,12 @@ func (qb *QueryBuilder) WithIndexRangeKey(indexName string, values ...any) *Quer
 func (qb *QueryBuilder) WithIndexRangeKeyBetween(indexName string, start, end any) *QueryBuilder {
     index := qb.getIndexByName(indexName)
     if index == nil || index.RangeKey == "" || index.RangeKeyParts != nil {
-        return qb // Only works with simple range keys
+        return qb 
     }
-    
     qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).Between(expression.Value(start), expression.Value(end))
     qb.UsedKeys[index.RangeKey] = true
     qb.Attributes[index.RangeKey+"_start"] = start
     qb.Attributes[index.RangeKey+"_end"] = end
-    
     return qb
 }
 
@@ -333,11 +325,9 @@ func (qb *QueryBuilder) WithIndexRangeKeyGT(indexName string, value any) *QueryB
     if index == nil || index.RangeKey == "" || index.RangeKeyParts != nil {
         return qb
     }
-    
     qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).GreaterThan(expression.Value(value))
     qb.UsedKeys[index.RangeKey] = true
     qb.Attributes[index.RangeKey] = value
-    
     return qb
 }
 
@@ -349,11 +339,9 @@ func (qb *QueryBuilder) WithIndexRangeKeyLT(indexName string, value any) *QueryB
     if index == nil || index.RangeKey == "" || index.RangeKeyParts != nil {
         return qb
     }
-    
     qb.KeyConditions[index.RangeKey] = expression.Key(index.RangeKey).LessThan(expression.Value(value))
     qb.UsedKeys[index.RangeKey] = true
     qb.Attributes[index.RangeKey] = value
-    
     return qb
 }
 
@@ -383,16 +371,12 @@ func (qb *QueryBuilder) getNonConstantParts(parts []CompositeKeyPart) []Composit
 // setCompositeKey builds and sets composite key from parts and values.
 func (qb *QueryBuilder) setCompositeKey(keyName string, parts []CompositeKeyPart, values []any) {
     nonConstantParts := qb.getNonConstantParts(parts)
-    
-    // Map values to their respective attributes
     for i, part := range nonConstantParts {
         if i < len(values) {
             qb.Attributes[part.Value] = values[i]
             qb.UsedKeys[part.Value] = true
         }
     }
-    
-    // Build composite value
     compositeValue := qb.buildCompositeKeyValue(parts)
     qb.Attributes[keyName] = compositeValue
     qb.UsedKeys[keyName] = true
@@ -444,7 +428,6 @@ type IndexInfo struct {
 }
 
 func getIndexType(index SecondaryIndex) string {
-    // GSI has different hash key than main table, LSI has same hash key
     if index.HashKey != TableSchema.HashKey {
         return "GSI"
     }

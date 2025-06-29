@@ -25,7 +25,6 @@ func (fm *FilterMixin) Filter(field string, op OperatorType, values ...any) {
     if !ValidateValues(op, values) {
         return
     }
-
     if !ValidateOperator(field, op) {
         return
     }
@@ -177,11 +176,9 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...any)
     if !exists {
         return
     }
-
     if !fieldInfo.IsKey {
         return
     }
-
     if !ValidateOperator(field, op) {
         return
     }
@@ -190,7 +187,6 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...any)
     if err != nil {
         return
     }
-
     kcm.KeyConditions[field] = keyCond
 }
 

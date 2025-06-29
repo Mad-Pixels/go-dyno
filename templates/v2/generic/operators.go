@@ -80,12 +80,12 @@ var keyOperatorHandlers = map[OperatorType]KeyOperatorHandler{
 // allowedKeyConditionOperators defines operators valid for key conditions.
 // Single source of truth for key condition validation.
 var allowedKeyConditionOperators = map[OperatorType]bool{
-    EQ:      true,  // Required for partition key
-    GT:      true,  // Valid for sort key
-    LT:      true,  // Valid for sort key
-    GTE:     true,  // Valid for sort key
-    LTE:     true,  // Valid for sort key
-    BETWEEN: true,  // Valid for sort key
+    EQ:      true,
+    GT:      true,
+    LT:      true,
+    GTE:     true,
+    LTE:     true,
+    BETWEEN: true,
 }
 
 // conditionOperatorHandlers provides O(1) lookup for filter operations.
@@ -198,25 +198,20 @@ func ValidateOperator(fieldName string, op OperatorType) bool {
 // Creates type-safe filter conditions with full validation.
 // Example: BuildConditionExpression("name", EQ, []any{"John"})
 func BuildConditionExpression(field string, op OperatorType, values []any) (expression.ConditionBuilder, error) {
-    // Check if field exists in schema
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
         return expression.ConditionBuilder{}, fmt.Errorf("field %s not found in schema", field)
     }
-    
-    // Check if operator is supported for this field type
     if !fieldInfo.SupportsOperator(op) {
         return expression.ConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s (type %s)", op, field, fieldInfo.DynamoType)
     }
-    
     if !ValidateValues(op, values) {
         return expression.ConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
-    
+
     handler := conditionOperatorHandlers[op]
     fieldExpr := expression.Name(field)
     result := handler(fieldExpr, values)
-    
     return result, nil
 }
 
@@ -224,22 +219,16 @@ func BuildConditionExpression(field string, op OperatorType, values []any) (expr
 // Creates type-safe key conditions for Query operations only.
 // Example: BuildKeyConditionExpression("user_id", EQ, []any{"123"})
 func BuildKeyConditionExpression(field string, op OperatorType, values []any) (expression.KeyConditionBuilder, error) {
-    // Check if field exists in schema
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
         return expression.KeyConditionBuilder{}, fmt.Errorf("field %s not found in schema", field)
     }
-    
-    // Check if field is actually a key
     if !fieldInfo.IsKey {
         return expression.KeyConditionBuilder{}, fmt.Errorf("field %s is not a key field", field)
     }
-    
-    // Check if operator is supported for this field type
     if !fieldInfo.SupportsOperator(op) {
         return expression.KeyConditionBuilder{}, fmt.Errorf("operator %s not supported for field %s (type %s)", op, field, fieldInfo.DynamoType)
     }
-    
     if !ValidateValues(op, values) {
         return expression.KeyConditionBuilder{}, fmt.Errorf("invalid number of values for operator %s", op)
     }
@@ -247,7 +236,6 @@ func BuildKeyConditionExpression(field string, op OperatorType, values []any) (e
     handler := keyOperatorHandlers[op]
     fieldExpr := expression.Key(field)
     result := handler(fieldExpr, values)
-    
     return result, nil
 }
 `

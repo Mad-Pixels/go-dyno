@@ -15,11 +15,9 @@ func (qb *QueryBuilder) With(field string, op OperatorType, values ...any) *Quer
     if !exists {
         return qb
     }
-
     if !fieldInfo.IsKey {
         return qb
     }
-
     if !ValidateOperator(fieldInfo.DynamoType, op) {
         return qb
     }
@@ -28,14 +26,12 @@ func (qb *QueryBuilder) With(field string, op OperatorType, values ...any) *Quer
     if err != nil {
         return qb
     }
-
     qb.KeyConditions[field] = keyCond
     qb.UsedKeys[field] = true
 
     if op == EQ && len(values) == 1 {
         qb.Attributes[field] = values[0]
     }
-
     return qb
 }
 
@@ -48,31 +44,24 @@ func (qb *QueryBuilder) Filter(field string, op OperatorType, values ...any) *Qu
         return qb
     }
 
-    // O(1) field lookup with pre-computed type information
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
         return qb
     }
-
-    // Validate operator compatibility with DynamoDB field type
     if !ValidateOperator(fieldInfo.DynamoType, op) {
         return qb
     }
 
-    // Build type-safe filter condition
     filterCond, err := BuildConditionExpression(field, op, values)
     if err != nil {
         return qb
     }
-
     qb.FilterConditions = append(qb.FilterConditions, filterCond)
     qb.UsedKeys[field] = true
 
-    // Store simple equality values for index selection optimization
     if op == EQ && len(values) == 1 {
         qb.Attributes[field] = values[0]
     }
-
     return qb
 }
 

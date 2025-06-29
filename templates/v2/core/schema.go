@@ -97,12 +97,10 @@ func buildAllowedOperators(dynamoType string) map[OperatorType]bool {
         allowed[EXISTS] = true
         allowed[NOT_EXISTS] = true
     }
-    
     return allowed
 }
 
 // DynamoSchema represents the complete table schema with indexes and metadata.
-// Provides fast field lookup with O(1) access to operator validation.
 type DynamoSchema struct {
     TableName        string
     HashKey          string
@@ -110,7 +108,6 @@ type DynamoSchema struct {
     Attributes       []Attribute
     CommonAttributes []Attribute
     SecondaryIndexes []SecondaryIndex
-    // FieldsMap provides O(1) field lookup with pre-computed operators
     FieldsMap        map[string]FieldInfo
 }
 
@@ -132,10 +129,10 @@ type CompositeKeyPart struct {
 type SecondaryIndex struct {
     Name             string
     HashKey          string
-    HashKeyParts     []CompositeKeyPart  // for composite hash keys
     RangeKey         string
+    ProjectionType   string
+    HashKeyParts     []CompositeKeyPart  // for composite hash keys
     RangeKeyParts    []CompositeKeyPart  // for composite range keys
-    ProjectionType   string              // ALL, KEYS_ONLY, or INCLUDE
     NonKeyAttributes []string            // projected attributes for INCLUDE
 }
 
@@ -159,13 +156,11 @@ var TableSchema = DynamoSchema{
         {Name: "{{.Name}}", Type: "{{.Type}}"},
         {{- end}}
     },
-    
     CommonAttributes: []Attribute{
         {{- range .CommonAttributes}}
         {Name: "{{.Name}}", Type: "{{.Type}}"},
         {{- end}}
     },
-    
     SecondaryIndexes: []SecondaryIndex{
         {{- range .SecondaryIndexes}}
         {
@@ -197,8 +192,6 @@ var TableSchema = DynamoSchema{
         },
         {{- end}}
     },
-    
-    // FieldsMap provides fast field metadata lookup with operator validation
     FieldsMap: map[string]FieldInfo{
         {{- range .AllAttributes}}
         "{{.Name}}": {

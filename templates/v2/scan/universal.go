@@ -5,38 +5,29 @@ const ScanBuilderUniversalTemplate = `
 // Filter adds a filter condition using the universal operator system.
 // Works with any table attribute and validates operator compatibility with field types.
 // Filters are applied after items are read from DynamoDB, affecting the returned results.
-// Uses O(1) schema lookup for efficient field validation and type checking.
 // Example: scan.Filter("status", EQ, "active").Filter("tags", CONTAINS, "premium")
 func (sb *ScanBuilder) Filter(field string, op OperatorType, values ...any) *ScanBuilder {
     if !ValidateValues(op, values) {
         return sb
     }
-    
-    // O(1) field lookup with pre-computed type information
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
         return sb
     }
-    
-    // Validate operator compatibility with DynamoDB field type
     if !ValidateOperator(fieldInfo.DynamoType, op) {
         return sb
     }
     
-    // Build type-safe filter condition
     filterCond, err := BuildConditionExpression(field, op, values)
     if err != nil {
         return sb
     }
-    
     sb.FilterConditions = append(sb.FilterConditions, filterCond)
     sb.UsedKeys[field] = true
     
-    // Store simple equality values for potential optimization
     if op == EQ && len(values) == 1 {
         sb.Attributes[field] = values[0]
     }
-    
     return sb
 }
 

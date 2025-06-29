@@ -18,12 +18,9 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     rangeKeyValue = item.{{ToSafeName .Name | ToUpperCamelCase}}
     {{end}}{{end}}{{end}}
     
-    // Single validation call at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
-    
-    // Pure business logic after validation
     key := make(map[string]types.AttributeValue)
    
     hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
@@ -41,7 +38,6 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
         key[TableSchema.RangeKey] = rangeKeyAV
     }
     {{end}}
-   
     return key, nil
 }
 
@@ -51,7 +47,6 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
 // Handles both simple (hash only) and composite (hash + range) keys automatically.
 // Example: keyMap, err := KeyInputFromRaw("user123", "session456")
 func KeyInputFromRaw(hashKeyValue any, rangeKeyValue any) (map[string]types.AttributeValue, error) {
-    // Pure business logic - validation should be done by caller
     key := make(map[string]types.AttributeValue)
    
     hashKeyAV, err := attributevalue.Marshal(hashKeyValue)
@@ -69,7 +64,6 @@ func KeyInputFromRaw(hashKeyValue any, rangeKeyValue any) (map[string]types.Attr
         key[TableSchema.RangeKey] = rangeKeyAV
     }
     {{end}}
-   
     return key, nil
 }
 `

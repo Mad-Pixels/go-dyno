@@ -70,7 +70,6 @@ func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
 		return ""
 	}
 	
-	// Fast path for common simple types - avoids marshaling overhead
 	switch v := value.(type) {
 	case string:
 		return v
@@ -81,33 +80,26 @@ func (qb *QueryBuilder) formatAttributeValue(value interface{}) string {
 		return "false"
 	}
 	
-	// Use AWS SDK marshaling for complex types and numbers
-	// Ensures consistent formatting with DynamoDB expectations
 	av, err := attributevalue.Marshal(value)
 	if err != nil {
-		// Fallback to Go's string conversion if marshaling fails
 		return fmt.Sprintf("%v", value)
 	}
 	
-	// Extract string representation from AttributeValue types
 	switch typed := av.(type) {
 	case *types.AttributeValueMemberS:
 		return typed.Value
 	case *types.AttributeValueMemberN:
-		return typed.Value // Numbers are stored as strings in DynamoDB
+		return typed.Value
 	case *types.AttributeValueMemberBOOL:
 		if typed.Value {
 			return "true"
 		}
 		return "false"
 	case *types.AttributeValueMemberSS:
-		// String sets joined with comma for composite keys
 		return strings.Join(typed.Value, ",")
 	case *types.AttributeValueMemberNS:
-		// Number sets joined with comma for composite keys
 		return strings.Join(typed.Value, ",")
 	default:
-		// Fallback for unsupported types (Lists, Maps, Binary, etc.)
 		return fmt.Sprintf("%v", value)
 	}
 }
