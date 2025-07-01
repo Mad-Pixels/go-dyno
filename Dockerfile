@@ -1,5 +1,5 @@
 ARG ALPINE_VERSION=3.20
-ARG GO_VERSION=1.23.0
+ARG GO_VERSION=1.24.0
 ARG APP_NAME=godyno
 ARG APP_PATH=./cmd/dyno
 ARG GOCACHE=/root/.cache/go-build
@@ -68,12 +68,12 @@ RUN upx --best --lzma /bin/${APP_NAME}
 
 # Final amd64 image
 FROM scratch AS amd64
-ARG APP_NAME
+ARG APP_NAME=godyno
 COPY --from=builder-amd64 /bin/${APP_NAME} /${APP_NAME}
-ENTRYPOINT ["/${APP_NAME}"]
+ENTRYPOINT ["/godyno"]
 
 # Final arm64 image
 FROM scratch AS arm64
-ARG APP_NAME
+ARG APP_NAME=godyno
 COPY --from=builder-arm64 /bin/${APP_NAME} /${APP_NAME}
-ENTRYPOINT ["/${APP_NAME}"]
+ENTRYPOINT ["/godyno"]
