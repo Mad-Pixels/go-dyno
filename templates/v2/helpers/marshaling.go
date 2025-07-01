@@ -49,13 +49,11 @@ func marshalItemToMap(item SchemaItem) (map[string]types.AttributeValue, error) 
 // Returns only non-key attributes for SET/ADD/REMOVE expressions.
 func extractNonKeyAttributes(allAttributes map[string]types.AttributeValue) map[string]types.AttributeValue {
     updates := make(map[string]types.AttributeValue, len(allAttributes)-2)
-    
     for attrName, attrValue := range allAttributes {
         if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
             updates[attrName] = attrValue
         }
     }
-    
     return updates
 }
 
@@ -67,7 +65,6 @@ func buildUpdateExpression(updates map[string]types.AttributeValue) (string, map
     if len(updates) == 0 {
         return "", nil, nil
     }
-    
     updateParts := make([]string, 0, len(updates))
     attrNames := make(map[string]string, len(updates))
     attrValues := make(map[string]types.AttributeValue, len(updates))
@@ -82,7 +79,6 @@ func buildUpdateExpression(updates map[string]types.AttributeValue) (string, map
         attrValues[valueKey] = attrValue
         i++
     }
-    
     return "SET " + strings.Join(updateParts, ", "), attrNames, attrValues
 }
 
@@ -95,19 +91,16 @@ func mergeExpressionAttributes(
     conditionNames map[string]string, 
     conditionValues map[string]types.AttributeValue,
 ) (map[string]string, map[string]types.AttributeValue) {
-    
     if conditionNames != nil {
         for key, value := range conditionNames {
             baseNames[key] = value
         }
     }
-    
     if conditionValues != nil {
         for key, value := range conditionValues {
             baseValues[key] = value
         }
     }
-    
     return baseNames, baseValues
 }
 
@@ -116,7 +109,6 @@ func mergeExpressionAttributes(
 // Handles special DynamoDB types (Sets) that require custom marshaling logic.
 func marshalUpdatesWithSchema(updates map[string]any) (map[string]types.AttributeValue, error) {
     result := make(map[string]types.AttributeValue, len(updates))
-    
     for fieldName, value := range updates {
         if fieldInfo, exists := TableSchema.FieldsMap[fieldName]; exists {
             av, err := marshalValueByType(value, fieldInfo.DynamoType)
@@ -133,7 +125,6 @@ func marshalUpdatesWithSchema(updates map[string]any) (map[string]types.Attribut
             result[fieldName] = av
         }
     }
-    
     return result, nil
 }
 
@@ -168,7 +159,6 @@ func marshalValueByType(value any, dynamoType string) (types.AttributeValue, err
         return nil, fmt.Errorf("NS: no numeric set types defined in schema")
         {{- end}}
     default:
-        // Use AWS SDK default marshaling for standard types
         return attributevalue.Marshal(value)
     }
 }

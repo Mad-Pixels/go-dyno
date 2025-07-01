@@ -21,7 +21,6 @@ func IncrementAttribute(hashKeyValue any, rangeKeyValue any, attributeName strin
     if err != nil {
         return nil, fmt.Errorf("failed to create key for increment: %v", err)
     }
-   
     return &dynamodb.UpdateItemInput{
         TableName:        aws.String(TableSchema.TableName),
         Key:              key,
@@ -57,7 +56,6 @@ func AddToSet(hashKeyValue any, rangeKeyValue any, attributeName string, values 
     }
    
     var attributeValue types.AttributeValue
-   
     {{- $nsTypes := GetUsedNumericSetTypes .AllAttributes}}
     switch v := values.(type) {
     case []string:
@@ -111,7 +109,6 @@ func RemoveFromSet(hashKeyValue any, rangeKeyValue any, attributeName string, va
     }
    
     var attributeValue types.AttributeValue
-   
     {{- $nsTypes := GetUsedNumericSetTypes .AllAttributes}}
     switch v := values.(type) {
     case []string:

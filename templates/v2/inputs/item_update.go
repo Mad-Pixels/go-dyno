@@ -12,19 +12,14 @@ func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
         return nil, fmt.Errorf("failed to create key from item for update: %v", err)
     }
    
-    // Use helper to marshal item
     allAttributes, err := marshalItemToMap(item)
     if err != nil {
         return nil, fmt.Errorf("failed to marshal item for update: %v", err)
     }
-   
-    // Use helper to extract non-key attributes
     updates := extractNonKeyAttributes(allAttributes)
     if len(updates) == 0 {
         return nil, fmt.Errorf("no non-key attributes to update")
     }
-   
-    // Use helper to build expression
     updateExpression, attrNames, attrValues := buildUpdateExpression(updates)
    
     return &dynamodb.UpdateItemInput{
@@ -41,7 +36,6 @@ func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
 // Use when you know exactly which fields to update without loading the full item.
 // Example: UpdateItemInputFromRaw("user123", nil, map[string]any{"status": "active", "last_login": time.Now()})
 func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[string]any) (*dynamodb.UpdateItemInput, error) {
-    // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -49,19 +43,14 @@ func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[str
         return nil, err
     }
 
-    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for update: %v", err)
     }
-   
-    // Use schema-aware marshaling for proper type handling
     marshaledUpdates, err := marshalUpdatesWithSchema(updates)
     if err != nil {
         return nil, fmt.Errorf("failed to marshal updates: %v", err)
     }
-   
-    // Use helper to build expression
     updateExpression, attrNames, attrValues := buildUpdateExpression(marshaledUpdates)
    
     return &dynamodb.UpdateItemInput{
@@ -78,7 +67,6 @@ func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[str
 // Enables optimistic locking and prevents race conditions in concurrent updates.
 // Example: UpdateItemInputWithCondition("user123", nil, updates, "version = :v", nil, map[string]types.AttributeValue{":v": &types.AttributeValueMemberN{Value: "1"}})
 func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates map[string]any, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
-    // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -89,22 +77,18 @@ func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates m
         return nil, err
     }
 
-    // Pure business logic after validation
     updateInput, err := UpdateItemInputFromRaw(hashKeyValue, rangeKeyValue, updates)
     if err != nil {
         return nil, err
     }
-   
     updateInput.ConditionExpression = aws.String(conditionExpression)
    
-    // Use helper to merge expression attributes safely
     updateInput.ExpressionAttributeNames, updateInput.ExpressionAttributeValues = mergeExpressionAttributes(
         updateInput.ExpressionAttributeNames,
         updateInput.ExpressionAttributeValues,
         conditionAttributeNames,
         conditionAttributeValues,
     )
-   
     return updateInput, nil
 }
 
@@ -116,12 +100,10 @@ func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates m
 //   condExpr := expression.Name("version").Equal(expression.Value(currentVersion))
 //   input, err := UpdateItemInputWithExpression("user123", nil, updateExpr, &condExpr)
 func UpdateItemInputWithExpression(hashKeyValue any, rangeKeyValue any, updateBuilder expression.UpdateBuilder, conditionBuilder *expression.ConditionBuilder) (*dynamodb.UpdateItemInput, error) {
-    // All validations at the beginning
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
     
-    // Pure business logic after validation
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for expression update: %v", err)
@@ -138,7 +120,6 @@ func UpdateItemInputWithExpression(hashKeyValue any, rangeKeyValue any, updateBu
             WithUpdate(updateBuilder).
             Build()
     }
-   
     if err != nil {
         return nil, fmt.Errorf("failed to build update expression: %v", err)
     }
@@ -150,11 +131,9 @@ func UpdateItemInputWithExpression(hashKeyValue any, rangeKeyValue any, updateBu
         ExpressionAttributeNames:  expr.Names(),
         ExpressionAttributeValues: expr.Values(),
     }
-   
     if conditionBuilder != nil {
         input.ConditionExpression = expr.Condition()
     }
-   
     return input, nil
 }
 `

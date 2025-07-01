@@ -7,11 +7,11 @@ const ScanBuilderTemplate = `
 // Use Query for efficient key-based access; use Scan for full table analysis.
 // Combines FilterMixin and PaginationMixin for comprehensive scan functionality.
 type ScanBuilder struct {
-    FilterMixin              // Filter conditions applied after reading items
-    PaginationMixin          // Limit and pagination support
-    IndexName            string                 // Optional secondary index to scan
-    ProjectionAttributes []string               // Specific attributes to return
-    ParallelScanConfig   *ParallelScanConfig   // Parallel scan configuration
+    FilterMixin                               // Filter conditions applied after reading items
+    PaginationMixin                           // Limit and pagination support
+    IndexName            string               // Optional secondary index to scan
+    ProjectionAttributes []string             // Specific attributes to return
+    ParallelScanConfig   *ParallelScanConfig  // Parallel scan configuration
 }
 
 // ParallelScanConfig configures parallel scan operations for improved throughput.

@@ -10,15 +10,12 @@ func ExtractFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Schema
     if dbEvent.Change.NewImage == nil {
         return nil, fmt.Errorf("new image is nil in the event")
     }
-  
-    // Convert stream AttributeValues to DynamoDB types
     dynamoAttrs := toDynamoMap(dbEvent.Change.NewImage)
     
     var item SchemaItem
     if err := attributevalue.UnmarshalMap(dynamoAttrs, &item); err != nil {
         return nil, fmt.Errorf("failed to unmarshal DynamoDB stream event: %v", err)
     }
-  
     return &item, nil
 }
 
@@ -30,15 +27,12 @@ func ExtractOldFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Sch
     if dbEvent.Change.OldImage == nil {
         return nil, fmt.Errorf("old image is nil in the event")
     }
-  
-    // Convert stream AttributeValues to DynamoDB types
     dynamoAttrs := toDynamoMap(dbEvent.Change.OldImage)
     
     var item SchemaItem
     if err := attributevalue.UnmarshalMap(dynamoAttrs, &item); err != nil {
         return nil, fmt.Errorf("failed to unmarshal old DynamoDB stream event: %v", err)
     }
-  
     return &item, nil
 }
 
@@ -46,18 +40,15 @@ func ExtractOldFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Sch
 // Required because Lambda and DynamoDB SDK use different attribute value types.
 func toDynamoMap(streamAttrs map[string]events.DynamoDBAttributeValue) map[string]types.AttributeValue {
     dynamoAttrs := make(map[string]types.AttributeValue, len(streamAttrs))
-    
     for key, streamAttr := range streamAttrs {
         dynamoAttrs[key] = toDynamoAttr(streamAttr)
     }
-    
     return dynamoAttrs
 }
 
 // toDynamoAttr converts single Lambda AttributeValue to SDK AttributeValue.
 // Handles all DynamoDB data types including nested Lists and Maps.
 func toDynamoAttr(streamAttr events.DynamoDBAttributeValue) types.AttributeValue {
-    // Use DataType to properly identify the attribute type
     switch streamAttr.DataType() {
     case events.DataTypeString:
         return &types.AttributeValueMemberS{Value: streamAttr.String()}
@@ -88,7 +79,6 @@ func toDynamoAttr(streamAttr events.DynamoDBAttributeValue) types.AttributeValue
     case events.DataTypeNull:
         return &types.AttributeValueMemberNULL{Value: true}
     default:
-        // Fallback for unknown types
         return &types.AttributeValueMemberNULL{Value: true}
     }
 }
@@ -101,41 +91,31 @@ func IsFieldModified(dbEvent events.DynamoDBEventRecord, fieldName string) bool 
     if dbEvent.EventName != "MODIFY" {
         return false
     }
-    
     if dbEvent.Change.OldImage == nil || dbEvent.Change.NewImage == nil {
         return false
     }
-    
     oldVal, oldExists := dbEvent.Change.OldImage[fieldName]
     newVal, newExists := dbEvent.Change.NewImage[fieldName]
     
-    // Field was added
     if !oldExists && newExists {
         return true
     }
-    
-    // Field was removed
     if oldExists && !newExists {
         return true
     }
-    
-    // Field exists in both - check if values differ
     if oldExists && newExists {
         return !streamAttributeValuesEqual(oldVal, newVal)
     }
-    
     return false
 }
 
 // streamAttributeValuesEqual compares two stream AttributeValues for equality.
 // Handles all DynamoDB data types with proper set comparison for SS/NS.
 func streamAttributeValuesEqual(a, b events.DynamoDBAttributeValue) bool {
-    // First check if data types are the same
     if a.DataType() != b.DataType() {
         return false
     }
     
-    // Compare based on data type
     switch a.DataType() {
     case events.DataTypeString:
         return a.String() == b.String()
@@ -174,10 +154,8 @@ func streamAttributeValuesEqual(a, b events.DynamoDBAttributeValue) bool {
         }
         return true
     case events.DataTypeNull:
-        return true // Both are null
+        return true 
     default:
-        // For complex types (List, Map, Binary), fall back to simple comparison
-        // In real scenarios, you might want more sophisticated comparison
         return false
     }
 }
@@ -189,7 +167,6 @@ func GetBoolFieldChanged(dbEvent events.DynamoDBEventRecord, fieldName string) b
     if dbEvent.EventName != "MODIFY" {
         return false
     }
-    
     if dbEvent.Change.OldImage == nil || dbEvent.Change.NewImage == nil {
         return false
     }
@@ -198,12 +175,10 @@ func GetBoolFieldChanged(dbEvent events.DynamoDBEventRecord, fieldName string) b
     if oldVal, ok := dbEvent.Change.OldImage[fieldName]; ok {
         oldValue = oldVal.Boolean()
     }
-    
     newValue := false
     if newVal, ok := dbEvent.Change.NewImage[fieldName]; ok {
         newValue = newVal.Boolean()
     }
-    
     return !oldValue && newValue
 }
 
@@ -220,14 +195,12 @@ func ExtractBothFromDynamoDBStreamEvent(dbEvent events.DynamoDBEventRecord) (*Sc
             return nil, nil, fmt.Errorf("failed to extract old item: %v", err)
         }
     }
-    
     if dbEvent.Change.NewImage != nil {
         newItem, err = ExtractFromDynamoDBStreamEvent(dbEvent)
         if err != nil {
             return nil, nil, fmt.Errorf("failed to extract new item: %v", err)
         }
     }
-    
     return oldItem, newItem, nil
 }
 
@@ -258,7 +231,6 @@ func CreateTriggerHandler(
                         return err
                     }
                 }
-                
             case "MODIFY":
                 if onModify != nil {
                     oldItem, newItem, err := ExtractBothFromDynamoDBStreamEvent(record)
@@ -270,7 +242,6 @@ func CreateTriggerHandler(
                         return err
                     }
                 }
-                
             case "REMOVE":
                 if onDelete != nil {
                     if err := onDelete(ctx, record.Change.OldImage); err != nil {

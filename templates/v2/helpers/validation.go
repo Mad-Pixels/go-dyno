@@ -7,11 +7,10 @@ const ValidationHelpersTemplate = `
 // Supports string, numeric types commonly used as DynamoDB keys.
 func validateKeyPart(partName string, value any) error {
     if value == nil {
-        // Only hash key cannot be nil, range key can be nil
         if partName == "hash" {
             return fmt.Errorf("hash key cannot be nil")
         }
-        return nil // range key can be nil
+        return nil
     }
     
     switch v := value.(type) {
@@ -20,13 +19,10 @@ func validateKeyPart(partName string, value any) error {
             return fmt.Errorf("hash key string cannot be empty")
         }
     case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-        // numbers are always valid for keys
     case float32, float64:
-        // floats are valid but unusual for keys
     default:
         return fmt.Errorf("unsupported %s key type: %T", partName, value)
     }
-    
     return nil
 }
 
@@ -51,11 +47,9 @@ func validateAttributeName(name string) error {
     if name == "" {
         return fmt.Errorf("attribute name cannot be empty")
     }
-    
     if len(name) > 255 {
         return fmt.Errorf("attribute name too long: %d chars (max 255)", len(name))
     }
-    
     return nil
 }
 
@@ -71,12 +65,10 @@ func validateUpdatesMap(updates map[string]any) error {
         if err := validateAttributeName(attrName); err != nil {
             return fmt.Errorf("invalid attribute name '%s': %v", attrName, err)
         }
-        
         if value == nil {
             return fmt.Errorf("update value for '%s' cannot be nil", attrName)
         }
     }
-    
     return nil
 }
 
@@ -92,7 +84,6 @@ func validateBatchSize(size int, operation string) error {
     if size > 25 {
         return fmt.Errorf("%s batch size %d exceeds DynamoDB limit of 25", operation, size)
     }
-    
     return nil
 }
 
@@ -115,7 +106,6 @@ func validateSetValues(values any) error {
             }
         }
     case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []float32, []float64:
-        // Use reflection to check length for all numeric types
         rv := reflect.ValueOf(v)
         if rv.Len() == 0 {
             return fmt.Errorf("number set cannot be empty")
@@ -123,7 +113,6 @@ func validateSetValues(values any) error {
     default:
         return fmt.Errorf("unsupported set type: %T, expected []string or numeric slice", values)
     }
-    
     return nil
 }
 
@@ -134,11 +123,9 @@ func validateConditionExpression(expr string) error {
     if expr == "" {
         return fmt.Errorf("condition expression cannot be empty")
     }
-    
     if len(expr) > 4096 {
         return fmt.Errorf("condition expression too long: %d chars (max 4096)", len(expr))
     }
-    
     return nil
 }
 
@@ -159,11 +146,9 @@ func validateKeyInputs(hashKeyValue, rangeKeyValue any) error {
     if err := validateHashKey(hashKeyValue); err != nil {
         return fmt.Errorf("invalid hash key: %v", err)
     }
-    
     if err := validateRangeKey(rangeKeyValue); err != nil {
         return fmt.Errorf("invalid range key: %v", err)
     }
-    
     return nil
 }
 `
