@@ -113,5 +113,7 @@ func (a Attribute) Validate() error {
 			With("type", a.Type).
 			With("available", conv.AvailableKeys(validTypes))
 	}
+
+	logger.Log.Debug().Any("attr", a).Msg("Attribute is valid")
 	return a.Subtype.Validate(a.Type)
 }

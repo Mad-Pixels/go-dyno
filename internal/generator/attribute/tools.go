@@ -104,7 +104,6 @@ func IsNumericAttr(attr Attribute) bool {
 	if attr.Subtype != SubtypeDefault {
 		return attr.Subtype.IsNumeric()
 	}
-	// Fallback for default types
 	return attr.Type == "N"
 }
 
@@ -144,7 +143,6 @@ func ToGolangAttrType(attrName string, attributes []Attribute) string {
 //	attr := Attribute{Type: "SS"}
 //	ToGolangBaseType(attr) → "[]string"
 func ToGolangBaseType(attr Attribute) string {
-	// Handle Set types first
 	switch attr.Type {
 	case "SS":
 		return "[]string"
@@ -169,7 +167,6 @@ func ToGolangBaseType(attr Attribute) string {
 //	attr := Attribute{Type: "N", Subtype: SubtypeInt}      → "0"
 //	attr := Attribute{Type: "SS"}                          → "nil"
 func ToGolangZeroType(attr Attribute) string {
-	// Handle Set types first
 	switch attr.Type {
 	case "SS", "NS", "BS":
 		return "nil"

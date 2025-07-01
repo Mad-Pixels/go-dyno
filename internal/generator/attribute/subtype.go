@@ -252,6 +252,8 @@ func (s attributeSubtype) Validate(dynamoType string) error {
 		return logger.NewFailure("incompatible subtype", nil).
 			With("DynamoDB type", dynamoType)
 	}
+
+	logger.Log.Debug().Any("attr", s).Msg("Subtype is valid")
 	return nil
 }
 
