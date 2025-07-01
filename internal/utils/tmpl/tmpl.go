@@ -22,8 +22,7 @@ import (
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/rs/zerolog"
-	"golang.org/x/tools/imports"
-	"mvdan.cc/gofumpt/format"
+	gofumpt "mvdan.cc/gofumpt/format"
 )
 
 // MustParseTemplate renders the given Go text template `tmpl` into buffer `b`
@@ -169,24 +168,13 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 
 	// Apply formatting if requested
 	if shouldFormat {
-		formatted, err := format.Source(b.Bytes(), format.Options{})
+		formatted, err := gofumpt.Source(b.Bytes(), gofumpt.Options{})
 		if err != nil {
-			logger.NewFailure("internal: failed to format generated code with gofumpt", err).
+			logger.NewFailure("internal: failed to format generated code with go/format", err).
 				Log(zerolog.FatalLevel)
 			os.Exit(1)
 		}
-		imported, err := imports.Process("", formatted, &imports.Options{
-			Comments:  true,
-			TabWidth:  8,
-			TabIndent: true,
-		})
-		if err != nil {
-			logger.NewFailure("internal: failed to process imports with goimports", err).
-				Log(zerolog.FatalLevel)
-			os.Exit(1)
-		}
-
 		b.Reset()
-		b.Write(imported)
+		b.Write(formatted)
 	}
 }
