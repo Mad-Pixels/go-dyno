@@ -12,6 +12,9 @@ package conv
 //	TrimLeftN("GoLang", 0)      → "GoLang"
 //	TrimLeftN("short", 10)      → ""
 func TrimLeftN(s string, start int) string {
+	if start < 0 {
+		return s
+	}
 	if start >= len(s) {
 		return ""
 	}
