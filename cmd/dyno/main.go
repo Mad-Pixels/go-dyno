@@ -5,7 +5,8 @@ import (
 	"os"
 
 	godyno "github.com/Mad-Pixels/go-dyno"
-	"github.com/Mad-Pixels/go-dyno/internal/commands/generate"
+	"github.com/Mad-Pixels/go-dyno/internal/app/commands/generate"
+	"github.com/Mad-Pixels/go-dyno/internal/app/commands/validate"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 
 	"github.com/rs/zerolog"
@@ -24,6 +25,7 @@ func main() {
 
 		Commands: []*cli.Command{
 			generate.Command(),
+			validate.Command(),
 		},
 	}
 

@@ -2,37 +2,33 @@ package generate
 
 import (
 	godyno "github.com/Mad-Pixels/go-dyno"
+	"github.com/Mad-Pixels/go-dyno/internal/app/flags"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/tmpl"
 
 	cli "github.com/urfave/cli/v2"
 )
 
 var (
-	name  = "gen"
+	name  = "generate"
 	usage = "generate static golang code from config"
-
-	flagCfg = "cfg"
-	flagDst = "dst"
 )
 
 type tmplUsage struct {
-	Command     string
-	FlagCfg     string
-	FlagDst     string
-	EnvPrefix   string
-	ExampleJSON string
+	Command   string
+	EnvPrefix string
+
+	FlagSchemaPath string
 }
 
-// Command ...
+// Command entrypoint.
 func Command() *cli.Command {
 	usageText := tmpl.MustParseTemplateToString(
 		usageTemplate,
 		tmplUsage{
-			Command:     name,
-			FlagCfg:     flagCfg,
-			FlagDst:     flagDst,
-			EnvPrefix:   godyno.EnvPrefix,
-			ExampleJSON: "dynamo_db_description.json",
+			Command:   name,
+			EnvPrefix: godyno.EnvPrefix,
+
+			FlagSchemaPath: flags.LocalSchema.GetName(),
 		},
 	)
 
@@ -41,6 +37,12 @@ func Command() *cli.Command {
 		Usage:     usage,
 		UsageText: usageText,
 		Action:    action,
-		Flags:     flags(),
+
+		Flags: []cli.Flag{
+			flags.LocalSchema.Object,
+			flags.LocalOutputDir.Object,
+			flags.LocalFilename.Object,
+			flags.LocalPackageName.Object,
+		},
 	}
 }
