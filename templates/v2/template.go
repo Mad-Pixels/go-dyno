@@ -23,11 +23,15 @@ package {{.PackageName}}
 
 ` + core.MixinsTemplate + `
 
-` + query.QueryBuilderTemplate + query.QueryBuilderBuildTemplate + query.QueryBuilderUtilsTemplate + `
+` + query.QueryBuilderTemplate + query.QueryBuilderWithTemplate + query.QueryBuilderFilterTemplate + query.QueryBuilderBuildTemplate + query.QueryBuilderUtilsTemplate + `
 
 ` + scan.ScanBuilderTemplate + scan.ScanBuilderBuildTemplate + `
 
 ` + inputs.ItemInputsTemplate + inputs.UpdateInputsTemplate + inputs.DeleteInputsTemplate + inputs.KeyInputsTemplate + `
 
-` + helpers.AtomicHelpersTemplate + helpers.StreamHelpersTemplate + helpers.ConverterHelpersTemplate + helpers.MarshalingHelpersTemplate + helpers.ValidationHelpersTemplate + `
+` + helpers.AtomicHelpersTemplate + `
+{{if IsALL .Mode}}
+` + helpers.StreamHelpersTemplate + `
+{{end}}
+` + helpers.ConverterHelpersTemplate + helpers.MarshalingHelpersTemplate + helpers.ValidationHelpersTemplate + `
 `
