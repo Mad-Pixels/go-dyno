@@ -20,7 +20,7 @@ func action(ctx *cli.Context) error {
 		modeRaw    = ctx.String(flags.LocalGenerateMode.GetName())
 	)
 
-	genMode, err := mode.ParseMode(modeRaw)
+	m, err := mode.ParseMode(modeRaw)
 	if err != nil {
 		return err
 	}
@@ -28,7 +28,7 @@ func action(ctx *cli.Context) error {
 	logger.Log.Debug().
 		Str("schema", schemaPath).
 		Str("output", outputPath).
-		Str("mode", genMode.String()).
+		Str("mode", m.String()).
 		Msg("Starting code generation")
 
 	g, err := generator.NewGenerator(schemaPath)
@@ -39,7 +39,8 @@ func action(ctx *cli.Context) error {
 		return err
 	}
 
-	builder := g.NewRenderBuilder()
+	builder := g.NewRenderBuilder().
+		WithMode(m)
 	if ctx.IsSet(flags.LocalPackageName.GetName()) {
 		var (
 			raw  = ctx.String(flags.LocalPackageName.GetName())

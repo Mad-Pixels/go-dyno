@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"github.com/Mad-Pixels/go-dyno/internal/generator/mode"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/tmpl"
@@ -11,6 +12,7 @@ import (
 // Allows overriding schema defaults (package name, filename) via CLI flags.
 type RenderBuilder struct {
 	generator   *Generator
+	mode        *mode.Mode
 	packageName *string
 	filename    *string
 }
@@ -29,6 +31,14 @@ func (rb *RenderBuilder) WithFilename(name string) *RenderBuilder {
 	if name != "" {
 		cleanName := conv.ToSafeName(name)
 		rb.filename = &cleanName
+	}
+	return rb
+}
+
+// WithMode overrides the generator mode type.
+func (rb *RenderBuilder) WithMode(mode mode.Mode) *RenderBuilder {
+	if mode.IsValid() {
+		rb.mode = &mode
 	}
 	return rb
 }
