@@ -19,6 +19,7 @@ type tmplUsage struct {
 	EnvPrefix string
 
 	FlagSchemaPath string
+	FlagMode       string
 }
 
 // Command entrypoint.
@@ -30,6 +31,7 @@ func Command() *cli.Command {
 			EnvPrefix: godyno.EnvPrefix,
 
 			FlagSchemaPath: flags.LocalSchema.GetName(),
+			FlagMode:       flags.LocalGenerateMode.GetName(),
 		},
 	)
 
@@ -44,6 +46,7 @@ func Command() *cli.Command {
 			flags.LocalOutputDir.Object,
 			flags.LocalFilename.Object,
 			flags.LocalPackageName.Object,
+			flags.LocalGenerateMode.Object,
 		},
 	}
 }

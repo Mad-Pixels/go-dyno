@@ -5,6 +5,7 @@ import (
 
 	"github.com/Mad-Pixels/go-dyno/internal/app/flags"
 	"github.com/Mad-Pixels/go-dyno/internal/generator"
+	"github.com/Mad-Pixels/go-dyno/internal/generator/mode"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/writer"
@@ -16,10 +17,18 @@ func action(ctx *cli.Context) error {
 	var (
 		schemaPath = ctx.String(flags.LocalSchema.GetName())
 		outputPath = ctx.String(flags.LocalOutputDir.GetName())
+		modeRaw    = ctx.String(flags.LocalGenerateMode.GetName())
 	)
+
+	genMode, err := mode.ParseMode(modeRaw)
+	if err != nil {
+		return err
+	}
+
 	logger.Log.Debug().
 		Str("schema", schemaPath).
 		Str("output", outputPath).
+		Str("mode", genMode.String()).
 		Msg("Starting code generation")
 
 	g, err := generator.NewGenerator(schemaPath)
