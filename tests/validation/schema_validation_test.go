@@ -16,20 +16,16 @@ func findProjectRoot() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	for {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
 			return dir, nil
 		}
-
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			// Reached filesystem root
 			break
 		}
 		dir = parent
 	}
-
 	return "", os.ErrNotExist
 }
 
@@ -37,17 +33,13 @@ func findProjectRoot() (string, error) {
 func getSchemaPath(t *testing.T, filename string) string {
 	t.Helper()
 
-	// Find project root dynamically
 	projectRoot, err := findProjectRoot()
 	require.NoError(t, err, "Should find project root")
 
-	// Build absolute path from project root
 	schemaPath := filepath.Join(projectRoot, "tests", "fixtures", filename)
 
-	// Verify file exists
 	_, err = os.Stat(schemaPath)
 	require.NoError(t, err, "Schema file should exist: %s", schemaPath)
-
 	return schemaPath
 }
 
@@ -111,28 +103,29 @@ func TestSchemaValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			t.Logf("Testing: %s", tc.description)
-
-			// Get absolute path to schema file
 			schemaPath := getSchemaPath(t, tc.schemaFile)
-
-			// Attempt to load the schema
-			loadedSchema, err := generator.Load(schemaPath)
-
+			g, err := generator.NewGenerator(schemaPath)
 			if tc.expectError {
-				assert.Error(t, err, "Expected validation error for %s", tc.name)
-				assert.Nil(t, loadedSchema, "Schema should be nil on validation error")
-
-				if tc.errorContains != "" {
+				if err != nil {
+					assert.Error(t, err, "Expected validation error for %s", tc.name)
 					assert.Contains(t, err.Error(), tc.errorContains,
 						"Error should contain expected message for %s", tc.name)
+					t.Logf("✅ Correctly rejected invalid schema: %s", err.Error())
+					return
 				}
 
+				require.NotNil(t, g, "Generator should be created")
+				err = g.Validate()
+				assert.Error(t, err, "Expected validation error for %s", tc.name)
+				assert.Contains(t, err.Error(), tc.errorContains,
+					"Error should contain expected message for %s", tc.name)
 				t.Logf("✅ Correctly rejected invalid schema: %s", err.Error())
 			} else {
 				assert.NoError(t, err, "Valid schema should load without error")
-				assert.NotNil(t, loadedSchema, "Valid schema should not be nil")
+				assert.NotNil(t, g, "Valid schema should not be nil")
 
+				err = g.Validate()
+				assert.NoError(t, err, "Valid schema should validate without error")
 				t.Logf("✅ Valid schema loaded successfully")
 			}
 		})
@@ -175,15 +168,15 @@ func TestValidationErrorMessages(t *testing.T) {
 			t.Parallel()
 
 			schemaPath := getSchemaPath(t, tc.schemaFile)
-
-			_, err := generator.Load(schemaPath)
+			g, err := generator.NewGenerator(schemaPath)
+			if err == nil {
+				err = g.Validate()
+			}
 			require.Error(t, err, "Should get validation error")
-
 			for _, expectedMsg := range tc.expectedMsgs {
 				assert.Contains(t, err.Error(), expectedMsg,
 					"Error message should contain: %s", expectedMsg)
 			}
-
 			t.Logf("✅ Error message contains expected content: %s", err.Error())
 		})
 	}

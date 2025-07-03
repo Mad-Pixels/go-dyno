@@ -149,9 +149,9 @@ tasks:
       - mkdir -p tests/localstack/generated 
       - |
         for schema in tests/fixtures/*.json; do 
-          go run ./cmd/dyno gen \
-            -c "${schema}" \
-            -d "tests/localstack/generated"
+          go run ./cmd/dyno generate \
+            -schema "${schema}" \
+            -output-dir "tests/localstack/generated"
         done
     silent: true
     internal: true

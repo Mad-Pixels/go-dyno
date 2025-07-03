@@ -15,20 +15,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Go
-        uses: actions/setup-go@v5 
-        with:
-          go-version-file: go.mod
-          cache: true
-      
-      # - name: Cache Docker layers
-      #   uses: actions/cache@v4 
-      #   with:
-      #     path: /tmp/.buildx-cache
-      #     key: ${{ runner.os }}-buildx-localstack-${{ github.sha }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-buildx-localstack-
-
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
       

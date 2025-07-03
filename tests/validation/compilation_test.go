@@ -6,16 +6,14 @@ import (
 	"testing"
 
 	"github.com/Mad-Pixels/go-dyno/internal/generator"
-	"github.com/Mad-Pixels/go-dyno/internal/utils/tmpl"
-	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 	"github.com/stretchr/testify/require"
 )
 
 // TestGeneratedCodeCompilation validates that complete DynamoDB code generation produces compilable Go code.
 //
 // Test process:
-//  1. Reads JSON schema files from .tmpl/ directory (skipping files with 'invalid-' prefix)
-//  2. Generates complete Go code using DynamoDB templates
+//  1. Reads JSON schema files from fixtures/ directory (skipping files with 'invalid-' prefix)
+//  2. Generates complete Go code using DynamoDB templates via new Generator API
 //  3. Creates temporary module with proper dependencies
 //  4. Runs "go build" to ensure compilation succeeds
 //
@@ -37,24 +35,17 @@ func TestGeneratedCodeCompilation(t *testing.T) {
 		t.Run(schemaName, func(t *testing.T) {
 			t.Parallel()
 
-			dynamoSchema, err := generator.Load(schemaFile)
-			require.NoError(t, err, "Failed to load schema: %s", schemaFile)
+			g, err := generator.NewGenerator(schemaFile)
+			require.NoError(t, err, "Failed to create generator: %s", schemaFile)
 
-			templateMap := v2.TemplateMap{
-				PackageName:      dynamoSchema.PackageName(),
-				TableName:        dynamoSchema.TableName(),
-				HashKey:          dynamoSchema.HashKey(),
-				RangeKey:         dynamoSchema.RangeKey(),
-				Attributes:       dynamoSchema.Attributes(),
-				CommonAttributes: dynamoSchema.CommonAttributes(),
-				AllAttributes:    dynamoSchema.AllAttributes(),
-				SecondaryIndexes: dynamoSchema.SecondaryIndexes(),
-			}
+			err = g.Validate()
+			require.NoError(t, err, "Failed to validate schema: %s", schemaFile)
 
-			generatedCode := tmpl.MustParseTemplateFormattedToString(v2.CodeTemplate, templateMap)
+			builder := g.NewRenderBuilder()
+			generatedCode := builder.Build()
 			require.NotEmpty(t, generatedCode, "Generated code is empty")
 
-			CodeCompiles(t, generatedCode, dynamoSchema.PackageName())
+			CodeCompiles(t, generatedCode, g.PackageName())
 		})
 	}
 }
