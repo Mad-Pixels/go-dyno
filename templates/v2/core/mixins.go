@@ -42,90 +42,6 @@ func (fm *FilterMixin) Filter(field string, op OperatorType, values ...any) {
     }
 }
 
-// FilterEQ adds equality filter condition.
-// Example: .FilterEQ("status", "active")
-func (fm *FilterMixin) FilterEQ(field string, value any) {
-    fm.Filter(field, EQ, value)
-}
-
-// FilterContains adds contains filter for strings or sets.
-// Example: .FilterContains("tags", "important")
-func (fm *FilterMixin) FilterContains(field string, value any) {
-    fm.Filter(field, CONTAINS, value)
-}
-
-// FilterNotContains adds not contains filter for strings or sets.
-func (fm *FilterMixin) FilterNotContains(field string, value any) {
-    fm.Filter(field, NOT_CONTAINS, value)
-}
-
-// FilterBeginsWith adds begins_with filter for strings.
-// Example: .FilterBeginsWith("email", "admin@")
-func (fm *FilterMixin) FilterBeginsWith(field string, value any) {
-    fm.Filter(field, BEGINS_WITH, value)
-}
-
-// FilterBetween adds range filter for comparable values.
-// Example: .FilterBetween("price", 10, 100)
-func (fm *FilterMixin) FilterBetween(field string, start, end any) {
-    fm.Filter(field, BETWEEN, start, end)
-}
-
-// FilterGT adds greater than filter.
-func (fm *FilterMixin) FilterGT(field string, value any) {
-    fm.Filter(field, GT, value)
-}
-
-// FilterLT adds less than filter.
-func (fm *FilterMixin) FilterLT(field string, value any) {
-    fm.Filter(field, LT, value)
-}
-
-// FilterGTE adds greater than or equal filter.
-func (fm *FilterMixin) FilterGTE(field string, value any) {
-    fm.Filter(field, GTE, value)
-}
-
-// FilterLTE adds less than or equal filter.
-func (fm *FilterMixin) FilterLTE(field string, value any) {
-    fm.Filter(field, LTE, value)
-}
-
-// FilterExists checks if attribute exists.
-// Example: .FilterExists("optional_field")
-func (fm *FilterMixin) FilterExists(field string) {
-    fm.Filter(field, EXISTS)
-}
-
-// FilterNotExists checks if attribute does not exist.
-func (fm *FilterMixin) FilterNotExists(field string) {
-    fm.Filter(field, NOT_EXISTS)
-}
-
-// FilterNE adds not equal filter.
-func (fm *FilterMixin) FilterNE(field string, value any) {
-    fm.Filter(field, NE, value)
-}
-
-// FilterIn adds IN filter for scalar values.
-// For DynamoDB Sets (SS/NS), use FilterContains instead.
-// Example: .FilterIn("category", "books", "electronics")
-func (fm *FilterMixin) FilterIn(field string, values ...any) {
-    if len(values) == 0 {
-        return
-    }
-    fm.Filter(field, IN, values...)
-}
-
-// FilterNotIn adds NOT_IN filter for scalar values.
-// For DynamoDB Sets (SS/NS), use FilterNotContains instead.
-func (fm *FilterMixin) FilterNotIn(field string, values ...any) {
-    if len(values) == 0 {
-        return
-    }
-    fm.Filter(field, NOT_IN, values...)
-}
-
 // PaginationMixin provides pagination support for Query and Scan operations.
 type PaginationMixin struct {
     LimitValue        *int
@@ -188,39 +104,6 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...any)
         return
     }
     kcm.KeyConditions[field] = keyCond
-}
-
-// WithEQ adds equality key condition.
-// Required for partition key, optional for sort key.
-// Example: .WithEQ("user_id", "123")
-func (kcm *KeyConditionMixin) WithEQ(field string, value any) {
-    kcm.With(field, EQ, value)
-}
-
-// WithBetween adds range key condition for sort keys.
-// Example: .WithBetween("created_at", start_time, end_time)
-func (kcm *KeyConditionMixin) WithBetween(field string, start, end any) {
-    kcm.With(field, BETWEEN, start, end)
-}
-
-// WithGT adds greater than key condition for sort keys.
-func (kcm *KeyConditionMixin) WithGT(field string, value any) {
-    kcm.With(field, GT, value)
-}
-
-// WithGTE adds greater than or equal key condition for sort keys.
-func (kcm *KeyConditionMixin) WithGTE(field string, value any) {
-    kcm.With(field, GTE, value)
-}
-
-// WithLT adds less than key condition for sort keys.
-func (kcm *KeyConditionMixin) WithLT(field string, value any) {
-    kcm.With(field, LT, value)
-}
-
-// WithLTE adds less than or equal key condition for sort keys.
-func (kcm *KeyConditionMixin) WithLTE(field string, value any) {
-    kcm.With(field, LTE, value)
 }
 
 // WithPreferredSortKey sets preferred sort key for index selection.

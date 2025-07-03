@@ -22,6 +22,9 @@ package {{.PackageName}}
 ` + core.SchemaTemplate + `
 
 ` + core.MixinsTemplate + `
+{{if IsALL .Mode}}
+` + core.FilterMixinSugarTemplate + core.KeyConditionMixinSugarTemplate + `
+{{end}}
 
 ` + query.QueryBuilderTemplate + query.QueryBuilderWithTemplate + query.QueryBuilderFilterTemplate + `
 {{if IsALL .Mode}}
