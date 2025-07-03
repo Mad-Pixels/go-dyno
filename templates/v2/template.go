@@ -29,7 +29,11 @@ package {{.PackageName}}
 {{end}}
 ` + query.QueryBuilderBuildTemplate + query.QueryBuilderUtilsTemplate + `
 
-` + scan.ScanBuilderTemplate + scan.ScanBuilderBuildTemplate + `
+` + scan.ScanBuilderTemplate + scan.ScanBuilderFilterTemplate + `
+{{if IsALL .Mode}}
+` + scan.ScanBuilderFilterSugarTemplate + `
+{{end}}
+` + scan.ScanBuilderBuildTemplate + `
 
 ` + inputs.ItemInputsTemplate + inputs.UpdateInputsTemplate + inputs.DeleteInputsTemplate + inputs.KeyInputsTemplate + `
 
