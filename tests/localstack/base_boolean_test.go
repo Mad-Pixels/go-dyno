@@ -125,8 +125,8 @@ func testBooleanInput(t *testing.T, client *dynamodb.Client, ctx context.Context
 		item := baseboolean.SchemaItem{
 			Id:          "boolean-test-001",
 			Version:     1,
-			IsActive:    false, // Changed from true to false
-			IsPublished: true,  // Changed from false to true
+			IsActive:    false,
+			IsPublished: true,
 		}
 
 		updateInput, err := baseboolean.UpdateItemInput(item)

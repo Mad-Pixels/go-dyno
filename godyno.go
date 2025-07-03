@@ -9,7 +9,7 @@ var (
 	Version = "0.0.1"
 
 	// Usage is a main binary description.
-	Usage = "generate dynamoDB objects"
+	Usage = "generate dynamoDB objects from JSON-schema, details: https://go-dyno.madpixels.io"
 
 	// EnvPrefix for all binary env vars.
 	EnvPrefix = "GODYNO"

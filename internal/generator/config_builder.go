@@ -36,15 +36,23 @@ func (cb *ConfigBuilder) Build() (*Config, error) {
 	if cb.config.packageName != nil {
 		safe := conv.ToSafeName(*cb.config.packageName)
 		cb.config.packageName = &safe
+
+		logger.Log.Info().
+			Str("safe", safe).
+			Str("value", *cb.config.packageName).
+			Msg("Initialize custom package name")
 	}
 	if cb.config.fileName != nil {
 		safe := fs.AddFileExt(conv.ToSafeName(*cb.config.fileName), ".go")
 		cb.config.fileName = &safe
+
+		logger.Log.Info().
+			Str("safe", safe).
+			Str("value", *cb.config.fileName).
+			Msg("Initialize custom filename")
 	}
 
-	if cb.config.verbose {
-		logger.Log.Debug().Any("config", cb.config).Msg("Generator config was built")
-	}
+	logger.Log.Debug().Object("data", cb.config).Msg("Generator config initialized")
 	return cb.config, nil
 }
 
@@ -63,12 +71,6 @@ func (cb *ConfigBuilder) WithPackageName(name string) *ConfigBuilder {
 // WithFileName overwrite generated file name.
 func (cb *ConfigBuilder) WithFileName(name string) *ConfigBuilder {
 	cb.config.fileName = &name
-	return cb
-}
-
-// WithVerbose enables/disables verbose output.
-func (cb *ConfigBuilder) WithVerbose(flag bool) *ConfigBuilder {
-	cb.config.verbose = flag
 	return cb
 }
 

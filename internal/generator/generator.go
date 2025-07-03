@@ -51,6 +51,8 @@ func Load(path string) (*schema.Schema, error) {
 	if err := spec.Validate(); err != nil {
 		return nil, err
 	}
+
+	logger.Log.Info().Str("path", path).Msg("Schema was loaded and validated")
 	return spec, nil
 }
 
@@ -86,6 +88,8 @@ func Render(spec *schema.Schema) (string, error) {
 		AllAttributes:    spec.AllAttributes(),
 		SecondaryIndexes: spec.SecondaryIndexes(),
 	}
+
+	logger.Log.Debug().Any("data", tmplMap).Msg("Template map prepared")
 	return tmpl.MustParseTemplateFormattedToString(v2.CodeTemplate, tmplMap), nil
 }
 
@@ -121,5 +125,10 @@ func Generate(config *Config) error {
 	if err := fs.IsFileOrCreate(f); err != nil {
 		return err
 	}
-	return fs.WriteToFile(f, []byte(c))
+	if err := fs.WriteToFile(f, []byte(c)); err != nil {
+		return err
+	}
+
+	logger.Log.Info().Str("path", f).Msg("File created")
+	return nil
 }
