@@ -8,8 +8,10 @@ func (qb *QueryBuilder) Filter(field string, op OperatorType, values ...any) *Qu
     qb.FilterMixin.Filter(field, op, values...)
     return qb
 }
+`
 
-{{if IsALL .Mode}}
+// QueryBuilderFilterSugarTemplate provides convenience Filter methods (only for ALL mode)
+const QueryBuilderFilterSugarTemplate = `
 // CONVENIENCE METHODS - Only available in ALL mode
 
 // FilterEQ adds equality filter and returns QueryBuilder for method chaining.
@@ -114,5 +116,4 @@ func (qb *QueryBuilder) FilterNotIn(field string, values ...any) *QueryBuilder {
     qb.FilterMixin.FilterNotIn(field, values...)
     return qb
 }
-{{end}}
 `

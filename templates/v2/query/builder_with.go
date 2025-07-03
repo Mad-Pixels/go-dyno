@@ -13,8 +13,10 @@ func (qb *QueryBuilder) With(field string, op OperatorType, values ...any) *Quer
     }
     return qb
 }
+`
 
-{{if IsALL .Mode}}
+// QueryBuilderWithSugarTemplate provides convenience With methods (only for ALL mode)
+const QueryBuilderWithSugarTemplate = `
 // CONVENIENCE METHODS - Only available in ALL mode
 
 // WithEQ adds equality key condition and returns QueryBuilder for method chaining.
@@ -204,5 +206,4 @@ func (qb *QueryBuilder) WithIndexRangeKeyLTE(indexName string, value any) *Query
     qb.Attributes[index.RangeKey] = value
     return qb
 }
-{{end}}
 `

@@ -23,7 +23,11 @@ package {{.PackageName}}
 
 ` + core.MixinsTemplate + `
 
-` + query.QueryBuilderTemplate + query.QueryBuilderWithTemplate + query.QueryBuilderFilterTemplate + query.QueryBuilderBuildTemplate + query.QueryBuilderUtilsTemplate + `
+` + query.QueryBuilderTemplate + query.QueryBuilderWithTemplate + query.QueryBuilderFilterTemplate + `
+{{if IsALL .Mode}}
+` + query.QueryBuilderWithSugarTemplate + query.QueryBuilderFilterSugarTemplate + `
+{{end}}
+` + query.QueryBuilderBuildTemplate + query.QueryBuilderUtilsTemplate + `
 
 ` + scan.ScanBuilderTemplate + scan.ScanBuilderBuildTemplate + `
 
