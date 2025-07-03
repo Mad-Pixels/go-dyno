@@ -1,37 +1,28 @@
-// Package generator provides the core logic for converting DynamoDB schema definitions
-// into Go source code using structured templates.
+// Package generator converts DynamoDB schema definitions into Go source code.
 //
-// It orchestrates the code generation process by:
-//   - Loading and validating a schema definition from JSON (via the schema package)
-//   - Parsing attributes, indexes, and configuration options
-//   - Rendering code using predefined templates
-//   - Writing generated code to disk in a safe and configurable way
+// Core workflow:
+//   - Load and validate JSON schema
+//   - Parse attributes, indexes, and configuration
+//   - Render Go code using templates
+//   - Support for customization via Builder pattern
 //
-// Subpackages include:
-//   - schema: schema parsing, validation, and introspection
-//   - attribute: attribute typing, subtype handling, and Go type mapping
-//   - index: index type validation and composite key resolution
-//
-// The generator supports customization via the ConfigBuilder API, allowing for dry-run,
-// verbose logging, output file overrides, and scoping.
-//
-// This package is intended to be used internally by code generation tools.
+// Subpackages:
+//   - schema: JSON parsing and validation
+//   - attribute: DynamoDB type mapping to Go types
+//   - index: secondary index handling
 package generator
 
 import (
 	"github.com/Mad-Pixels/go-dyno/internal/generator/schema"
-	"github.com/Mad-Pixels/go-dyno/internal/logger"
-	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
-	"github.com/Mad-Pixels/go-dyno/internal/utils/tmpl"
-	v2 "github.com/Mad-Pixels/go-dyno/templates/v2"
 )
 
+// Generator orchestrates the code generation process from DynamoDB schema to Go code.
 type Generator struct {
 	schemaPath string
 	schema     *schema.Schema
 }
 
-// NewGenerator object.
+// NewGenerator creates a new generator instance from a schema file path.
 func NewGenerator(schemaPath string) (*Generator, error) {
 	s, err := schema.NewSchema(schemaPath)
 	if err != nil {
@@ -43,36 +34,7 @@ func NewGenerator(schemaPath string) (*Generator, error) {
 	}, nil
 }
 
-// Validate schema.
-func (g *Generator) Validate() error {
-	if err := g.schema.Validate(); err != nil {
-		return err
-	}
-	logger.Log.Info().Str("schema", g.schemaPath).Msg("Schema is valid")
-	return g.schema.Validate()
-}
-
-// RenderContent ...
-func (g *Generator) RenderContent(packageFl string) string {
-	pkg := g.schema.PackageName()
-	if packageFl != "" {
-		pkg = conv.ToLowerInlineCase(conv.ToSafeName(packageFl))
-	}
-
-	tmplMap := v2.TemplateMap{
-		PackageName:      pkg,
-		TableName:        g.schema.TableName(),
-		HashKey:          g.schema.HashKey(),
-		RangeKey:         g.schema.RangeKey(),
-		Attributes:       g.schema.Attributes(),
-		CommonAttributes: g.schema.CommonAttributes(),
-		AllAttributes:    g.schema.AllAttributes(),
-		SecondaryIndexes: g.schema.SecondaryIndexes(),
-	}
-	logger.Log.Debug().Any("data", tmplMap).Msg("Template map prepared")
-	return tmpl.MustParseTemplateFormattedToString(v2.CodeTemplate, tmplMap)
-}
-
+// FileName returns the default output filename based on schema.
 func (g *Generator) FileName() string {
 	if g.schema != nil {
 		return g.schema.Filename()
@@ -80,9 +42,33 @@ func (g *Generator) FileName() string {
 	return ""
 }
 
+// PackageName returns the Go package name derived from schema.
 func (g *Generator) PackageName() string {
 	if g.schema != nil {
 		return g.schema.PackageName()
 	}
 	return ""
+}
+
+// TableName returns the DynamoDB table name from schema.
+func (g *Generator) TableName() string {
+	if g.schema != nil {
+		return g.schema.TableName()
+	}
+	return ""
+}
+
+// NewRenderBuilder creates a new builder instance.
+func (g *Generator) NewRenderBuilder() *RenderBuilder {
+	return &RenderBuilder{
+		generator: g,
+	}
+}
+
+// Validate performs comprehensive schema validation.
+func (g *Generator) Validate() error {
+	if err := g.schema.Validate(); err != nil {
+		return err
+	}
+	return g.schema.Validate()
 }

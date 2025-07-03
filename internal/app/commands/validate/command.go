@@ -1,3 +1,4 @@
+// Package validate provides a CLI command for validate JSON schema.
 package validate
 
 import (

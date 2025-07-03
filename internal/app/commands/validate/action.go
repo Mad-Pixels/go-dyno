@@ -12,6 +12,9 @@ func action(ctx *cli.Context) (err error) {
 	var (
 		schemaPath = ctx.String(flags.LocalSchema.GetName())
 	)
+	logger.Log.Debug().
+		Str("schema", schemaPath).
+		Msg("Starting schema validation")
 
 	g, err := generator.NewGenerator(schemaPath)
 	if err != nil {
@@ -21,6 +24,10 @@ func action(ctx *cli.Context) (err error) {
 		return err
 	}
 
-	logger.Log.Info().Str("path", schemaPath).Msg("schema is valid")
+	logger.Log.Info().
+		Str("schema", schemaPath).
+		Str("table", g.TableName()).
+		Str("package", g.PackageName()).
+		Msg("Schema validation completed successfully")
 	return nil
 }

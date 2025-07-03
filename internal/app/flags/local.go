@@ -10,6 +10,8 @@ import (
 )
 
 var (
+	// LocalSchema defines the --schema flag for specifying the input JSON schema file.
+	// This flag is required for all commands that need to process a DynamoDB schema definition.
 	LocalSchema = Flag{
 		Object: &cli.StringFlag{
 			Name:  "schema",
@@ -24,6 +26,7 @@ var (
 		},
 	}
 
+	// LocalOutputDir defines the --output-dir flag for specifying where generated files should be written.
 	LocalOutputDir = Flag{
 		Object: &cli.StringFlag{
 			Name:  "output-dir",
@@ -38,6 +41,8 @@ var (
 		},
 	}
 
+	// LocalPackageName defines the --package flag for overriding the generated Go package name.
+	// By default, the package name is derived from the table_name in the schema.
 	LocalPackageName = Flag{
 		Object: &cli.StringFlag{
 			Name:    "package",
@@ -50,6 +55,8 @@ var (
 		},
 	}
 
+	// LocalFilename defines the --filename flag for overriding the generated Go file name.
+	// By default, the filename is derived from the table_name in the schema with .go extension.
 	LocalFilename = Flag{
 		Object: &cli.StringFlag{
 			Name:    "filename",

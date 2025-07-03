@@ -1,3 +1,4 @@
+// Package generate provides a CLI command for generate GoLang code from JSON schema.
 package generate
 
 import (
@@ -10,7 +11,7 @@ import (
 
 var (
 	name  = "generate"
-	usage = "generate static golang code from config"
+	usage = "generate static golang code from JSON schema"
 )
 
 type tmplUsage struct {
