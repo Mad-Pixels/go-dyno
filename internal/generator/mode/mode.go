@@ -74,3 +74,18 @@ func GetAvailableModes() []string {
 	}
 	return conv.AvailableKeys(stringModes)
 }
+
+// IsALL checks if the given mode is ALL.
+func IsALL(m Mode) bool {
+	return m == ALL
+}
+
+// IsMIN checks if the given mode is MIN.
+func IsMIN(m Mode) bool {
+	return m == MIN
+}
+
+// IsMode checks if the given mode matches the target mode string.
+func IsMode(m Mode, target string) bool {
+	return m.String() == target
+}

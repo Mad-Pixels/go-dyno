@@ -70,6 +70,14 @@ func (rb *RenderBuilder) GetFilename() string {
 	return rb.generator.schema.Filename()
 }
 
+// GetMode returns the current generation mode (or default if not set).
+func (rb *RenderBuilder) GetMode() mode.Mode {
+	if rb.mode != nil {
+		return *rb.mode
+	}
+	return mode.GetDefault()
+}
+
 // buildTemplateMap creates template data with schema and overrides.
 func (rb *RenderBuilder) buildTemplateMap() v2.TemplateMap {
 	schema := rb.generator.schema
@@ -79,6 +87,7 @@ func (rb *RenderBuilder) buildTemplateMap() v2.TemplateMap {
 		TableName:        schema.TableName(),
 		HashKey:          schema.HashKey(),
 		RangeKey:         schema.RangeKey(),
+		Mode:             rb.GetMode(),
 		Attributes:       schema.Attributes(),
 		CommonAttributes: schema.CommonAttributes(),
 		AllAttributes:    schema.AllAttributes(),
