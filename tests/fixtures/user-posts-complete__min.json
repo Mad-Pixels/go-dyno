@@ -1,0 +1,62 @@
+{
+  "table_name": "user-posts-complete-min",
+  "hash_key": "user_id",
+  "range_key": "created_at",
+  "attributes": [
+    { "name": "user_id", "type": "S" },
+    { "name": "created_at", "type": "S" },
+    { "name": "post_type", "type": "S" },
+    { "name": "status", "type": "S" },
+    { "name": "priority", "type": "N" },
+    { "name": "category", "type": "S" },
+    { "name": "title", "type": "S" }
+  ],
+  "common_attributes": [
+    { "name": "content", "type": "S" },
+    { "name": "tags", "type": "SS" },
+    { "name": "view_count", "type": "N" },
+    { "name": "updated_at", "type": "S" }
+  ],
+  "secondary_indexes": [
+    {
+      "name": "lsi_by_post_type",
+      "type": "LSI",
+      "range_key": "post_type",
+      "projection_type": "ALL"
+    },
+    {
+      "name": "lsi_by_status",
+      "type": "LSI", 
+      "range_key": "status",
+      "projection_type": "KEYS_ONLY"
+    },
+    {
+      "name": "lsi_by_priority",
+      "type": "LSI",
+      "range_key": "priority", 
+      "projection_type": "INCLUDE",
+      "non_key_attributes": ["title", "content"]
+    },
+    {
+      "name": "gsi_by_category",
+      "type": "GSI",
+      "hash_key": "category",
+      "range_key": "created_at",
+      "projection_type": "ALL"
+    },
+    {
+      "name": "gsi_by_title",
+      "type": "GSI", 
+      "hash_key": "title",
+      "projection_type": "KEYS_ONLY"
+    },
+    {
+      "name": "gsi_by_status_priority",
+      "type": "GSI",
+      "hash_key": "status",
+      "range_key": "priority",
+      "projection_type": "INCLUDE", 
+      "non_key_attributes": ["user_id", "title", "view_count"]
+    }
+  ]
+}

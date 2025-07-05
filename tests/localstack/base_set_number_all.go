@@ -2,6 +2,7 @@ package localstack
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
@@ -105,6 +106,7 @@ func testNumberSetInput(t *testing.T, client *dynamodb.Client, ctx context.Conte
 			TableName: aws.String(basesetnumber.TableName),
 			Item:      av,
 		})
+		t.Logf("Saved item attributes: %+v", av)
 		require.NoError(t, err, "Should store number set item in DynamoDB")
 
 		t.Logf("✅ Created number set item: %s/%s", item.UserId, item.SessionId)
@@ -123,6 +125,8 @@ func testNumberSetInput(t *testing.T, client *dynamodb.Client, ctx context.Conte
 			TableName: aws.String(basesetnumber.TableName),
 			Key:       key,
 		})
+		t.Logf("Retrieved item: %+v", getResult.Item)
+		t.Logf("Available keys: %v", maps.Keys(getResult.Item))
 		require.NoError(t, err, "Should retrieve number set item")
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 

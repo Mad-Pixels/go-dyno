@@ -61,7 +61,6 @@ func TestCustomNumber(t *testing.T) {
 
 func testCustomTypesStruct(t *testing.T) {
 	t.Run("verify_go_types", func(t *testing.T) {
-		// Создаем item с кастомными типами
 		item := customnumber.SchemaItem{
 			Id:        "test-id",
 			Timestamp: 1640995200, // int64
@@ -71,27 +70,23 @@ func testCustomTypesStruct(t *testing.T) {
 			Score:     85,         // int16
 		}
 
-		// Проверяем что компилятор принимает правильные типы
-		assert.IsType(t, "", item.Id)              // string
-		assert.IsType(t, int64(0), item.Timestamp) // int64
-		assert.IsType(t, int32(0), item.Count)     // int32
-		assert.IsType(t, float32(0), item.Price)   // float32
-		assert.IsType(t, uint64(0), item.Views)    // uint64
-		assert.IsType(t, int16(0), item.Score)     // int16
+		assert.IsType(t, "", item.Id)
+		assert.IsType(t, int64(0), item.Timestamp)
+		assert.IsType(t, int32(0), item.Count)
+		assert.IsType(t, float32(0), item.Price)
+		assert.IsType(t, uint64(0), item.Views)
+		assert.IsType(t, int16(0), item.Score)
 
-		// Проверяем что значения сохранились правильно
 		assert.Equal(t, "test-id", item.Id)
 		assert.Equal(t, int64(1640995200), item.Timestamp)
 		assert.Equal(t, int32(42), item.Count)
 		assert.Equal(t, float32(19.99), item.Price)
 		assert.Equal(t, uint64(1000000), item.Views)
 		assert.Equal(t, int16(85), item.Score)
-
 		t.Logf("✅ Custom types verified: int64, int32, float32, uint64, int16")
 	})
 
 	t.Run("type_safety_compilation", func(t *testing.T) {
-		// Эти присваивания должны компилироваться без ошибок
 		var item customnumber.SchemaItem
 
 		item.Timestamp = int64(1640995200)
@@ -100,13 +95,11 @@ func testCustomTypesStruct(t *testing.T) {
 		item.Views = uint64(1000000)
 		item.Score = int16(85)
 
-		// Проверяем что присваивания работают
 		assert.Equal(t, int64(1640995200), item.Timestamp)
 		assert.Equal(t, int32(42), item.Count)
 		assert.Equal(t, float32(19.99), item.Price)
 		assert.Equal(t, uint64(1000000), item.Views)
 		assert.Equal(t, int16(85), item.Score)
-
 		t.Logf("✅ Type safety compilation verified")
 	})
 }
@@ -124,12 +117,10 @@ func testCustomTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx contex
 			Score:     85,
 		}
 
-		// Test marshaling with custom types
 		av, err := customnumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal item with custom types")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
-		// Verify all fields are present and properly typed
 		assert.Contains(t, av, "id", "Should contain id field")
 		assert.Contains(t, av, "timestamp", "Should contain timestamp field")
 		assert.Contains(t, av, "count", "Should contain count field")
@@ -137,14 +128,12 @@ func testCustomTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx contex
 		assert.Contains(t, av, "views", "Should contain views field")
 		assert.Contains(t, av, "score", "Should contain score field")
 
-		// Verify DynamoDB types (all custom numeric types should be marshaled as N)
 		assert.IsType(t, &types.AttributeValueMemberS{}, av[customnumber.ColumnId])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[customnumber.ColumnTimestamp])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[customnumber.ColumnCount])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[customnumber.ColumnPrice])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[customnumber.ColumnViews])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[customnumber.ColumnScore])
-
 		t.Logf("✅ Custom types marshaled successfully")
 	})
 
@@ -158,7 +147,6 @@ func testCustomTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx contex
 			Score:     95,
 		}
 
-		// Marshal and store
 		av, err := customnumber.ItemInput(originalItem)
 		require.NoError(t, err, "Should marshal original item")
 
@@ -168,7 +156,6 @@ func testCustomTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx contex
 		})
 		require.NoError(t, err, "Should store item in DynamoDB")
 
-		// Retrieve and verify
 		key, err := customnumber.KeyInput(originalItem)
 		require.NoError(t, err, "Should create key from item")
 
@@ -179,14 +166,12 @@ func testCustomTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx contex
 		require.NoError(t, err, "Should retrieve item")
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
-		// Verify values are preserved with correct precision
 		assert.Equal(t, "roundtrip-test-001", getResult.Item[customnumber.ColumnId].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "1640995300", getResult.Item[customnumber.ColumnTimestamp].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "123", getResult.Item[customnumber.ColumnCount].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "29.95", getResult.Item[customnumber.ColumnPrice].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "2000000", getResult.Item[customnumber.ColumnViews].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "95", getResult.Item[customnumber.ColumnScore].(*types.AttributeValueMemberN).Value)
-
 		t.Logf("✅ Custom types roundtrip successful")
 	})
 
@@ -194,27 +179,27 @@ func testCustomTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx contex
 		edgeItems := []customnumber.SchemaItem{
 			{
 				Id:        "edge-1",
-				Timestamp: 0,   // int64 zero
-				Count:     0,   // int32 zero
-				Price:     0.0, // float32 zero
-				Views:     0,   // uint64 zero
-				Score:     0,   // int16 zero
+				Timestamp: 0,
+				Count:     0,
+				Price:     0.0,
+				Views:     0,
+				Score:     0,
 			},
 			{
 				Id:        "edge-2",
-				Timestamp: 9223372036854775807,  // int64 max
-				Count:     2147483647,           // int32 max
-				Price:     3.4028235e+38,        // float32 max
-				Views:     18446744073709551615, // uint64 max
-				Score:     32767,                // int16 max
+				Timestamp: 9223372036854775807,
+				Count:     2147483647,
+				Price:     3.4028235e+38,
+				Views:     18446744073709551615,
+				Score:     32767,
 			},
 			{
 				Id:        "edge-3",
-				Timestamp: -9223372036854775808, // int64 min
-				Count:     -2147483648,          // int32 min
-				Price:     -3.4028235e+38,       // float32 min
-				Views:     0,                    // uint64 min (can't be negative)
-				Score:     -32768,               // int16 min
+				Timestamp: -9223372036854775808,
+				Count:     -2147483648,
+				Price:     -3.4028235e+38,
+				Views:     0,
+				Score:     -32768,
 			},
 		}
 
@@ -246,7 +231,6 @@ func testCustomTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx cont
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with custom int64 parameter")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ Custom types parameters accepted by QueryBuilder")
 	})
 
@@ -261,7 +245,6 @@ func testCustomTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx cont
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with custom type filters")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ Custom types filters work in QueryBuilder")
 	})
 
@@ -279,7 +262,6 @@ func testCustomTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx cont
 			assert.IsType(t, uint64(0), item.Views, "Views should be uint64")
 			assert.IsType(t, int16(0), item.Score, "Score should be int16")
 		}
-
 		t.Logf("✅ Custom types query execution returned %d items", len(items))
 	})
 }
@@ -302,7 +284,6 @@ func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx c
 			assert.GreaterOrEqual(t, item.Timestamp, int64(1640995200), "Timestamp should be >= start")
 			assert.LessOrEqual(t, item.Timestamp, int64(1640995500), "Timestamp should be <= end")
 		}
-
 		t.Logf("✅ int64 timestamp range conditions work correctly")
 	})
 
@@ -313,7 +294,6 @@ func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx c
 
 		_, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build int32 count between condition")
-
 		t.Logf("✅ int32 count range conditions compile correctly")
 	})
 
@@ -333,9 +313,6 @@ func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx c
 
 func testCustomTypesStreamEvent(t *testing.T) {
 	t.Run("extract_custom_types_logic", func(t *testing.T) {
-		// Проверяем что в сгенерированном коде есть правильная логика для кастомных типов
-		// Это косвенный тест - мы проверяем что код компилируется и имеет правильную структуру
-
 		item := customnumber.SchemaItem{
 			Id:        "stream-test",
 			Timestamp: 1640995600,
@@ -345,13 +322,11 @@ func testCustomTypesStreamEvent(t *testing.T) {
 			Score:     90,
 		}
 
-		// Если код компилируется и эти присваивания работают, значит типы правильные
 		assert.Equal(t, int64(1640995600), item.Timestamp)
 		assert.Equal(t, int32(75), item.Count)
 		assert.Equal(t, float32(39.99), item.Price)
 		assert.Equal(t, uint64(3000000), item.Views)
 		assert.Equal(t, int16(90), item.Score)
-
 		t.Logf("✅ Custom types stream event extraction logic verified")
 	})
 }
@@ -366,7 +341,6 @@ func setupCustomTypesTestData(t *testing.T, client *dynamodb.Client, ctx context
 		{Id: "query-custom-test", Timestamp: 1640995400, Count: 55, Price: 29.99, Views: 2500000, Score: 90},
 		{Id: "query-custom-test", Timestamp: 1640995500, Count: 65, Price: 39.99, Views: 3500000, Score: 95},
 	}
-
 	for _, item := range testItems {
 		av, err := customnumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal custom types test item")
@@ -377,6 +351,5 @@ func setupCustomTypesTestData(t *testing.T, client *dynamodb.Client, ctx context
 		})
 		require.NoError(t, err, "Should store custom types test item")
 	}
-
 	t.Logf("Setup complete: inserted %d custom types test items", len(testItems))
 }
