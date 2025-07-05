@@ -366,7 +366,6 @@ func testBooleanInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Cont
 // ==================== Boolean QueryBuilder Tests ====================
 
 func testBooleanQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.Context) {
-	// Setup test data
 	setupBooleanTestData(t, client, ctx)
 
 	t.Run("boolean_hash_key_query", func(t *testing.T) {
@@ -526,7 +525,6 @@ func testBooleanScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 
 func testBooleanStateTransitions(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("activation_workflow", func(t *testing.T) {
-		// Create inactive, unpublished item
 		item := baseboolean.SchemaItem{
 			Id:          "workflow-test",
 			Version:     1,
@@ -631,10 +629,9 @@ func testBooleanSchema(t *testing.T) {
 	})
 
 	t.Run("boolean_attributes", func(t *testing.T) {
-		// Check primary attributes
 		expectedPrimary := map[string]string{
-			"id":      "S", // hash key is string
-			"version": "N", // range key is number
+			"id":      "S",
+			"version": "N",
 		}
 
 		for _, attr := range baseboolean.TableSchema.Attributes {
@@ -643,7 +640,6 @@ func testBooleanSchema(t *testing.T) {
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should have correct type", attr.Name)
 		}
 
-		// Check common attributes (all boolean type)
 		expectedCommon := map[string]string{
 			"is_active":    "BOOL",
 			"is_published": "BOOL",

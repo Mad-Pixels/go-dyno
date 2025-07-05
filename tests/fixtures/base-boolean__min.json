@@ -1,0 +1,14 @@
+{
+  "table_name": "base-boolean-min", 
+  "hash_key": "id",
+  "range_key": "version",
+  "attributes": [
+    { "name": "id", "type": "S" },
+    { "name": "version", "type": "N" }
+  ],
+  "common_attributes": [
+    { "name": "is_active", "type": "BOOL" },
+    { "name": "is_published", "type": "BOOL" }
+  ],
+  "secondary_indexes": []
+}

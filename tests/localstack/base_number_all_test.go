@@ -384,7 +384,6 @@ func testNumberInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 // ==================== Number QueryBuilder Tests ====================
 
 func testNumberQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.Context) {
-	// Setup test data
 	setupNumberTestData(t, client, ctx)
 
 	t.Run("number_hash_key_query", func(t *testing.T) {
@@ -610,7 +609,6 @@ func testNumberRangeConditions(t *testing.T, client *dynamodb.Client, ctx contex
 // ==================== Number Increment Operations Tests ====================
 
 func testNumberIncrementOperations(t *testing.T, client *dynamodb.Client, ctx context.Context) {
-	// Setup item for increment testing
 	testItem := basenumber.SchemaItem{
 		Id:        "increment-test",
 		Timestamp: 1640995999,
@@ -681,7 +679,6 @@ func testNumberSchema(t *testing.T) {
 	})
 
 	t.Run("number_attributes", func(t *testing.T) {
-		// Check primary attributes
 		expectedPrimary := map[string]string{
 			"id":        "S", // hash key is string
 			"timestamp": "N", // range key is number
@@ -692,8 +689,6 @@ func testNumberSchema(t *testing.T) {
 			assert.True(t, exists, "Primary attribute %s should be expected", attr.Name)
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should have correct type", attr.Name)
 		}
-
-		// Check common attributes (all number type)
 		expectedCommon := map[string]string{
 			"count": "N",
 			"price": "N",

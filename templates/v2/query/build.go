@@ -59,6 +59,7 @@ func (qb *QueryBuilder) Build() (string, expression.KeyConditionBuilder, *expres
             }
         }
         var filterConditions []expression.ConditionBuilder
+        filterConditions = append(filterConditions, qb.FilterConditions...)
         for attrName, value := range qb.Attributes {
             if attrName != TableSchema.HashKey && attrName != TableSchema.RangeKey {
                 filterConditions = append(filterConditions, expression.Name(attrName).Equal(expression.Value(value)))
@@ -135,6 +136,8 @@ func (qb *QueryBuilder) buildRangeKeyCondition(idx SecondaryIndex) (*expression.
 // Moves non-key conditions to filter expressions for optimal query performance.
 func (qb *QueryBuilder) buildFilterCondition(idx SecondaryIndex) *expression.ConditionBuilder {
     var filterConditions []expression.ConditionBuilder
+    
+    filterConditions = append(filterConditions, qb.FilterConditions...)
     for attrName, value := range qb.Attributes {
         if qb.isPartOfIndexKey(attrName, idx) {
             continue
