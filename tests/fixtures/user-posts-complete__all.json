@@ -1,5 +1,5 @@
 {
-  "table_name": "user-posts-complete",
+  "table_name": "user-posts-complete-all",
   "hash_key": "user_id",
   "range_key": "created_at",
   "attributes": [

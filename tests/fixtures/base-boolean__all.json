@@ -1,5 +1,5 @@
 {
-  "table_name": "base-boolean",
+  "table_name": "base-boolean-all",
   "hash_key": "id",
   "range_key": "version",
   "attributes": [

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	basesetnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basesetnumber"
+	basesetnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basesetnumberall"
 )
 
 // TestBaseSetNumber focuses on Number Set (NS) type operations and functionality.
@@ -25,8 +25,8 @@ import (
 // - Set operations in Query and Scan
 // - Edge cases (empty sets, large numbers, negative numbers)
 //
-// Schema: base-set-number.json
-// - Table: "base-set-number"
+// Schema: base-set-number__all.json
+// - Table: "base-set-number-all"
 // - Hash Key: user_id (S)
 // - Range Key: session_id (S)
 // - Common: scores (NS), ratings (NS)
@@ -604,7 +604,7 @@ func testNumberSetSchema(t *testing.T) {
 	t.Run("number_set_table_schema", func(t *testing.T) {
 		schema := basesetnumber.TableSchema
 
-		assert.Equal(t, "base-set-number", schema.TableName, "Table name should match")
+		assert.Equal(t, "base-set-number-all", schema.TableName, "Table name should match")
 		assert.Equal(t, "user_id", schema.HashKey, "Hash key should be 'user_id'")
 		assert.Equal(t, "session_id", schema.RangeKey, "Range key should be 'session_id'")
 		assert.Len(t, schema.SecondaryIndexes, 0, "Should have no secondary indexes")
@@ -638,7 +638,7 @@ func testNumberSetSchema(t *testing.T) {
 	})
 
 	t.Run("number_set_constants", func(t *testing.T) {
-		assert.Equal(t, "base-set-number", basesetnumber.TableName, "TableName constant should be correct")
+		assert.Equal(t, "base-set-number-all", basesetnumber.TableName, "TableName constant should be correct")
 		assert.Equal(t, "user_id", basesetnumber.ColumnUserId, "ColumnUserId should be correct")
 		assert.Equal(t, "session_id", basesetnumber.ColumnSessionId, "ColumnSessionId should be correct")
 		assert.Equal(t, "scores", basesetnumber.ColumnScores, "ColumnScores should be correct")

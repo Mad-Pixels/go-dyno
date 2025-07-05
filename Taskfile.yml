@@ -145,14 +145,27 @@ tasks:
     desc: Generate Go code from all schema examples.
     dir: "{{.git_root}}"
     cmds:
-      - rm -rf tests/localstack/generated 
-      - mkdir -p tests/localstack/generated 
-      - |
-        for schema in tests/fixtures/*.json; do 
+    - rm -rf tests/localstack/generated 
+    - mkdir -p tests/localstack/generated 
+    - |
+      for schema in tests/fixtures/*.json; do 
+        filename=$(basename "${schema}" .json)
+        
+        if [[ "${filename}" == *__* ]]; then
+          mode="${filename##*__}"
+          echo "Generating with mode: ${mode} for ${schema}"
+          
+          go run ./cmd/dyno generate \
+            -schema "${schema}" \
+            -output-dir "tests/localstack/generated" \
+            -mode "${mode}"
+        else
+          echo "Generating without mode for ${schema}"
           go run ./cmd/dyno generate \
             -schema "${schema}" \
             -output-dir "tests/localstack/generated"
-        done
+        fi
+      done
     silent: true
     internal: true
 

@@ -1,5 +1,5 @@
 {
- "table_name": "custom-set-number",
+ "table_name": "custom-set-number-all",
  "hash_key": "id",
  "range_key": "group_id",
  "attributes": [

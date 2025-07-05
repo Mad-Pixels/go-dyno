@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	basenumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basenumber"
+	basenumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basenumberall"
 )
 
 // TestBaseNumber focuses on Number (N) type operations and functionality.
@@ -25,8 +25,8 @@ import (
 // - Increment operations
 // - Edge cases (zero, negative, large numbers)
 //
-// Schema: base-number.json
-// - Table: "base-number"
+// Schema: base-number__all.json
+// - Table: "base-number-all"
 // - Hash Key: id (S)
 // - Range Key: timestamp (N)
 // - Common: count (N), price (N)
@@ -672,7 +672,7 @@ func testNumberSchema(t *testing.T) {
 	t.Run("number_table_schema", func(t *testing.T) {
 		schema := basenumber.TableSchema
 
-		assert.Equal(t, "base-number", schema.TableName, "Table name should match")
+		assert.Equal(t, "base-number-all", schema.TableName, "Table name should match")
 		assert.Equal(t, "id", schema.HashKey, "Hash key should be 'id'")
 		assert.Equal(t, "timestamp", schema.RangeKey, "Range key should be 'timestamp'")
 		assert.Len(t, schema.SecondaryIndexes, 0, "Should have no secondary indexes")
@@ -709,7 +709,7 @@ func testNumberSchema(t *testing.T) {
 	})
 
 	t.Run("number_constants", func(t *testing.T) {
-		assert.Equal(t, "base-number", basenumber.TableName, "TableName constant should be correct")
+		assert.Equal(t, "base-number-all", basenumber.TableName, "TableName constant should be correct")
 		assert.Equal(t, "id", basenumber.ColumnId, "ColumnId should be correct")
 		assert.Equal(t, "timestamp", basenumber.ColumnTimestamp, "ColumnTimestamp should be correct")
 		assert.Equal(t, "count", basenumber.ColumnCount, "ColumnCount should be correct")

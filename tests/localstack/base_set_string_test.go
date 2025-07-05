@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	basesetstring "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basesetstring"
+	basesetstring "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basesetstringall"
 )
 
 // TestBaseSetString focuses on String Set (SS) type operations and functionality.
@@ -25,8 +25,8 @@ import (
 // - Set operations in Query and Scan
 // - Edge cases (empty sets, large sets, duplicates)
 //
-// Schema: base-set-string.json
-// - Table: "base-set-string"
+// Schema: base-set-string__all.json
+// - Table: "base-set-string-all"
 // - Hash Key: id (S)
 // - Range Key: group_id (S)
 // - Common: tags (SS), categories (SS)
@@ -584,7 +584,7 @@ func testStringSetSchema(t *testing.T) {
 	t.Run("string_set_table_schema", func(t *testing.T) {
 		schema := basesetstring.TableSchema
 
-		assert.Equal(t, "base-set-string", schema.TableName, "Table name should match")
+		assert.Equal(t, "base-set-string-all", schema.TableName, "Table name should match")
 		assert.Equal(t, "id", schema.HashKey, "Hash key should be 'id'")
 		assert.Equal(t, "group_id", schema.RangeKey, "Range key should be 'group_id'")
 		assert.Len(t, schema.SecondaryIndexes, 0, "Should have no secondary indexes")
@@ -619,7 +619,7 @@ func testStringSetSchema(t *testing.T) {
 	})
 
 	t.Run("string_set_constants", func(t *testing.T) {
-		assert.Equal(t, "base-set-string", basesetstring.TableName, "TableName constant should be correct")
+		assert.Equal(t, "base-set-string-all", basesetstring.TableName, "TableName constant should be correct")
 		assert.Equal(t, "id", basesetstring.ColumnId, "ColumnId should be correct")
 		assert.Equal(t, "group_id", basesetstring.ColumnGroupId, "ColumnGroupId should be correct")
 		assert.Equal(t, "tags", basesetstring.ColumnTags, "ColumnTags should be correct")

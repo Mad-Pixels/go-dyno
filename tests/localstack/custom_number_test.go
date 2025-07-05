@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	customnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/customnumber"
+	customnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/customnumberall"
 )
 
 // TestCustomNumber focuses on custom Number subtypes operations and functionality.
@@ -24,8 +24,8 @@ import (
 // - Custom types in QueryBuilder and ScanBuilder
 // - ExtractFromDynamoDBStreamEvent with custom types
 //
-// Schema: custom-number.json
-// - Table: "custom-number"
+// Schema: custom-number__all.json
+// - Table: "custom-number-all"
 // - Hash Key: id (S)
 // - Range Key: timestamp (N with int64 subtype)
 // - Common: count (int32), price (float32), views (uint64), score (int16)

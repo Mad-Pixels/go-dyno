@@ -11,9 +11,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	basestring "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basestring"
+	basestring "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basestringall"
 )
 
+// TestBaseString focuses on String (S) type operations and functionality.
+// This test validates string-specific features without other data types.
+//
+// Test Coverage:
+// - String CRUD operations
+// - String marshaling/unmarshaling
+// - String filter conditions (BeginsWith, Contains, NotContains)
+// - String operations in Query and Scan
+// - String comparison operations (GT, LT, Between)
+// - Edge cases (empty strings, special characters, long strings)
+//
+// Schema: base-string__all.json
+// - Table: "base-string-all"
+// - Hash Key: id (S)
+// - Range Key: category (S)
+// - Common: title (S), description (S)
 func TestBaseString(t *testing.T) {
 	client := ConnectToLocalStack(t, DefaultLocalStackConfig())
 	ctx, cancel := TestContext(3 * time.Minute)
@@ -495,7 +511,7 @@ func testStringSchema(t *testing.T) {
 	t.Run("string_table_schema", func(t *testing.T) {
 		schema := basestring.TableSchema
 
-		assert.Equal(t, "base-string", schema.TableName, "Table name should match")
+		assert.Equal(t, "base-string-all", schema.TableName, "Table name should match")
 		assert.Equal(t, "id", schema.HashKey, "Hash key should be 'id'")
 		assert.Equal(t, "category", schema.RangeKey, "Range key should be 'category'")
 		assert.Len(t, schema.SecondaryIndexes, 0, "Should have no secondary indexes")
@@ -530,7 +546,7 @@ func testStringSchema(t *testing.T) {
 	})
 
 	t.Run("string_constants", func(t *testing.T) {
-		assert.Equal(t, "base-string", basestring.TableName, "TableName constant should be correct")
+		assert.Equal(t, "base-string-all", basestring.TableName, "TableName constant should be correct")
 		assert.Equal(t, "id", basestring.ColumnId, "ColumnId should be correct")
 		assert.Equal(t, "category", basestring.ColumnCategory, "ColumnCategory should be correct")
 		assert.Equal(t, "title", basestring.ColumnTitle, "ColumnTitle should be correct")

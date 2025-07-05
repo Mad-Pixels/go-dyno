@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	customsetnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/customsetnumber"
+	customsetnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/customsetnumberall"
 )
 
 // TestCustomSetNumber focuses on custom Number Set subtypes operations and functionality.
@@ -24,8 +24,8 @@ import (
 // - Custom types in QueryBuilder and ScanBuilder with Contains filters
 // - Set operations with different numeric types
 //
-// Schema: custom-set-number.json
-//   - Table: "custom-set-number"
+// Schema: custom-set-number__all.json
+//   - Table: "custom-set-number-all"
 //   - Hash Key: id (S)
 //   - Range Key: group_id (S)
 //   - Common: int32_scores (NS with int32 subtype), int64_timestamps (NS with int64 subtype),

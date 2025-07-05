@@ -1,5 +1,5 @@
 {
-  "table_name": "base-set-number",
+  "table_name": "base-set-number-all",
   "hash_key": "user_id",
   "range_key": "session_id",
   "attributes": [
