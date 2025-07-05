@@ -217,7 +217,6 @@ func testStringMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query using universal .With() method")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ MIN mode universal .With() method works")
 	})
 
@@ -229,7 +228,6 @@ func testStringMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build range query using universal operators")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ MIN mode range conditions work with universal operators")
 	})
 
@@ -241,7 +239,6 @@ func testStringMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with universal .Filter() method")
 		assert.NotNil(t, queryInput.FilterExpression, "Should have filter expression")
-
 		t.Logf("✅ MIN mode universal .Filter() method works")
 	})
 
@@ -338,13 +335,11 @@ func testStringMINSchema(t *testing.T) {
 			"id":       "S",
 			"category": "S",
 		}
-
 		for _, attr := range basestringmin.TableSchema.Attributes {
 			expectedType, exists := expectedPrimary[attr.Name]
 			assert.True(t, exists, "Primary attribute %s should be expected", attr.Name)
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should be string type", attr.Name)
 		}
-
 		expectedCommon := map[string]string{
 			"title":       "S",
 			"description": "S",

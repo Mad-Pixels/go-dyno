@@ -65,7 +65,6 @@ func TestBaseNumberMIN(t *testing.T) {
 
 func testNumberMINBasicCRUD(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("min_create_and_read", func(t *testing.T) {
-		// Create item using basic input methods
 		item := basenumbermin.SchemaItem{
 			Id:        "min-number-001",
 			Timestamp: 1640995200,
@@ -77,20 +76,17 @@ func testNumberMINBasicCRUD(t *testing.T, client *dynamodb.Client, ctx context.C
 		require.NoError(t, err, "Should marshal number item in MIN mode")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
-		// Verify basic types are preserved
 		assert.IsType(t, &types.AttributeValueMemberS{}, av[basenumbermin.ColumnId])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumbermin.ColumnTimestamp])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumbermin.ColumnCount])
 		assert.IsType(t, &types.AttributeValueMemberN{}, av[basenumbermin.ColumnPrice])
 
-		// Store in DynamoDB
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(basenumbermin.TableName),
 			Item:      av,
 		})
 		require.NoError(t, err, "Should store number item in DynamoDB")
 
-		// Read back using basic key input
 		key, err := basenumbermin.KeyInput(item)
 		require.NoError(t, err, "Should create key from item")
 
@@ -101,7 +97,6 @@ func testNumberMINBasicCRUD(t *testing.T, client *dynamodb.Client, ctx context.C
 		require.NoError(t, err, "Should retrieve number item")
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
-		// Verify retrieved numeric values
 		assert.Equal(t, "42", getResult.Item[basenumbermin.ColumnCount].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "1999", getResult.Item[basenumbermin.ColumnPrice].(*types.AttributeValueMemberN).Value)
 		assert.Equal(t, "1640995200", getResult.Item[basenumbermin.ColumnTimestamp].(*types.AttributeValueMemberN).Value)
@@ -110,12 +105,10 @@ func testNumberMINBasicCRUD(t *testing.T, client *dynamodb.Client, ctx context.C
 	})
 
 	t.Run("min_raw_operations", func(t *testing.T) {
-		// Test raw input methods (should be available in MIN mode)
 		key, err := basenumbermin.KeyInputFromRaw("min-raw-001", 1640995300)
 		require.NoError(t, err, "Should create key from raw values")
 		assert.NotEmpty(t, key, "Raw key should not be empty")
 
-		// Test raw update (basic functionality)
 		updates := map[string]any{
 			"count": 100,
 			"price": 2500,
@@ -148,11 +141,9 @@ func testNumberMINBasicCRUD(t *testing.T, client *dynamodb.Client, ctx context.C
 // ==================== Number MIN QueryBuilder Tests ====================
 
 func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.Context) {
-	// Setup minimal test data
 	setupNumberMINTestData(t, client, ctx)
 
 	t.Run("min_query_universal_methods", func(t *testing.T) {
-		// Test universal .With() method (should be available in MIN)
 		qb := basenumbermin.NewQueryBuilder().
 			With("id", basenumbermin.EQ, "min-query-test")
 
@@ -164,7 +155,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 	})
 
 	t.Run("min_query_range_conditions", func(t *testing.T) {
-		// Test range conditions using universal operators
 		qb := basenumbermin.NewQueryBuilder().
 			With("id", basenumbermin.EQ, "min-query-test").
 			With("timestamp", basenumbermin.BETWEEN, 1640995200, 1640995400)
@@ -177,7 +167,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 	})
 
 	t.Run("min_query_numeric_comparisons", func(t *testing.T) {
-		// Test greater than
 		qbGT := basenumbermin.NewQueryBuilder().
 			With("id", basenumbermin.EQ, "min-query-test").
 			With("timestamp", basenumbermin.GT, 1640995300)
@@ -186,7 +175,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 		require.NoError(t, err, "Should build GT query using universal operators")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
 
-		// Test less than
 		qbLT := basenumbermin.NewQueryBuilder().
 			With("id", basenumbermin.EQ, "min-query-test").
 			With("timestamp", basenumbermin.LT, 1640995350)
@@ -199,8 +187,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 	})
 
 	t.Run("min_query_with_filters", func(t *testing.T) {
-		// Test universal .Filter() method for numbers
-		// First build query without filters to ensure basic functionality works
 		qb := basenumbermin.NewQueryBuilder().
 			With("id", basenumbermin.EQ, "min-query-test")
 
@@ -208,7 +194,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 		require.NoError(t, err, "Should build basic query first")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
 
-		// Now test with filters
 		qbWithFilters := basenumbermin.NewQueryBuilder().
 			With("id", basenumbermin.EQ, "min-query-test").
 			Filter("count", basenumbermin.GT, 20)
@@ -232,7 +217,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 			assert.Equal(t, "min-query-test", item.Id, "All items should have correct hash key")
 			assert.Greater(t, item.Timestamp, 0, "All items should have positive timestamp")
 		}
-
 		t.Logf("✅ MIN mode query execution returned %d items", len(items))
 	})
 
@@ -254,7 +238,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 		if len(itemsAsc) > 1 && len(itemsDesc) > 1 {
 			assert.NotEqual(t, itemsAsc[0].Timestamp, itemsDesc[0].Timestamp, "Sorting should produce different order")
 		}
-
 		t.Logf("✅ MIN mode sorting works correctly")
 	})
 }
@@ -263,7 +246,6 @@ func testNumberMINQueryBuilder(t *testing.T, client *dynamodb.Client, ctx contex
 
 func testNumberMINScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("min_scan_universal_filter", func(t *testing.T) {
-		// Test universal .Filter() method for scan
 		sb := basenumbermin.NewScanBuilder().
 			Filter("count", basenumbermin.GT, 20)
 
@@ -275,7 +257,6 @@ func testNumberMINScanBuilder(t *testing.T, client *dynamodb.Client, ctx context
 	})
 
 	t.Run("min_scan_multiple_numeric_filters", func(t *testing.T) {
-		// Test multiple filters using universal operators
 		sb := basenumbermin.NewScanBuilder().
 			Filter("count", basenumbermin.GT, 20).
 			Filter("price", basenumbermin.LT, 3000).
@@ -284,7 +265,6 @@ func testNumberMINScanBuilder(t *testing.T, client *dynamodb.Client, ctx context
 		scanInput, err := sb.BuildScan()
 		require.NoError(t, err, "Should build scan with multiple universal numeric filters")
 		assert.NotNil(t, scanInput.FilterExpression, "Should have filter expression")
-
 		t.Logf("✅ MIN mode multiple universal numeric filters work")
 	})
 
@@ -299,7 +279,6 @@ func testNumberMINScanBuilder(t *testing.T, client *dynamodb.Client, ctx context
 		for _, item := range items {
 			assert.Equal(t, "min-query-test", item.Id, "Items should match filter")
 		}
-
 		t.Logf("✅ MIN mode scan execution returned %d items", len(items))
 	})
 }
@@ -325,7 +304,6 @@ func testNumberMINIncrementOperations(t *testing.T, client *dynamodb.Client, ctx
 	require.NoError(t, err, "Should store test item")
 
 	t.Run("min_increment_basic", func(t *testing.T) {
-		// Test basic increment operation (should be available in MIN mode)
 		incrementInput, err := basenumbermin.IncrementAttribute("min-increment-test", 1640995888, "count", 5)
 		require.NoError(t, err, "Should create increment input")
 		assert.NotNil(t, incrementInput.UpdateExpression, "Should have update expression")
@@ -334,7 +312,6 @@ func testNumberMINIncrementOperations(t *testing.T, client *dynamodb.Client, ctx
 		_, err = client.UpdateItem(ctx, incrementInput)
 		require.NoError(t, err, "Should increment count")
 
-		// Verify increment worked
 		key, _ := basenumbermin.KeyInputFromRaw("min-increment-test", 1640995888)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumbermin.TableName),
@@ -348,23 +325,19 @@ func testNumberMINIncrementOperations(t *testing.T, client *dynamodb.Client, ctx
 	})
 
 	t.Run("min_decrement_basic", func(t *testing.T) {
-		// Test basic decrement operation
 		decrementInput, err := basenumbermin.IncrementAttribute("min-increment-test", 1640995888, "price", -25)
 		require.NoError(t, err, "Should create decrement input")
 
 		_, err = client.UpdateItem(ctx, decrementInput)
 		require.NoError(t, err, "Should decrement price")
 
-		// Verify decrement worked
 		key, _ := basenumbermin.KeyInputFromRaw("min-increment-test", 1640995888)
 		getResult, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(basenumbermin.TableName),
 			Key:       key,
 		})
 		require.NoError(t, err, "Should retrieve decremented item")
-
 		assert.Equal(t, "75", getResult.Item[basenumbermin.ColumnPrice].(*types.AttributeValueMemberN).Value)
-
 		t.Logf("✅ MIN mode decrement: 100 - 25 = 75")
 	})
 }
@@ -394,56 +367,43 @@ func testNumberMINSchema(t *testing.T) {
 	})
 
 	t.Run("min_numeric_operators_available", func(t *testing.T) {
-		// Verify that universal operators are available in MIN mode
 		assert.NotNil(t, basenumbermin.EQ, "EQ operator should be available")
 		assert.NotNil(t, basenumbermin.GT, "GT operator should be available")
 		assert.NotNil(t, basenumbermin.LT, "LT operator should be available")
 		assert.NotNil(t, basenumbermin.GTE, "GTE operator should be available")
 		assert.NotNil(t, basenumbermin.LTE, "LTE operator should be available")
 		assert.NotNil(t, basenumbermin.BETWEEN, "BETWEEN operator should be available")
-
 		t.Logf("✅ MIN mode universal numeric operators available")
 	})
 
 	t.Run("min_number_attributes", func(t *testing.T) {
-		// Check primary attributes
 		expectedPrimary := map[string]string{
-			"id":        "S", // hash key is string
-			"timestamp": "N", // range key is number
+			"id":        "S",
+			"timestamp": "N",
 		}
-
 		for _, attr := range basenumbermin.TableSchema.Attributes {
 			expectedType, exists := expectedPrimary[attr.Name]
 			assert.True(t, exists, "Primary attribute %s should be expected", attr.Name)
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should have correct type", attr.Name)
 		}
-
-		// Check common attributes (all number type)
 		expectedCommon := map[string]string{
 			"count": "N",
 			"price": "N",
 		}
-
 		for _, attr := range basenumbermin.TableSchema.CommonAttributes {
 			expectedType, exists := expectedCommon[attr.Name]
 			assert.True(t, exists, "Common attribute %s should be expected", attr.Name)
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should be number type", attr.Name)
 		}
-
 		t.Logf("✅ MIN mode number attributes validated")
 	})
 
 	t.Run("min_no_sugar_methods", func(t *testing.T) {
-		// In MIN mode, we should only have the basic builder methods
-		// This test verifies the expected MIN behavior by checking available methods
 		qb := basenumbermin.NewQueryBuilder()
 		assert.NotNil(t, qb, "QueryBuilder should be available")
 
 		sb := basenumbermin.NewScanBuilder()
 		assert.NotNil(t, sb, "ScanBuilder should be available")
-
-		// Note: We can't directly test absence of sugar methods in Go reflection
-		// but the generated code should not include them in MIN mode
 		t.Logf("✅ MIN mode builders available (sugar methods should be absent)")
 	})
 }
@@ -453,13 +413,11 @@ func testNumberMINSchema(t *testing.T) {
 func setupNumberMINTestData(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Helper()
 
-	// Minimal test data for MIN mode testing
 	testItems := []basenumbermin.SchemaItem{
 		{Id: "min-query-test", Timestamp: 1640995300, Count: 25, Price: 1500},
 		{Id: "min-query-test", Timestamp: 1640995400, Count: 35, Price: 2000},
 		{Id: "min-query-test", Timestamp: 1640995500, Count: 45, Price: 2500},
 	}
-
 	for _, item := range testItems {
 		av, err := basenumbermin.ItemInput(item)
 		require.NoError(t, err, "Should marshal MIN test item")
@@ -470,6 +428,5 @@ func setupNumberMINTestData(t *testing.T, client *dynamodb.Client, ctx context.C
 		})
 		require.NoError(t, err, "Should store MIN test item")
 	}
-
 	t.Logf("MIN setup complete: inserted %d number test items", len(testItems))
 }

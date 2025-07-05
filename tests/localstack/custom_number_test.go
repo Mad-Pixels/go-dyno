@@ -304,7 +304,6 @@ func testCustomTypesRangeConditions(t *testing.T, client *dynamodb.Client, ctx c
 
 		_, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build uint64 views greater than condition")
-
 		t.Logf("✅ uint64 views range conditions compile correctly")
 	})
 }
