@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	baseboolean "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/baseboolean"
+	baseboolean "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basebooleanall"
 )
 
 // TestBaseBoolean focuses on Boolean (BOOL) type operations and functionality.
@@ -24,8 +24,8 @@ import (
 // - Boolean state transitions and filtering
 // - Edge cases (true/false consistency)
 //
-// Schema: base-boolean.json
-// - Table: "base-boolean"
+// Schema: base-boolean__all.json
+// - Table: "base-boolean-all"
 // - Hash Key: id (S)
 // - Range Key: version (N)
 // - Common: is_active (BOOL), is_published (BOOL)
@@ -366,7 +366,6 @@ func testBooleanInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Cont
 // ==================== Boolean QueryBuilder Tests ====================
 
 func testBooleanQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.Context) {
-	// Setup test data
 	setupBooleanTestData(t, client, ctx)
 
 	t.Run("boolean_hash_key_query", func(t *testing.T) {
@@ -526,7 +525,6 @@ func testBooleanScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 
 func testBooleanStateTransitions(t *testing.T, client *dynamodb.Client, ctx context.Context) {
 	t.Run("activation_workflow", func(t *testing.T) {
-		// Create inactive, unpublished item
 		item := baseboolean.SchemaItem{
 			Id:          "workflow-test",
 			Version:     1,
@@ -622,7 +620,7 @@ func testBooleanSchema(t *testing.T) {
 	t.Run("boolean_table_schema", func(t *testing.T) {
 		schema := baseboolean.TableSchema
 
-		assert.Equal(t, "base-boolean", schema.TableName, "Table name should match")
+		assert.Equal(t, "base-boolean-all", schema.TableName, "Table name should match")
 		assert.Equal(t, "id", schema.HashKey, "Hash key should be 'id'")
 		assert.Equal(t, "version", schema.RangeKey, "Range key should be 'version'")
 		assert.Len(t, schema.SecondaryIndexes, 0, "Should have no secondary indexes")
@@ -631,10 +629,9 @@ func testBooleanSchema(t *testing.T) {
 	})
 
 	t.Run("boolean_attributes", func(t *testing.T) {
-		// Check primary attributes
 		expectedPrimary := map[string]string{
-			"id":      "S", // hash key is string
-			"version": "N", // range key is number
+			"id":      "S",
+			"version": "N",
 		}
 
 		for _, attr := range baseboolean.TableSchema.Attributes {
@@ -643,7 +640,6 @@ func testBooleanSchema(t *testing.T) {
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should have correct type", attr.Name)
 		}
 
-		// Check common attributes (all boolean type)
 		expectedCommon := map[string]string{
 			"is_active":    "BOOL",
 			"is_published": "BOOL",
@@ -659,7 +655,7 @@ func testBooleanSchema(t *testing.T) {
 	})
 
 	t.Run("boolean_constants", func(t *testing.T) {
-		assert.Equal(t, "base-boolean", baseboolean.TableName, "TableName constant should be correct")
+		assert.Equal(t, "base-boolean-all", baseboolean.TableName, "TableName constant should be correct")
 		assert.Equal(t, "id", baseboolean.ColumnId, "ColumnId should be correct")
 		assert.Equal(t, "version", baseboolean.ColumnVersion, "ColumnVersion should be correct")
 		assert.Equal(t, "is_active", baseboolean.ColumnIsActive, "ColumnIsActive should be correct")

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	customsetnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/customsetnumber"
+	customsetnumber "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/customsetnumberall"
 )
 
 // TestCustomSetNumber focuses on custom Number Set subtypes operations and functionality.
@@ -24,8 +24,8 @@ import (
 // - Custom types in QueryBuilder and ScanBuilder with Contains filters
 // - Set operations with different numeric types
 //
-// Schema: custom-set-number.json
-//   - Table: "custom-set-number"
+// Schema: custom-set-number__all.json
+//   - Table: "custom-set-number-all"
 //   - Hash Key: id (S)
 //   - Range Key: group_id (S)
 //   - Common: int32_scores (NS with int32 subtype), int64_timestamps (NS with int64 subtype),
@@ -88,7 +88,6 @@ func testCustomSetTypesStruct(t *testing.T) {
 		assert.Equal(t, []float32{19.99, 25.50, 30.75}, item.Float32Rates)
 		assert.Equal(t, []uint64{1000000, 2000000, 3000000}, item.Uint64Counters)
 		assert.Equal(t, []int16{100, 200, 300}, item.Int16Values)
-
 		t.Logf("✅ Custom set types verified: []int32, []int64, []float32, []uint64, []int16")
 	})
 
@@ -106,7 +105,6 @@ func testCustomSetTypesStruct(t *testing.T) {
 		assert.Equal(t, []float32{19.99, 29.99}, item.Float32Rates)
 		assert.Equal(t, []uint64{1000000}, item.Uint64Counters)
 		assert.Equal(t, []int16{85, 95}, item.Int16Values)
-
 		t.Logf("✅ Type safety compilation verified")
 	})
 }
@@ -124,13 +122,10 @@ func testCustomSetTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx con
 			Uint64Counters:  []uint64{1000000, 2000000},
 			Int16Values:     []int16{100, 200, 300, 400},
 		}
-
-		// Test marshaling with custom set types
 		av, err := customsetnumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal item with custom set types")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
 
-		// Verify all fields are present and properly typed
 		assert.Contains(t, av, "id", "Should contain id field")
 		assert.Contains(t, av, "group_id", "Should contain group_id field")
 		assert.Contains(t, av, "int32_scores", "Should contain int32_scores field")
@@ -139,7 +134,6 @@ func testCustomSetTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx con
 		assert.Contains(t, av, "uint64_counters", "Should contain uint64_counters field")
 		assert.Contains(t, av, "int16_values", "Should contain int16_values field")
 
-		// Verify DynamoDB types (all custom numeric sets should be marshaled as NS)
 		assert.IsType(t, &types.AttributeValueMemberS{}, av[customsetnumber.ColumnId])
 		assert.IsType(t, &types.AttributeValueMemberS{}, av[customsetnumber.ColumnGroupId])
 		assert.IsType(t, &types.AttributeValueMemberNS{}, av[customsetnumber.ColumnInt32Scores])
@@ -147,7 +141,6 @@ func testCustomSetTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx con
 		assert.IsType(t, &types.AttributeValueMemberNS{}, av[customsetnumber.ColumnFloat32Rates])
 		assert.IsType(t, &types.AttributeValueMemberNS{}, av[customsetnumber.ColumnUint64Counters])
 		assert.IsType(t, &types.AttributeValueMemberNS{}, av[customsetnumber.ColumnInt16Values])
-
 		t.Logf("✅ Custom set types marshaled successfully")
 	})
 
@@ -162,7 +155,6 @@ func testCustomSetTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx con
 			Int16Values:     []int16{95, 85, 75},
 		}
 
-		// Marshal and store
 		av, err := customsetnumber.ItemInput(originalItem)
 		require.NoError(t, err, "Should marshal original item")
 
@@ -172,7 +164,6 @@ func testCustomSetTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx con
 		})
 		require.NoError(t, err, "Should store item in DynamoDB")
 
-		// Retrieve and verify
 		key, err := customsetnumber.KeyInput(originalItem)
 		require.NoError(t, err, "Should create key from item")
 
@@ -183,11 +174,9 @@ func testCustomSetTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx con
 		require.NoError(t, err, "Should retrieve item")
 		assert.NotEmpty(t, getResult.Item, "Retrieved item should not be empty")
 
-		// Verify values are preserved as number sets
 		assert.Equal(t, "roundtrip-test-001", getResult.Item[customsetnumber.ColumnId].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "roundtrip-group", getResult.Item[customsetnumber.ColumnGroupId].(*types.AttributeValueMemberS).Value)
 
-		// Check that all sets contain expected string representations
 		int32Set := getResult.Item[customsetnumber.ColumnInt32Scores].(*types.AttributeValueMemberNS)
 		assert.Contains(t, int32Set.Value, "123")
 		assert.Contains(t, int32Set.Value, "456")
@@ -208,7 +197,6 @@ func testCustomSetTypesMarshaling(t *testing.T, client *dynamodb.Client, ctx con
 		int16Set := getResult.Item[customsetnumber.ColumnInt16Values].(*types.AttributeValueMemberNS)
 		assert.Contains(t, int16Set.Value, "95")
 		assert.Contains(t, int16Set.Value, "85")
-
 		t.Logf("✅ Custom set types roundtrip successful")
 	})
 }
@@ -229,7 +217,6 @@ func testCustomSetTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx c
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with custom set type contains filters")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ Custom set types contains filters work in QueryBuilder")
 	})
 
@@ -247,7 +234,6 @@ func testCustomSetTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx c
 			assert.IsType(t, []uint64{}, item.Uint64Counters, "Uint64Counters should be []uint64")
 			assert.IsType(t, []int16{}, item.Int16Values, "Int16Values should be []int16")
 		}
-
 		t.Logf("✅ Custom set types query execution returned %d items", len(items))
 	})
 }
@@ -255,7 +241,6 @@ func testCustomSetTypesQueryBuilder(t *testing.T, client *dynamodb.Client, ctx c
 // ==================== Custom Set Operations Tests ====================
 
 func testCustomSetOperations(t *testing.T, client *dynamodb.Client, ctx context.Context) {
-	// Setup item for set operations testing
 	testItem := customsetnumber.SchemaItem{
 		Id:              "set-ops-test",
 		GroupId:         "operations",
@@ -294,7 +279,6 @@ func testCustomSetOperations(t *testing.T, client *dynamodb.Client, ctx context.
 		assert.Contains(t, int32Set.Value, "20", "Should still contain initial value")
 		assert.Contains(t, int32Set.Value, "30", "Should contain added value")
 		assert.Contains(t, int32Set.Value, "40", "Should contain added value")
-
 		t.Logf("✅ Added to int32 set successfully")
 	})
 
@@ -317,7 +301,6 @@ func testCustomSetOperations(t *testing.T, client *dynamodb.Client, ctx context.
 		assert.Contains(t, float32Set.Value, "2.5", "Should still contain initial value")
 		assert.Contains(t, float32Set.Value, "3.5", "Should contain added value")
 		assert.Contains(t, float32Set.Value, "4.5", "Should contain added value")
-
 		t.Logf("✅ Added to float32 set successfully")
 	})
 
@@ -338,7 +321,6 @@ func testCustomSetOperations(t *testing.T, client *dynamodb.Client, ctx context.
 		uint64Set := getResult.Item[customsetnumber.ColumnUint64Counters].(*types.AttributeValueMemberNS)
 		assert.Contains(t, uint64Set.Value, "200", "Should still contain remaining value")
 		assert.NotContains(t, uint64Set.Value, "100", "Should not contain removed value")
-
 		t.Logf("✅ Removed from uint64 set successfully")
 	})
 }
@@ -360,23 +342,22 @@ func testCustomSetEdgeValues(t *testing.T, client *dynamodb.Client, ctx context.
 			{
 				Id:              "edge-2",
 				GroupId:         "max-values",
-				Int32Scores:     []int32{2147483647},            // int32 max
-				Int64Timestamps: []int64{9223372036854775807},   // int64 max
-				Float32Rates:    []float32{3.4028235e+38},       // float32 max
-				Uint64Counters:  []uint64{18446744073709551615}, // uint64 max
-				Int16Values:     []int16{32767},                 // int16 max
+				Int32Scores:     []int32{2147483647},
+				Int64Timestamps: []int64{9223372036854775807},
+				Float32Rates:    []float32{3.4028235e+38},
+				Uint64Counters:  []uint64{18446744073709551615},
+				Int16Values:     []int16{32767},
 			},
 			{
 				Id:              "edge-3",
 				GroupId:         "min-values",
-				Int32Scores:     []int32{-2147483648},          // int32 min
-				Int64Timestamps: []int64{-9223372036854775808}, // int64 min
-				Float32Rates:    []float32{-3.4028235e+38},     // float32 min
-				Uint64Counters:  []uint64{0},                   // uint64 min (can't be negative)
-				Int16Values:     []int16{-32768},               // int16 min
+				Int32Scores:     []int32{-2147483648},
+				Int64Timestamps: []int64{-9223372036854775808},
+				Float32Rates:    []float32{-3.4028235e+38},
+				Uint64Counters:  []uint64{0},
+				Int16Values:     []int16{-32768},
 			},
 		}
-
 		for _, item := range edgeItems {
 			av, err := customsetnumber.ItemInput(item)
 			require.NoError(t, err, "Should handle edge values for item: %s", item.Id)
@@ -387,7 +368,6 @@ func testCustomSetEdgeValues(t *testing.T, client *dynamodb.Client, ctx context.
 			})
 			require.NoError(t, err, "Should store edge value item: %s", item.Id)
 		}
-
 		t.Logf("✅ Custom set types edge values handled successfully")
 	})
 }
@@ -417,7 +397,6 @@ func setupCustomSetTypesTestData(t *testing.T, client *dynamodb.Client, ctx cont
 			Int16Values:     []int16{400, 500},
 		},
 	}
-
 	for _, item := range testItems {
 		av, err := customsetnumber.ItemInput(item)
 		require.NoError(t, err, "Should marshal custom set types test item")
@@ -428,6 +407,5 @@ func setupCustomSetTypesTestData(t *testing.T, client *dynamodb.Client, ctx cont
 		})
 		require.NoError(t, err, "Should store custom set types test item")
 	}
-
 	t.Logf("Setup complete: inserted %d custom set types test items", len(testItems))
 }

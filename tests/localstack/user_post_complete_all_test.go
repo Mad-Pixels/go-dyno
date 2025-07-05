@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	userpostscomplete "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/userpostscomplete"
+	userpostscomplete "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/userpostscompleteall"
 )
 
 // TestUserPostsComplete focuses on GSI/LSI mixed operations and functionality.
@@ -24,8 +24,8 @@ import (
 // - Complex projection types (ALL, KEYS_ONLY, INCLUDE)
 // - Multiple index types on same table
 //
-// Schema: user-posts-complete.json
-// - Table: "user-posts-complete"
+// Schema: user-posts-complete__all.json
+// - Table: "user-posts-complete-all"
 // - Hash Key: user_id (S)
 // - Range Key: created_at (S)
 // - LSI: lsi_by_post_type, lsi_by_status, lsi_by_priority
@@ -289,14 +289,14 @@ func testUserPostsSchema(t *testing.T) {
 	t.Run("table_schema_structure", func(t *testing.T) {
 		schema := userpostscomplete.TableSchema
 
-		assert.Equal(t, "user-posts-complete", schema.TableName)
+		assert.Equal(t, "user-posts-complete-all", schema.TableName)
 		assert.Equal(t, "user_id", schema.HashKey)
 		assert.Equal(t, "created_at", schema.RangeKey)
 		assert.Len(t, schema.SecondaryIndexes, 6, "Should have 6 secondary indexes (3 LSI + 3 GSI)")
 	})
 
 	t.Run("constants_validation", func(t *testing.T) {
-		assert.Equal(t, "user-posts-complete", userpostscomplete.TableName)
+		assert.Equal(t, "user-posts-complete-all", userpostscomplete.TableName)
 		assert.Equal(t, "user_id", userpostscomplete.ColumnUserId)
 		assert.Equal(t, "created_at", userpostscomplete.ColumnCreatedAt)
 		assert.Equal(t, "post_type", userpostscomplete.ColumnPostType)

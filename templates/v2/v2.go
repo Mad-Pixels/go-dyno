@@ -9,6 +9,7 @@ package v2
 import (
 	"github.com/Mad-Pixels/go-dyno/internal/generator/attribute"
 	"github.com/Mad-Pixels/go-dyno/internal/generator/index"
+	"github.com/Mad-Pixels/go-dyno/internal/generator/mode"
 )
 
 // TemplateMap defines the full set of metadata used to generate DynamoDB-related code.
@@ -25,6 +26,9 @@ type TemplateMap struct {
 
 	// RangeKey is the optional sort key of the table.
 	RangeKey string
+
+	// Mode determines what code to generate (ALL, MIN, etc).
+	Mode mode.Mode
 
 	// Attributes are the table-specific attributes defined in the schema.
 	Attributes []attribute.Attribute

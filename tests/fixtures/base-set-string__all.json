@@ -1,5 +1,5 @@
 {
-  "table_name": "base-set-string",
+  "table_name": "base-set-string-all",
   "hash_key": "id",
   "range_key": "group_id",
   "attributes": [

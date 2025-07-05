@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	godyno "github.com/Mad-Pixels/go-dyno"
+	"github.com/Mad-Pixels/go-dyno/internal/generator/mode"
 
 	"github.com/urfave/cli/v2"
 )
@@ -66,6 +67,23 @@ var (
 				fmt.Sprintf("%s_%s", godyno.EnvPrefix, strings.ToUpper("filename")),
 			},
 			Required: false,
+		},
+	}
+
+	// LocalGenerateMode defines the --mode flag for controlling code generation mode.
+	// Determines what code to generate: ALL (complete) or MIN (minimal).
+	LocalGenerateMode = Flag{
+		Object: &cli.StringFlag{
+			Name:  "mode",
+			Usage: fmt.Sprintf("Set generation mode (%s). (default: %s)", strings.Join(mode.GetAvailableModes(), ", "), mode.GetDefault()),
+			Aliases: []string{
+				"m",
+			},
+			EnvVars: []string{
+				fmt.Sprintf("%s_%s", godyno.EnvPrefix, strings.ToUpper("mode")),
+			},
+			Required: false,
+			Value:    mode.GetDefault().String(),
 		},
 	}
 )

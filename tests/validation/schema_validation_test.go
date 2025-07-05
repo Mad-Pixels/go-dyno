@@ -63,8 +63,26 @@ func TestSchemaValidation(t *testing.T) {
 		description   string
 	}{
 		{
-			name:        "valid_schema_should_pass",
-			schemaFile:  "base-string.json",
+			name:        "valid_schema_should_pass_base-string-all",
+			schemaFile:  "base-string__all.json",
+			expectError: false,
+			description: "Valid schema should load without errors",
+		},
+		{
+			name:        "valid_schema_should_pass_base-boolean-all",
+			schemaFile:  "base-boolean__all.json",
+			expectError: false,
+			description: "Valid schema should load without errors",
+		},
+		{
+			name:        "valid_schema_should_pass_user-posts-compile-all",
+			schemaFile:  "user-posts-complete__all.json",
+			expectError: false,
+			description: "Valid schema should load without errors",
+		},
+		{
+			name:        "valid_schema_should_pass_user-posts-compile-min",
+			schemaFile:  "user-posts-complete__min.json",
 			expectError: false,
 			description: "Valid schema should load without errors",
 		},

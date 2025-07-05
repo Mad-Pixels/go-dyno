@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"github.com/Mad-Pixels/go-dyno/internal/generator/mode"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/tmpl"
@@ -11,6 +12,7 @@ import (
 // Allows overriding schema defaults (package name, filename) via CLI flags.
 type RenderBuilder struct {
 	generator   *Generator
+	mode        *mode.Mode
 	packageName *string
 	filename    *string
 }
@@ -29,6 +31,14 @@ func (rb *RenderBuilder) WithFilename(name string) *RenderBuilder {
 	if name != "" {
 		cleanName := conv.ToSafeName(name)
 		rb.filename = &cleanName
+	}
+	return rb
+}
+
+// WithMode overrides the generator mode type.
+func (rb *RenderBuilder) WithMode(mode mode.Mode) *RenderBuilder {
+	if mode.IsValid() {
+		rb.mode = &mode
 	}
 	return rb
 }
@@ -60,6 +70,14 @@ func (rb *RenderBuilder) GetFilename() string {
 	return rb.generator.schema.Filename()
 }
 
+// GetMode returns the current generation mode (or default if not set).
+func (rb *RenderBuilder) GetMode() mode.Mode {
+	if rb.mode != nil {
+		return *rb.mode
+	}
+	return mode.GetDefault()
+}
+
 // buildTemplateMap creates template data with schema and overrides.
 func (rb *RenderBuilder) buildTemplateMap() v2.TemplateMap {
 	schema := rb.generator.schema
@@ -69,6 +87,7 @@ func (rb *RenderBuilder) buildTemplateMap() v2.TemplateMap {
 		TableName:        schema.TableName(),
 		HashKey:          schema.HashKey(),
 		RangeKey:         schema.RangeKey(),
+		Mode:             rb.GetMode(),
 		Attributes:       schema.Attributes(),
 		CommonAttributes: schema.CommonAttributes(),
 		AllAttributes:    schema.AllAttributes(),

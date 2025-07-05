@@ -19,6 +19,7 @@ import (
 	"text/template"
 
 	"github.com/Mad-Pixels/go-dyno/internal/generator/attribute"
+	"github.com/Mad-Pixels/go-dyno/internal/generator/mode"
 	"github.com/Mad-Pixels/go-dyno/internal/logger"
 	"github.com/Mad-Pixels/go-dyno/internal/utils/conv"
 	"github.com/rs/zerolog"
@@ -152,6 +153,9 @@ func renderTemplate(b *bytes.Buffer, tmpl string, vars any, shouldFormat bool) {
 			"GetUsedNumericSetTypes": attribute.GetUsedNumericSetTypes,
 			"IsFloatType":            conv.IsFloatType,
 			"Slice":                  conv.TrimLeftN,
+			"IsALL":                  mode.IsALL,
+			"IsMIN":                  mode.IsMIN,
+			"IsMode":                 mode.IsMode,
 		},
 	).
 		Parse(tmpl)

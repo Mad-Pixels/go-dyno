@@ -11,9 +11,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	basestring "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basestring"
+	basestring "github.com/Mad-Pixels/go-dyno/tests/localstack/generated/basestringall"
 )
 
+// TestBaseString focuses on String (S) type operations and functionality.
+// This test validates string-specific features without other data types.
+//
+// Test Coverage:
+// - String CRUD operations
+// - String marshaling/unmarshaling
+// - String filter conditions (BeginsWith, Contains, NotContains)
+// - String operations in Query and Scan
+// - String comparison operations (GT, LT, Between)
+// - Edge cases (empty strings, special characters, long strings)
+//
+// Schema: base-string__all.json
+// - Table: "base-string-all"
+// - Hash Key: id (S)
+// - Range Key: category (S)
+// - Common: title (S), description (S)
 func TestBaseString(t *testing.T) {
 	client := ConnectToLocalStack(t, DefaultLocalStackConfig())
 	ctx, cancel := TestContext(3 * time.Minute)
@@ -51,7 +67,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 			Title:       "String Operations Guide",
 			Description: "Comprehensive guide for string handling",
 		}
-
 		av, err := basestring.ItemInput(item)
 		require.NoError(t, err, "Should marshal string item")
 		assert.NotEmpty(t, av, "Marshaled item should not be empty")
@@ -71,7 +86,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 			Item:      av,
 		})
 		require.NoError(t, err, "Should store string item in DynamoDB")
-
 		t.Logf("✅ Created string item: %s/%s", item.Id, item.Category)
 	})
 
@@ -80,7 +94,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 			Id:       "string-test-001",
 			Category: "docs",
 		}
-
 		key, err := basestring.KeyInput(item)
 		require.NoError(t, err, "Should create key from item")
 
@@ -95,7 +108,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 		assert.Equal(t, "string-test-001", getResult.Item[basestring.ColumnId].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "String Operations Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "Comprehensive guide for string handling", getResult.Item[basestring.ColumnDescription].(*types.AttributeValueMemberS).Value)
-
 		t.Logf("✅ Retrieved string item successfully")
 	})
 
@@ -106,7 +118,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 			Title:       "Updated String Guide",
 			Description: "Updated comprehensive guide for string operations",
 		}
-
 		updateInput, err := basestring.UpdateItemInput(item)
 		require.NoError(t, err, "Should create update input from item")
 
@@ -122,7 +133,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 
 		assert.Equal(t, "Updated String Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "Updated comprehensive guide for string operations", getResult.Item[basestring.ColumnDescription].(*types.AttributeValueMemberS).Value)
-
 		t.Logf("✅ Updated string item successfully")
 	})
 
@@ -145,7 +155,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 		})
 		require.NoError(t, err, "GetItem should not error for missing item")
 		assert.Empty(t, getResult.Item, "String item should be deleted")
-
 		t.Logf("✅ Deleted string item successfully")
 	})
 
@@ -156,7 +165,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 			{Id: "edge-3", Category: "long", Title: "Very " + string(make([]byte, 100)), Description: "Long string test"},
 			{Id: "edge-4", Category: "minimal", Title: "x", Description: "Single char"},
 		}
-
 		for _, item := range edgeCases {
 			av, err := basestring.ItemInput(item)
 			require.NoError(t, err, "Should handle edge case: %s", item.Id)
@@ -167,7 +175,6 @@ func testStringInput(t *testing.T, client *dynamodb.Client, ctx context.Context)
 			})
 			require.NoError(t, err, "Should store edge case item: %s", item.Id)
 		}
-
 		t.Logf("✅ String edge cases handled successfully")
 	})
 }
@@ -190,7 +197,6 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 			Item:      av,
 		})
 		require.NoError(t, err, "Should store string item in DynamoDB")
-
 		t.Logf("✅ Created string item for raw testing: %s/%s", item.Id, item.Category)
 	})
 
@@ -208,7 +214,6 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		assert.Equal(t, "string-raw-001", getResult.Item[basestring.ColumnId].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "raw-docs", getResult.Item[basestring.ColumnCategory].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "Raw String Operations Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
-
 		t.Logf("✅ Retrieved string item successfully using raw key")
 	})
 
@@ -233,7 +238,6 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 
 		assert.Equal(t, "Updated Raw String Guide", getResult.Item[basestring.ColumnTitle].(*types.AttributeValueMemberS).Value)
 		assert.Equal(t, "Updated guide for raw string operations methods", getResult.Item[basestring.ColumnDescription].(*types.AttributeValueMemberS).Value)
-
 		t.Logf("✅ Updated string item successfully using raw method")
 	})
 
@@ -251,7 +255,6 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		})
 		require.NoError(t, err, "GetItem should not error for missing item")
 		assert.Empty(t, getResult.Item, "String item should be deleted")
-
 		t.Logf("✅ Deleted string item successfully using raw method")
 	})
 
@@ -265,9 +268,7 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 		}
 		keyFromObject, err := basestring.KeyInput(item)
 		require.NoError(t, err, "Should create key from object")
-
 		assert.Equal(t, keyFromRaw, keyFromObject, "Raw and object-based keys should be identical")
-
 		t.Logf("✅ Raw and object-based methods produce identical results")
 	})
 
@@ -293,7 +294,6 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 				updates:  map[string]any{"title": "Special: !@#$%^&*()", "description": "Special characters"},
 			},
 		}
-
 		for _, edgeCase := range edgeCases {
 			updateInput, err := basestring.UpdateItemInputFromRaw(edgeCase.id, edgeCase.category, edgeCase.updates)
 			require.NoError(t, err, "Should handle raw edge case: %s", edgeCase.id)
@@ -303,7 +303,6 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 			require.NoError(t, err, "Should create delete input for edge case: %s", edgeCase.id)
 			assert.NotNil(t, deleteInput, "Delete input should be created")
 		}
-
 		t.Logf("✅ Raw string edge cases handled successfully")
 	})
 
@@ -326,14 +325,12 @@ func testStringInputRaw(t *testing.T, client *dynamodb.Client, ctx context.Conte
 			"title":   "Conditional Update",
 			"version": 2,
 		}
-
 		updateInput, err := basestring.UpdateItemInputWithCondition(
 			"conditional-test", "raw-condition",
 			updates, conditionExpr, conditionNames, conditionValues,
 		)
 		require.NoError(t, err, "Should create conditional update with raw method")
 		assert.NotNil(t, updateInput.ConditionExpression, "Should have condition expression")
-
 		t.Logf("✅ Raw conditional operations work correctly")
 	})
 }
@@ -348,7 +345,6 @@ func testStringQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 		require.NoError(t, err, "Should build string hash key query")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
 		assert.Equal(t, basestring.TableName, *queryInput.TableName, "Should target correct table")
-
 		t.Logf("✅ String hash key query built successfully")
 	})
 
@@ -360,7 +356,6 @@ func testStringQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build string hash+range query")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ String hash+range query built successfully")
 	})
 
@@ -373,7 +368,6 @@ func testStringQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build query with string filters")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ String filters query built successfully")
 	})
 
@@ -385,7 +379,6 @@ func testStringQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 		queryInput, err := qb.BuildQuery()
 		require.NoError(t, err, "Should build string between query")
 		assert.NotNil(t, queryInput.KeyConditionExpression, "Should have key condition")
-
 		t.Logf("✅ String range condition built successfully")
 	})
 
@@ -402,7 +395,6 @@ func testStringQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 			assert.IsType(t, "", item.Title, "Title should be string type")
 			assert.IsType(t, "", item.Description, "Description should be string type")
 		}
-
 		t.Logf("✅ String query execution returned %d items", len(items))
 	})
 
@@ -424,7 +416,6 @@ func testStringQueryBuilder(t *testing.T, client *dynamodb.Client, ctx context.C
 		if len(itemsAsc) > 1 && len(itemsDesc) > 1 {
 			assert.NotEqual(t, itemsAsc[0].Category, itemsDesc[0].Category, "Sorting should produce different order")
 		}
-
 		t.Logf("✅ String sorting works correctly")
 	})
 }
@@ -438,7 +429,6 @@ func testStringScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Co
 		scanInput, err := sb.BuildScan()
 		require.NoError(t, err, "Should build scan with string filters")
 		assert.NotNil(t, scanInput.FilterExpression, "Should have filter expression")
-
 		t.Logf("✅ String scan filters built successfully")
 	})
 
@@ -448,7 +438,6 @@ func testStringScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Co
 		scanInput, err := sb.BuildScan()
 		require.NoError(t, err, "Should build scan with contains filter")
 		assert.NotNil(t, scanInput.FilterExpression, "Should have filter expression")
-
 		t.Logf("✅ String contains filter built successfully")
 	})
 
@@ -458,7 +447,6 @@ func testStringScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Co
 		scanInput, err := sb.BuildScan()
 		require.NoError(t, err, "Should build scan with begins_with filter")
 		assert.NotNil(t, scanInput.FilterExpression, "Should have filter expression")
-
 		t.Logf("✅ String begins_with filter built successfully")
 	})
 
@@ -471,7 +459,6 @@ func testStringScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Co
 		scanInput, err := sb.BuildScan()
 		require.NoError(t, err, "Should build scan with advanced string filters")
 		assert.NotNil(t, scanInput.FilterExpression, "Should have filter expression")
-
 		t.Logf("✅ Advanced string filters built successfully")
 	})
 
@@ -486,7 +473,6 @@ func testStringScanBuilder(t *testing.T, client *dynamodb.Client, ctx context.Co
 		for _, item := range items {
 			assert.Contains(t, item.Title, "API", "Items should match contains filter")
 		}
-
 		t.Logf("✅ String scan execution returned %d items", len(items))
 	})
 }
@@ -495,7 +481,7 @@ func testStringSchema(t *testing.T) {
 	t.Run("string_table_schema", func(t *testing.T) {
 		schema := basestring.TableSchema
 
-		assert.Equal(t, "base-string", schema.TableName, "Table name should match")
+		assert.Equal(t, "base-string-all", schema.TableName, "Table name should match")
 		assert.Equal(t, "id", schema.HashKey, "Hash key should be 'id'")
 		assert.Equal(t, "category", schema.RangeKey, "Range key should be 'category'")
 		assert.Len(t, schema.SecondaryIndexes, 0, "Should have no secondary indexes")
@@ -508,47 +494,40 @@ func testStringSchema(t *testing.T) {
 			"id":       "S",
 			"category": "S",
 		}
-
 		for _, attr := range basestring.TableSchema.Attributes {
 			expectedType, exists := expectedPrimary[attr.Name]
 			assert.True(t, exists, "Primary attribute %s should be expected", attr.Name)
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should be string type", attr.Name)
 		}
-
 		expectedCommon := map[string]string{
 			"title":       "S",
 			"description": "S",
 		}
-
 		for _, attr := range basestring.TableSchema.CommonAttributes {
 			expectedType, exists := expectedCommon[attr.Name]
 			assert.True(t, exists, "Common attribute %s should be expected", attr.Name)
 			assert.Equal(t, expectedType, attr.Type, "Attribute %s should be string type", attr.Name)
 		}
-
 		t.Logf("✅ String attributes validated")
 	})
 
 	t.Run("string_constants", func(t *testing.T) {
-		assert.Equal(t, "base-string", basestring.TableName, "TableName constant should be correct")
+		assert.Equal(t, "base-string-all", basestring.TableName, "TableName constant should be correct")
 		assert.Equal(t, "id", basestring.ColumnId, "ColumnId should be correct")
 		assert.Equal(t, "category", basestring.ColumnCategory, "ColumnCategory should be correct")
 		assert.Equal(t, "title", basestring.ColumnTitle, "ColumnTitle should be correct")
 		assert.Equal(t, "description", basestring.ColumnDescription, "ColumnDescription should be correct")
-
 		t.Logf("✅ String constants validated")
 	})
 
 	t.Run("string_attribute_names", func(t *testing.T) {
 		attrs := basestring.AttributeNames
 		expectedAttrs := []string{"id", "category", "title", "description"}
-
 		assert.Len(t, attrs, len(expectedAttrs), "Should have correct number of attributes")
 
 		for _, expected := range expectedAttrs {
 			assert.Contains(t, attrs, expected, "AttributeNames should contain %s", expected)
 		}
-
 		t.Logf("✅ String AttributeNames validated")
 	})
 }
@@ -561,7 +540,6 @@ func setupStringTestData(t *testing.T, client *dynamodb.Client, ctx context.Cont
 		{Id: "query-string-test", Category: "sdk", Title: "SDK Reference", Description: "Complete SDK documentation"},
 		{Id: "query-string-test", Category: "tutorial", Title: "Getting Started", Description: "Quick start tutorial"},
 	}
-
 	for _, item := range testItems {
 		av, err := basestring.ItemInput(item)
 		require.NoError(t, err, "Should marshal string test item")
@@ -572,6 +550,5 @@ func setupStringTestData(t *testing.T, client *dynamodb.Client, ctx context.Cont
 		})
 		require.NoError(t, err, "Should store string test item")
 	}
-
 	t.Logf("Setup complete: inserted %d string test items", len(testItems))
 }
