@@ -19,7 +19,7 @@
 - **Code Generation:** Produces clean, dependency-free Go code directly into your project.
 - **Type Safety:** Ensures compile-time checks and full IDE autocompletion. 
 - **Unified Schema:** Maintains a single source of truth—use one JSON schema for both Terraform and Go.
-- **Production Ready:** Generates optimized queries with intelligent automatic index selection.
+- **Smart Query Generation:** Automatically selects optimal indexes based on query conditions.
 - **AWS SDK v2 Compatibility:** Full support for AWS SDK v2, including handling composite keys.
 
 ### Documentation
