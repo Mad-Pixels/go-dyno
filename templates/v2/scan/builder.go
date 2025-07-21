@@ -24,7 +24,6 @@ type ParallelScanConfig struct {
 
 // NewScanBuilder creates a new ScanBuilder instance with initialized mixins.
 // All mixins are properly initialized for immediate use.
-// Example: scan := NewScanBuilder().FilterEQ("status", "active").Limit(100)
 func NewScanBuilder() *ScanBuilder {
     return &ScanBuilder{
         FilterMixin:     NewFilterMixin(),
@@ -34,8 +33,6 @@ func NewScanBuilder() *ScanBuilder {
 
 // Limit sets the maximum number of items and returns ScanBuilder for method chaining.
 // Controls the number of items returned in a single scan request.
-// Note: DynamoDB may return fewer items due to size limits even with this setting.
-// Example: scan.Limit(100)
 func (sb *ScanBuilder) Limit(limit int) *ScanBuilder {
     sb.PaginationMixin.Limit(limit)
     return sb
@@ -43,7 +40,6 @@ func (sb *ScanBuilder) Limit(limit int) *ScanBuilder {
 
 // StartFrom sets the exclusive start key and returns ScanBuilder for method chaining.
 // Use LastEvaluatedKey from previous response for pagination.
-// Example: scan.StartFrom(previousResponse.LastEvaluatedKey)
 func (sb *ScanBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeValue) *ScanBuilder {
     sb.PaginationMixin.StartFrom(lastEvaluatedKey)
     return sb
@@ -52,7 +48,6 @@ func (sb *ScanBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeValu
 // WithIndex sets the index name for scanning a secondary index.
 // Allows scanning GSI or LSI instead of the main table.
 // Index must exist and be in ACTIVE state.
-// Example: scan.WithIndex("status-index")
 func (sb *ScanBuilder) WithIndex(indexName string) *ScanBuilder {
     sb.IndexName = indexName
     return sb
@@ -61,7 +56,6 @@ func (sb *ScanBuilder) WithIndex(indexName string) *ScanBuilder {
 // WithProjection sets the projection attributes to return specific fields only.
 // Reduces network traffic and costs by returning only needed attributes.
 // Pass attribute names that should be included in the response.
-// Example: scan.WithProjection([]string{"id", "name", "status"})
 func (sb *ScanBuilder) WithProjection(attributes []string) *ScanBuilder {
     sb.ProjectionAttributes = attributes
     return sb
@@ -71,7 +65,6 @@ func (sb *ScanBuilder) WithProjection(attributes []string) *ScanBuilder {
 // Divides the table into segments for concurrent processing by multiple workers.
 // totalSegments: how many segments to divide the table (typically number of workers)
 // segment: which segment this worker processes (0-based, must be < totalSegments)
-// Example: scan.WithParallelScan(4, 0) // Process segment 0 of 4 total segments
 func (sb *ScanBuilder) WithParallelScan(totalSegments, segment int) *ScanBuilder {
     sb.ParallelScanConfig = &ParallelScanConfig{
         TotalSegments: totalSegments,

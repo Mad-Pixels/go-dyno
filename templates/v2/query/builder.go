@@ -14,7 +14,6 @@ type QueryBuilder struct {
 
 // NewQueryBuilder creates a new QueryBuilder instance with initialized mixins.
 // All mixins are properly initialized for immediate use.
-// Example: query := NewQueryBuilder().WithEQ("user_id", "123").FilterEQ("status", "active")
 func NewQueryBuilder() *QueryBuilder {
     return &QueryBuilder{
         FilterMixin:       NewFilterMixin(),
@@ -25,7 +24,6 @@ func NewQueryBuilder() *QueryBuilder {
 
 // Limit sets the maximum number of items and returns QueryBuilder for method chaining.
 // Controls the number of items returned in a single request.
-// Example: query.Limit(25)
 func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
     qb.PaginationMixin.Limit(limit)
     return qb
@@ -33,7 +31,6 @@ func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
 
 // StartFrom sets the exclusive start key and returns QueryBuilder for method chaining.
 // Use LastEvaluatedKey from previous response for pagination.
-// Example: query.StartFrom(previousResponse.LastEvaluatedKey)
 func (qb *QueryBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeValue) *QueryBuilder {
     qb.PaginationMixin.StartFrom(lastEvaluatedKey)
     return qb
@@ -41,7 +38,6 @@ func (qb *QueryBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeVal
 
 // OrderByDesc sets descending sort order and returns QueryBuilder for method chaining.
 // Only affects sort key ordering, not filter results.
-// Example: query.OrderByDesc() // newest first
 func (qb *QueryBuilder) OrderByDesc() *QueryBuilder {
     qb.KeyConditionMixin.OrderByDesc()
     return qb
@@ -49,7 +45,6 @@ func (qb *QueryBuilder) OrderByDesc() *QueryBuilder {
 
 // OrderByAsc sets ascending sort order and returns QueryBuilder for method chaining.
 // This is the default sort order.
-// Example: query.OrderByAsc() // oldest first
 func (qb *QueryBuilder) OrderByAsc() *QueryBuilder {
     qb.KeyConditionMixin.OrderByAsc()
     return qb
@@ -57,7 +52,6 @@ func (qb *QueryBuilder) OrderByAsc() *QueryBuilder {
 
 // WithPreferredSortKey sets the preferred sort key and returns QueryBuilder for method chaining.
 // Hints the index selection algorithm when multiple indexes could satisfy the query.
-// Example: query.WithPreferredSortKey("created_at")
 func (qb *QueryBuilder) WithPreferredSortKey(key string) *QueryBuilder {
     qb.KeyConditionMixin.WithPreferredSortKey(key)
     return qb
@@ -95,7 +89,6 @@ func (qb *QueryBuilder) setCompositeKey(keyName string, parts []CompositeKeyPart
             qb.UsedKeys[part.Value] = true
         }
     }
-
     compositeValue := qb.buildCompositeKeyValue(parts)
     qb.Attributes[keyName] = compositeValue
     qb.UsedKeys[keyName] = true

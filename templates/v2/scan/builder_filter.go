@@ -15,7 +15,6 @@ const ScanBuilderFilterSugarTemplate = `
 // CONVENIENCE METHODS - Only available in ALL mode
 
 // FilterEQ adds equality filter and returns ScanBuilder for method chaining.
-// Example: scan.FilterEQ("status", "active")
 func (sb *ScanBuilder) FilterEQ(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterEQ(field, value)
     return sb
@@ -23,7 +22,6 @@ func (sb *ScanBuilder) FilterEQ(field string, value any) *ScanBuilder {
 
 // FilterContains adds contains filter and returns ScanBuilder for method chaining.
 // Works with String attributes (substring) and Set attributes (membership).
-// Example: scan.FilterContains("tags", "premium")
 func (sb *ScanBuilder) FilterContains(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterContains(field, value)
     return sb
@@ -38,7 +36,6 @@ func (sb *ScanBuilder) FilterNotContains(field string, value any) *ScanBuilder {
 
 // FilterBeginsWith adds begins_with filter and returns ScanBuilder for method chaining.
 // Only works with String attributes for prefix matching.
-// Example: scan.FilterBeginsWith("email", "admin@")
 func (sb *ScanBuilder) FilterBeginsWith(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterBeginsWith(field, value)
     return sb
@@ -46,35 +43,30 @@ func (sb *ScanBuilder) FilterBeginsWith(field string, value any) *ScanBuilder {
 
 // FilterBetween adds range filter and returns ScanBuilder for method chaining.
 // Works with comparable types for inclusive range filtering.
-// Example: scan.FilterBetween("score", 80, 100)
 func (sb *ScanBuilder) FilterBetween(field string, start, end any) *ScanBuilder {
     sb.FilterMixin.FilterBetween(field, start, end)
     return sb
 }
 
 // FilterGT adds greater than filter and returns ScanBuilder for method chaining.
-// Example: scan.FilterGT("last_login", cutoffDate)
 func (sb *ScanBuilder) FilterGT(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterGT(field, value)
     return sb
 }
 
 // FilterLT adds less than filter and returns ScanBuilder for method chaining.
-// Example: scan.FilterLT("attempts", maxAttempts)
 func (sb *ScanBuilder) FilterLT(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterLT(field, value)
     return sb
 }
 
 // FilterGTE adds greater than or equal filter and returns ScanBuilder for method chaining.
-// Example: scan.FilterGTE("age", minimumAge)
 func (sb *ScanBuilder) FilterGTE(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterGTE(field, value)
     return sb
 }
 
 // FilterLTE adds less than or equal filter and returns ScanBuilder for method chaining.
-// Example: scan.FilterLTE("file_size", maxFileSize)
 func (sb *ScanBuilder) FilterLTE(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterLTE(field, value)
     return sb
@@ -82,7 +74,6 @@ func (sb *ScanBuilder) FilterLTE(field string, value any) *ScanBuilder {
 
 // FilterExists adds attribute exists filter and returns ScanBuilder for method chaining.
 // Checks if the specified attribute exists in the item.
-// Example: scan.FilterExists("optional_field")
 func (sb *ScanBuilder) FilterExists(field string) *ScanBuilder {
     sb.FilterMixin.FilterExists(field)
     return sb
@@ -96,7 +87,6 @@ func (sb *ScanBuilder) FilterNotExists(field string) *ScanBuilder {
 }
 
 // FilterNE adds not equal filter and returns ScanBuilder for method chaining.
-// Example: scan.FilterNE("status", "deleted")
 func (sb *ScanBuilder) FilterNE(field string, value any) *ScanBuilder {
     sb.FilterMixin.FilterNE(field, value)
     return sb
@@ -104,7 +94,6 @@ func (sb *ScanBuilder) FilterNE(field string, value any) *ScanBuilder {
 
 // FilterIn adds IN filter and returns ScanBuilder for method chaining.
 // For scalar values only - use FilterContains for DynamoDB Sets.
-// Example: scan.FilterIn("category", "books", "electronics", "clothing")
 func (sb *ScanBuilder) FilterIn(field string, values ...any) *ScanBuilder {
     sb.FilterMixin.FilterIn(field, values...)
     return sb

@@ -16,20 +16,20 @@ const (
     LTE OperatorType = "<="     // Less than or equal
 
     // Range operator for between comparisons
-    BETWEEN OperatorType = "BETWEEN"  // Between two values (inclusive)
+    BETWEEN OperatorType = "BETWEEN"
 
     // String operators - work with String types and Sets
-    CONTAINS     OperatorType = "contains"      // Contains substring or set member
-    NOT_CONTAINS OperatorType = "not_contains"  // Does not contain substring or member
-    BEGINS_WITH  OperatorType = "begins_with"   // String starts with prefix
+    CONTAINS     OperatorType = "contains" 
+    NOT_CONTAINS OperatorType = "not_contains"
+    BEGINS_WITH  OperatorType = "begins_with"
 
     // Set operators for scalar values only (not DynamoDB Sets SS/NS)
-    IN     OperatorType = "IN"      // Value is in list of values
-    NOT_IN OperatorType = "NOT_IN"  // Value is not in list of values
+    IN     OperatorType = "IN"
+    NOT_IN OperatorType = "NOT_IN"
 
     // Existence operators - work with all types
-    EXISTS     OperatorType = "attribute_exists"      // Attribute exists
-    NOT_EXISTS OperatorType = "attribute_not_exists"  // Attribute does not exist
+    EXISTS     OperatorType = "attribute_exists"
+    NOT_EXISTS OperatorType = "attribute_not_exists"
 )
 
 // ConditionType defines whether this is a key condition or filter condition.
@@ -37,8 +37,8 @@ const (
 type ConditionType string
 
 const (
-    KeyCondition    ConditionType = "KEY"     // For partition/sort key conditions
-    FilterCondition ConditionType = "FILTER"  // For non-key attribute filtering
+    KeyCondition    ConditionType = "KEY"
+    FilterCondition ConditionType = "FILTER"
 )
 
 // Condition represents a single query or filter condition with validation metadata.
@@ -54,7 +54,6 @@ type Condition struct {
 type KeyOperatorHandler func(expression.KeyBuilder, []any) expression.KeyConditionBuilder
 type ConditionOperatorHandler func(expression.NameBuilder, []any) expression.ConditionBuilder
 
-// keyOperatorHandlers provides O(1) lookup for key condition operations.
 // Only includes operators valid for key conditions (partition/sort keys).
 var keyOperatorHandlers = map[OperatorType]KeyOperatorHandler{
     EQ: func(field expression.KeyBuilder, values []any) expression.KeyConditionBuilder {
@@ -88,10 +87,8 @@ var allowedKeyConditionOperators = map[OperatorType]bool{
     BETWEEN: true,
 }
 
-// conditionOperatorHandlers provides O(1) lookup for filter operations.
 // Includes all operators supported in filter expressions.
 var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
-    // Basic comparison operators
     EQ: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.Equal(expression.Value(values[0]))
     },
@@ -114,7 +111,6 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
         return field.Between(expression.Value(values[0]), expression.Value(values[1]))
     },
     
-    // String and set operations
     CONTAINS: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return field.Contains(fmt.Sprintf("%v", values[0]))
     },
@@ -125,7 +121,6 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
         return field.BeginsWith(fmt.Sprintf("%v", values[0]))
     },
     
-    // Scalar value list operations (not for DynamoDB Sets)
     IN: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         if len(values) == 0 {
             return expression.AttributeNotExists(field)
@@ -153,7 +148,6 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
         return expression.Not(field.In(operands[0], operands[1:]...))
     },
     
-    // Existence checks
     EXISTS: func(field expression.NameBuilder, values []any) expression.ConditionBuilder {
         return expression.AttributeExists(field)
     },
@@ -167,13 +161,13 @@ var conditionOperatorHandlers = map[OperatorType]ConditionOperatorHandler{
 func ValidateValues(op OperatorType, values []any) bool {
     switch op {
     case EQ, NE, GT, LT, GTE, LTE, CONTAINS, NOT_CONTAINS, BEGINS_WITH:
-        return len(values) == 1  // Single value operators
+        return len(values) == 1
     case BETWEEN:
-        return len(values) == 2  // Start and end values
+        return len(values) == 2
     case IN, NOT_IN:
-        return len(values) >= 1  // At least one value required
+        return len(values) >= 1
     case EXISTS, NOT_EXISTS:
-        return len(values) == 0  // No values needed
+        return len(values) == 0
     default:
         return false
     }
@@ -196,7 +190,6 @@ func ValidateOperator(fieldName string, op OperatorType) bool {
 
 // BuildConditionExpression converts operator to DynamoDB filter expression.
 // Creates type-safe filter conditions with full validation.
-// Example: BuildConditionExpression("name", EQ, []any{"John"})
 func BuildConditionExpression(field string, op OperatorType, values []any) (expression.ConditionBuilder, error) {
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
@@ -217,7 +210,6 @@ func BuildConditionExpression(field string, op OperatorType, values []any) (expr
 
 // BuildKeyConditionExpression converts operator to DynamoDB key condition.
 // Creates type-safe key conditions for Query operations only.
-// Example: BuildKeyConditionExpression("user_id", EQ, []any{"123"})
 func BuildKeyConditionExpression(field string, op OperatorType, values []any) (expression.KeyConditionBuilder, error) {
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {

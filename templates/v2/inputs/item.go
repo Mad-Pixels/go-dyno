@@ -5,7 +5,6 @@ const ItemInputsTemplate = `
 // ItemInput converts a SchemaItem to DynamoDB AttributeValue map format.
 // Uses AWS SDK's attributevalue package for safe and consistent marshaling.
 // The resulting map can be used in PutItem, UpdateItem, and other DynamoDB operations.
-// Example: attrMap, err := ItemInput(userItem)
 func ItemInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     attributeValues, err := attributevalue.MarshalMap(item)
     if err != nil {
@@ -17,7 +16,6 @@ func ItemInput(item SchemaItem) (map[string]types.AttributeValue, error) {
 // ItemsInput converts a slice of SchemaItems to DynamoDB AttributeValue maps.
 // Efficiently marshals multiple items for batch operations like BatchWriteItem.
 // Maintains order and provides detailed error context for debugging failed marshaling.
-// Example: attrMaps, err := ItemsInput([]SchemaItem{item1, item2, item3})
 func ItemsInput(items []SchemaItem) ([]map[string]types.AttributeValue, error) {
     result := make([]map[string]types.AttributeValue, 0, len(items))
     for i, item := range items {

@@ -78,7 +78,6 @@ func (qb *QueryBuilder) Build() (string, expression.KeyConditionBuilder, *expres
 }
 
 // calculateIndexParts counts the number of composite key parts in an index.
-// Used for index selection priority - more specific indexes are preferred.
 func (qb *QueryBuilder) calculateIndexParts(idx SecondaryIndex) int {
     parts := 0
     if idx.HashKeyParts != nil {
@@ -91,8 +90,6 @@ func (qb *QueryBuilder) calculateIndexParts(idx SecondaryIndex) int {
 }
 
 // buildHashKeyCondition creates the hash key condition for a given index.
-// Supports both simple hash keys and composite hash keys.
-// Returns the condition and whether the index hash key can be satisfied.
 func (qb *QueryBuilder) buildHashKeyCondition(idx SecondaryIndex) (*expression.KeyConditionBuilder, bool) {
     if idx.HashKeyParts != nil {
         if qb.hasAllKeys(idx.HashKeyParts) {
@@ -107,8 +104,6 @@ func (qb *QueryBuilder) buildHashKeyCondition(idx SecondaryIndex) (*expression.K
 }
 
 // buildRangeKeyCondition creates the range key condition for a given index.
-// Supports both simple range keys and composite range keys.
-// Range keys are optional - returns true if no range key is defined.
 func (qb *QueryBuilder) buildRangeKeyCondition(idx SecondaryIndex) (*expression.KeyConditionBuilder, bool) {
     if idx.RangeKeyParts != nil {
         if qb.hasAllKeys(idx.RangeKeyParts) {
@@ -133,7 +128,6 @@ func (qb *QueryBuilder) buildRangeKeyCondition(idx SecondaryIndex) (*expression.
 }
 
 // buildFilterCondition creates filter conditions for attributes not part of the index keys.
-// Moves non-key conditions to filter expressions for optimal query performance.
 func (qb *QueryBuilder) buildFilterCondition(idx SecondaryIndex) *expression.ConditionBuilder {
     var filterConditions []expression.ConditionBuilder
     
@@ -155,7 +149,6 @@ func (qb *QueryBuilder) buildFilterCondition(idx SecondaryIndex) *expression.Con
 }
 
 // isPartOfIndexKey checks if an attribute is part of the index's key structure.
-// Used to determine whether conditions should be key conditions or filter conditions.
 func (qb *QueryBuilder) isPartOfIndexKey(attrName string, idx SecondaryIndex) bool {
     if idx.HashKeyParts != nil {
         for _, part := range idx.HashKeyParts {
@@ -180,13 +173,11 @@ func (qb *QueryBuilder) isPartOfIndexKey(attrName string, idx SecondaryIndex) bo
 
 // BuildQuery constructs the final DynamoDB QueryInput with all expressions and parameters.
 // Combines key conditions, filter conditions, pagination, and sorting options.
-// Example: input, err := queryBuilder.BuildQuery()
 func (qb *QueryBuilder) BuildQuery() (*dynamodb.QueryInput, error) {
     indexName, keyCond, filterCond, exclusiveStartKey, err := qb.Build()
     if err != nil {
         return nil, err
     }
-
     exprBuilder := expression.NewBuilder().WithKeyCondition(keyCond)
     if filterCond != nil {
         exprBuilder = exprBuilder.WithFilter(*filterCond)
@@ -219,13 +210,11 @@ func (qb *QueryBuilder) BuildQuery() (*dynamodb.QueryInput, error) {
 
 // Execute runs the query against DynamoDB and returns strongly-typed results.
 // Handles the complete query lifecycle: build input, execute, unmarshal results.
-// Example: items, err := queryBuilder.Execute(ctx, dynamoClient)
 func (qb *QueryBuilder) Execute(ctx context.Context, client *dynamodb.Client) ([]SchemaItem, error) {
     input, err := qb.BuildQuery()
     if err != nil {
         return nil, err
     }
-
     result, err := client.Query(ctx, input)
     if err != nil {
         return nil, fmt.Errorf("failed to execute query: %v", err)

@@ -3,7 +3,6 @@ package core
 // SchemaTemplate with pre-computed allowed operators
 const SchemaTemplate = `
 // FieldInfo contains metadata about a schema field with operator validation.
-// Provides O(1) lookup for supported DynamoDB operations per field type.
 type FieldInfo struct {
     DynamoType       string
     IsKey            bool
@@ -14,7 +13,6 @@ type FieldInfo struct {
 
 // SupportsOperator checks if this field supports the given operator.
 // Returns false for invalid operator/type combinations.
-// Example: stringField.SupportsOperator(BEGINS_WITH) -> true
 func (fi FieldInfo) SupportsOperator(op OperatorType) bool {
     return fi.AllowedOperators[op]
 }
