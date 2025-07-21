@@ -155,27 +155,6 @@ func streamAttributeValuesEqual(a, b events.DynamoDBAttributeValue) bool {
     }
 }
 
-// GetBoolFieldChanged checks if a boolean field changed from false to true.
-// Useful for detecting state transitions like activation flags.
-func GetBoolFieldChanged(dbEvent events.DynamoDBEventRecord, fieldName string) bool {
-    if dbEvent.EventName != "MODIFY" {
-        return false
-    }
-    if dbEvent.Change.OldImage == nil || dbEvent.Change.NewImage == nil {
-        return false
-    }
-    
-    oldValue := false
-    if oldVal, ok := dbEvent.Change.OldImage[fieldName]; ok {
-        oldValue = oldVal.Boolean()
-    }
-    newValue := false
-    if newVal, ok := dbEvent.Change.NewImage[fieldName]; ok {
-        newValue = newVal.Boolean()
-    }
-    return !oldValue && newValue
-}
-
 // ExtractBothFromDynamoDBStreamEvent extracts both old and new items from stream event.
 // Returns nil for missing images (e.g., oldItem is nil for INSERT events).
 // Useful for MODIFY events where you need to compare before/after states.
