@@ -12,19 +12,4 @@ func ItemInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     }
     return attributeValues, nil
 }
-
-// ItemsInput converts a slice of SchemaItems to DynamoDB AttributeValue maps.
-// Efficiently marshals multiple items for batch operations like BatchWriteItem.
-// Maintains order and provides detailed error context for debugging failed marshaling.
-func ItemsInput(items []SchemaItem) ([]map[string]types.AttributeValue, error) {
-    result := make([]map[string]types.AttributeValue, 0, len(items))
-    for i, item := range items {
-        av, err := ItemInput(item)
-        if err != nil {
-            return nil, fmt.Errorf("failed to marshal item at index %d: %v", i, err)
-        }
-        result = append(result, av)
-    }
-    return result, nil
-}
 `
