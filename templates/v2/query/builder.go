@@ -36,6 +36,14 @@ func (qb *QueryBuilder) StartFrom(lastEvaluatedKey map[string]types.AttributeVal
     return qb
 }
 
+// WithIndex sets the index name for query a secondary index.
+// Allows query GSI or LSI instead of main table.
+// Index must exist and be in ACTIVE state.
+func (qb *QueryBuilder) WithIndex(indexName string) *QueryBuilder {
+    qb.IndexName = indexName
+    return qb
+}
+
 // OrderByDesc sets descending sort order and returns QueryBuilder for method chaining.
 // Only affects sort key ordering, not filter results.
 func (qb *QueryBuilder) OrderByDesc() *QueryBuilder {
