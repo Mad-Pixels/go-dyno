@@ -59,9 +59,8 @@ tasks:
         --user $(id -u):$(id -g) \
         --workdir /workspace \
         {{if .ENVS}}{{range $e := .ENVS}}--env {{$e}} {{end}}{{end}}\
-        {{if .PORTS}}{{range $p := .PORTS}}--publish {{p}} {{end}}{{end}}\
-        {{if .GO_CACHE_BUILD}}--volume "{{.GO_CACHE_BUILD}}:/workspace/.cache/go-build:rw" {{end}}\
-        {{if .GO_CACHE_MOD}}--volume "{{.GO_CACHE_MOD}}:/workspace/.cache/go-mod:rw" {{end}}\
+        {{if .PORTS}}{{range .PORTS}}--publish {{.}} {{end}}{{end}}\
+        {{if .VOLUMES}}{{range .VOLUMES}}--volume {{.}} {{end}}{{end}}\
         --volume "{{.git_root}}/{{.MOUNT_DIR}}:/workspace:rw" \
         "{{.IMAGE}}" \
         {{.CMD}}
