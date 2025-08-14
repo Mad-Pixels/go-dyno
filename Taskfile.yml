@@ -12,7 +12,7 @@ vars:
   go_fumpt: latest
   go_lint: v2.4
 
-  tf_version: 1.8.5
+  terraform: 1.8.5
 
 
   localstack_py_env: "{{.HOME}}/.pyenv_localstack"
@@ -76,7 +76,7 @@ tasks:
     silent: true
     cmd: echo {{.go_version}}
 
-  go/run/vendor:
+  go/mod/vendor:
     desc: Run 'go mod vendor'.
     silent: true
     cmds:
@@ -140,7 +140,7 @@ tasks:
         vars:
           IMAGE: "hashicorp/terraform:{{.terraform}}"
           CMD: "fmt -check -recursive -diff"
-          MOUNT_DIR: "terraform"
+          MOUNT_DIR: "./tests/localstack/env"
 
 
 
