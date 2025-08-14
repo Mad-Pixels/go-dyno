@@ -92,6 +92,7 @@ tasks:
   go/run/lint:
     desc: Run 'golangci-lint'.
     silent: true
+    deps: [go/mod/vendor]
     cmds:
     - task: _docker/run
       vars:
@@ -104,6 +105,7 @@ tasks:
   go/tests/app:
     desc: Tests app with basic cli checks.
     silent: true
+    deps: [go/mod/vendor]
     cmds:
     - task: _docker/run
       vars:
