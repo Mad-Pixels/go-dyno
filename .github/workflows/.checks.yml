@@ -80,6 +80,11 @@ jobs:
             go.sum
           key: ${{ needs.go-vendor.outputs.vendor_key }}
 
+      - name: Run go vendor
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: go/mod/vendor
+
       - name: Run GoLint
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
@@ -100,6 +105,11 @@ jobs:
             go.sum
           key: ${{ needs.go-vendor.outputs.vendor_key }}
 
+      - name: Run go vendor
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: go/mod/vendor
+
       - name: Run Go Tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
@@ -119,6 +129,11 @@ jobs:
             vendor/
             go.sum
           key: ${{ needs.go-vendor.outputs.vendor_key }}
+
+      - name: Run go vendor
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: go/mod/vendor
 
       - name: Run template compile tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
