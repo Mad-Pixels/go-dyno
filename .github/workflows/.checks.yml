@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       go_version: ${{ steps.norm_go.outputs.go_version }}
+      vendor_key: ${{ steps.vendor_restore.outputs.cache-primary-key }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,13 +37,15 @@ jobs:
           echo "Detected Go version: $V"
 
       - name: Restore Go vendor
+        id: vendor_restore
         uses: actions/cache/restore@v4
         with:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}-${{ github.sha }}
           restore-keys: |
+            go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}-
             go-vendor-${{ runner.os }}-
 
       - name: Run go vendor
@@ -60,7 +63,7 @@ jobs:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: ${{ steps.vendor_restore.outputs.cache-primary-key }}
 
   golint:
     name: GoLint
@@ -69,15 +72,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore Go vendor
+      - name: Restore Go vendor (exact key from go-vendor)
         uses: actions/cache/restore@v4
         with:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-          restore-keys: |
-            go-vendor-${{ runner.os }}-
+          key: ${{ needs.go-vendor.outputs.vendor_key }}
 
       - name: Run GoLint
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
@@ -91,15 +92,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore Go vendor
+      - name: Restore Go vendor (exact key from go-vendor)
         uses: actions/cache/restore@v4
         with:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-          restore-keys: |
-            go-vendor-${{ runner.os }}-
+          key: ${{ needs.go-vendor.outputs.vendor_key }}
 
       - name: Run Go Tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
@@ -113,15 +112,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore Go vendor
+      - name: Restore Go vendor (exact key from go-vendor)
         uses: actions/cache/restore@v4
         with:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-          restore-keys: |
-            go-vendor-${{ runner.os }}-
+          key: ${{ needs.go-vendor.outputs.vendor_key }}
 
       - name: Run template compile tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
@@ -133,7 +130,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: TfFmt
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
@@ -144,7 +140,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
