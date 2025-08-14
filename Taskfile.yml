@@ -10,9 +10,10 @@ vars:
   
   go_imports: latest
   go_fumpt: latest
-  go_lint: v2.1.2
+  go_lint: v2.4
 
-  terraform: 1.9.5
+  tf_version: 1.8.5
+
 
   localstack_py_env: "{{.HOME}}/.pyenv_localstack"
 
@@ -23,401 +24,495 @@ tasks:
   default:
     desc: Default task.
     cmds:
-      - echo "Please enter a task or use '-l' or '--list-all' to list all available tasks"
+    - echo "Please enter a task or use '-l' or '--list-all' to list all available tasks"
     silent: true
 
-  # =================================================
-  # ---------------------INTERNAL-------------------#
-  # =================================================
+# ================================================#
+# ---------------------INTERNAL-------------------#
+# ================================================#
 
-  _go/version/check:
-    desc: Check actual golang version.
-    dir: "{{.git_root}}"
+  _docker/pull:
+    internal: true
     cmds:
-      - |
-        required_version="{{.go_version}}"
-        current_version=$(go version | awk '{print $3}' | sed 's/go//')
-        
-        version_compare() {
-          if [ "$(echo -e "$1\n$2" | sort -V | head -n1)" = "$1" ]; then
-            return 0
-          else
-            return 1
-          fi
-        }
-        if ! version_compare "$required_version" "$current_version"; then
-          echo "Error: Go version $required_version or higher is required, but you have $current_version"
-          exit 1
-        fi
-    silent: true
-    internal: true
-
-  _go/install/lint:
-    desc: Install 'golangci-lint'.
-    deps:
-      - _go/version/check
-    cmds:
-      - cmd: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b {{.go_root}}/bin {{.golint_version}}
-      - "{{.go_root}}/bin/golangci-lint version"
-    sources:
-      - "{{.go_root}}/bin/golangci-lint"
-    internal: true
-    silent: true
-
-  _go/install/fumpt:
-    desc: Install 'gofumpt'.
-    deps:
-      - _go/version/check
-    cmd: go install mvdan.cc/gofumpt@{{.go_fumpt}}
-    sources: 
-     - "{{.go_root}}/bin/gofumpt"
-    internal: true
-    silent: true
-
-  _go/dyno/build:
-    desc: Internal build task template.
-    dir: "{{.git_root}}"
-    deps:
-      - _go/version/check
-      - go/mod/vendor
-    vars:
-      BINARY_NAME: "{{.base_name}}"
-      OUTPUT_DIR: "{{.bin_dir}}"
-      BUILD_VERSION: 
-        sh: echo "${VERSION:-dev}"
-      LDFLAGS: "-s -w -extldflags '-static' -X 'github.com/Mad-Pixels/go-dyno.Version={{.BUILD_VERSION}}'"
-      GCFLAGS: "-trimpath -N -l"
-      ASMFLAGS: "-trimpath"
-    cmds: 
-      - mkdir -p {{.OUTPUT_DIR}}
-      - |
-        GOOS={{.GOOS}} GOARCH={{.GOARCH}} CGO_ENABLED=0 go build \
-          -mod=vendor \
-          -ldflags="{{.LDFLAGS}}" \
-          -gcflags="{{.GCFLAGS}}" \
-          -asmflags="{{.ASMFLAGS}}" \
-          -o {{.OUTPUT_DIR}}/{{.BINARY_NAME}}_{{.GOOS}}_{{.GOARCH}}{{if eq .GOOS "windows"}}.exe{{end}} \
-          ./cmd/dyno
-    silent: true
-    internal: true
-
-  _terraform/install:
-    desc: Install 'terraform'.
-    cmds:
-      - curl -sL https://releases.hashicorp.com/terraform/{{.terraform}}/terraform_{{.terraform}}_{{OS}}_{{ARCH}}.zip -o /tmp/terraform.zip
-      - sudo unzip -o /tmp/terraform.zip -d /usr/local/bin/
-      - sudo chmod a+x /usr/local/bin/terraform
-      - terraform version
-    sources:
-      - /usr/local/bin/terraform
-    silent: true
-    internal: true
-
-  _terraform/apply:
-    desc: Apply terraform to localstack
-    dir: "{{.DIR}}"
-    deps:
-      - _terraform/install
-    cmds:
-      - |
-        cat << EOF > backend.tf
-        terraform {
-          backend "local" {}
-        }
-        EOF
-
-        terraform init -reconfigure
-        terraform apply -input=false -auto-approve {{.TF_VARS}}
-    silent: true
-    internal: true
-
-  _localstack/install:
-    desc: Install "localstack".
-    cmds:
-      - python3 -m venv {{.localstack_py_env}}
-      - "{{.localstack_py_env}}/bin/python3 -m pip install localstack"
-    sources:
-      - "{{.localstack_py_env}}/bin/localstack"
-    silent: true
-    internal: true
-
-  _localstack/go/generate:
-    desc: Generate Go code from all schema examples.
-    dir: "{{.git_root}}"
-    cmds:
-    - rm -rf tests/localstack/generated 
-    - mkdir -p tests/localstack/generated 
     - |
-      for schema in tests/fixtures/*.json; do 
-        filename=$(basename "${schema}" .json)
-        
-        if [[ "${filename}" == *__* ]]; then
-          mode="${filename##*__}"
-          echo "Generating with mode: ${mode} for ${schema}"
-          
-          go run ./cmd/dyno generate \
-            -schema "${schema}" \
-            -output-dir "tests/localstack/generated" \
-            -mode "${mode}"
-        else
-          echo "Generating without mode for ${schema}"
-          go run ./cmd/dyno generate \
-            -schema "${schema}" \
-            -output-dir "tests/localstack/generated"
-        fi
-      done
-    silent: true
-    internal: true
-
-  _localstack/go/tidy:
-    desc: Generate go.sum file.
-    dir: "{{.git_root}}/tests/localstack"
-    cmd: go mod tidy
-    silent: true 
-    internal: true
-
-  # =================================================
-  # ----------------------PUBLIC--------------------#
-  # =================================================
-
-  localstack/run:
-    desc: Run localstack environment.
-    deps:
-      - _localstack/install
-    cmds:
-      - |
-        if [ -z "$LOCALSTACK_AUTH_TOKEN" ]; then
-          echo "Error: LOCALSTACK_AUTH_TOKEN is not set. Please set this environment variable before running LocalStack."
+      if ! docker image inspect "{{.IMAGE}}" >/dev/null 2>&1; then
+        docker pull -q "{{.IMAGE}}" >/dev/null 2>&1 || {
+          echo "Failed to pull image: {{.IMAGE}}"
           exit 1
-        fi
-        if ! curl -s https://localhost.localstack.cloud:4566 >/dev/null 2>&1; then
-          echo "Starting LocalStack..."
-          {{.localstack_py_env}}/bin/localstack start -d
-        else
-          echo "LocalStack already running"
-        fi
-      - task: _terraform/apply
-        vars:
-          DIR: "{{.git_root}}/tests/localstack/env"
-          TF_VARS: |
-            -var="use_localstack=true"
-      - task: localstack/go/prepare
+        }
+      fi
     silent: true
+    requires:
+      vars: [IMAGE]
 
-  go/mod/vendor:
+  _docker/run:
+    internal: true
+    dir: "{{.git_root}}"
+    deps:
+    - task: _docker/pull
+      vars: { IMAGE: "{{.IMAGE}}" }
+    cmd: |
+      docker run --rm --init --pull=never {{if .TTY}}-it{{end}} \
+        --cap-drop=ALL \
+        --security-opt no-new-privileges \
+        --user $(id -u):$(id -g) \
+        --workdir /workspace \
+        {{if .ENVS}}{{range $e := .ENVS}}--env {{$e}} {{end}}{{end}}\
+        {{if .PORTS}}{{range $p := .PORTS}}--publish {{$p}} {{end}}{{end}}\
+        {{if .VOLUMES}}{{range $v := .VOLUMES}}--volume {{$v}} {{end}}{{end}}\
+        --volume "{{.git_root}}/{{.MOUNT_DIR}}:/workspace:rw" \
+        "{{.IMAGE}}" \
+        {{.CMD}}
+    silent: true
+    requires:
+      vars: [IMAGE, CMD, MOUNT_DIR]
+
+# ================================================#
+# ----------------------PUBLIC--------------------#
+# ================================================#
+
+  go/get/version:
+    desc: Return expected golang version
+    silent: true
+    cmd: echo {{.go_version}}
+
+  go/run/vendor:
     desc: Run 'go mod vendor'.
-    dir: "{{.git_root}}"
-    deps:
-      - _go/version/check
+    silent: true
     cmds:
-      - |
-        if [ -d "{{.git_root}}/vendor" ]; then
-          cd {{.git_root}} && go mod tidy
-        else 
-          cd {{.git_root}} && go mod tidy && go mod vendor
-        fi
-    silent: true
-
-  go/run/fumpt:
-    desc: Run 'gofumpt'.
-    dir: "{{.git_root}}"
-    deps:
-      - _go/install/fumpt
-    cmd: gofumpt -l -w .
-    silent: true
+    - task: _docker/run 
+      vars:
+        IMAGE: "golang:{{.go_version}}"
+        CMD: "sh -c 'go mod tidy && go mod vendor'"
+        MOUNT_DIR: "."
+        ENVS:
+        - "GOCACHE=/workspace/.cache/go-build"
+        - "GOMODCACHE=/workspace/.cache/go-mod"
+        - "GOPATH=/workspace/.cache/go"
 
   go/run/lint:
     desc: Run 'golangci-lint'.
-    dir: "{{.git_root}}"
-    deps:
-      - _go/install/lint
-      - go/mod/vendor 
-    cmds: 
-      - "{{.go_root}}/bin/golangci-lint run"
     silent: true
-
-  terraform/fmt/fix:
-    desc: Run 'terraform fix fmt'.
-    dir: "{{.git_root}}/tests/localstack/env"
-    deps:
-      - _terraform/install
-    cmd: terraform fmt -recursive --diff --write=true
-    silent: true
-
-  localstack/ci-apply-only:
-    desc: Apply terraform to existing LocalStack (for CI).
-    deps:
-      - _terraform/install
     cmds:
-    - task: _terraform/apply
+    - task: _docker/run
       vars:
-        DIR: "{{.git_root}}/tests/localstack/env"
-        TF_VARS: -var="use_localstack=true"
-    silent: true
-
-  localstack/go/prepare:
-    desc: Prepare integration tests for localstack (for Test or Dev).
-    cmds:
-      - task: _localstack/go/generate
-      - task: _localstack/go/tidy
-    silent: true
-
-  localstack/stop:
-    desc: Stop localstack container.
-    cmds:
-      - terraform -chdir="{{.git_root}}/tests/localstack/env" destroy -auto-approve
-      - "{{.localstack_py_env}}/bin/localstack stop"
-    silent: true
-
-  localstack/remove:
-    desc: Remove localstack env.
-    deps:
-      - localstack/stop
-    cmds:
-      - rm -rf {{.localstack_py_env}}
-    silent: true
-
-  # =================================================
-  # -----------------------TEST---------------------#
-  # =================================================
-
+        IMAGE: "golangci/golangci-lint:{{.go_lint}}"
+        CMD: "sh -c 'golangci-lint run'"
+        MOUNT_DIR: "."
+        ENVS:
+        - "HOME=/workspace"
+    
   go/tests/app:
     desc: Tests app with basic cli checks.
-    dir: "{{ .git_root }}/internal" 
-    deps:
-      - go/mod/vendor 
-    cmd: go test -parallel 4 -shuffle=on -v ./... 
     silent: true
+    cmds:
+    - task: _docker/run
+      vars:
+        IMAGE: "golang:{{.go_version}}"
+        CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./internal/...'"
+        MOUNT_DIR: "."
+        ENVS:
+        - "GOCACHE=/workspace/.cache/go-build"
+        - "GOMODCACHE=/workspace/.cache/go-mod"
+        - "GOPATH=/workspace/.cache/go"
+        - "CGO_ENABLED=0"
 
   go/tests/compile:
-    desc: Tests full template fromtatter, build, vet.
-    dir: "{{ .git_root }}/tests/validation" 
-    deps:
-      - go/mod/vendor 
-      - _go/install/fumpt
-    cmd: go test -parallel 4 -shuffle=on -v ./... 
+    desc: Tests full template formmatter, build, vet.
     silent: true
-
-  go/tests/localstack:
-    desc: Run local localstack integration tests.
-    dir: "{{ .git_root }}/tests/localstack/" 
-    deps:
-      - localstack/run
     cmds:
-      # - defer: { task: localstack/stop }
-      - go test -parallel 4 -shuffle=on -v ./... 
+    - task: _docker/run
+      vars:
+        IMAGE: "golang:{{.go_version}}"
+        CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./tests/validation/...'"
+        MOUNT_DIR: "."
+        ENVS:
+        - "GOCACHE=/workspace/.cache/go-build"
+        - "GOMODCACHE=/workspace/.cache/go-mod"
+        - "GOPATH=/workspace/.cache/go"
+        - "CGO_ENABLED=0"
+
+  tf/fmt:
+    desc: Check 'terraform fmt'.
     silent: true
+    cmds:
+      - task: _docker/run
+        vars:
+          IMAGE: "hashicorp/terraform:{{.terraform}}"
+          CMD: "fmt -check -recursive -diff"
+          MOUNT_DIR: "terraform"
+
+
+
+
+
+
+
   
-  go/tests/ci-localstack:
-    desc: Run CI/CD localstack integration tests.
-    dir: "{{.git_root}}/tests/localstack"
-    deps:
-      - localstack/go/prepare
-    cmd: go test -parallel 4 -shuffle=on -v ./... 
-    silent: true
+
+
+
+
   
-  # =================================================
-  # ----------------------BUILD---------------------#
-  # =================================================
 
-  go/build/darwin_amd64:
-    desc: Build for macOS Intel (darwin/amd64).
-    cmds:
-      - task: _go/dyno/build
-        vars:
-          GOOS: darwin 
-          GOARCH: amd64 
 
-  go/build/darwin_arm64:
-    desc: Build for macOS Apple Silicon (darwin/arm64).
-    cmds: 
-      - task: _go/dyno/build
-        vars: 
-          GOOS: darwin 
-          GOARCH: arm64 
+
+
+
+
+
+  # # =================================================
+  # # ---------------------INTERNAL-------------------#
+  # # =================================================
+
+
+
+
+
+  # _go/install/fumpt:
+  #   desc: Install 'gofumpt'.
+  #   deps:
+  #     - _go/version/check
+  #   cmd: go install mvdan.cc/gofumpt@{{.go_fumpt}}
+  #   sources: 
+  #    - "{{.go_root}}/bin/gofumpt"
+  #   internal: true
+  #   silent: true
+
+  # _go/dyno/build:
+  #   desc: Internal build task template.
+  #   dir: "{{.git_root}}"
+  #   deps:
+  #     - _go/version/check
+  #     - go/mod/vendor
+  #   vars:
+  #     BINARY_NAME: "{{.base_name}}"
+  #     OUTPUT_DIR: "{{.bin_dir}}"
+  #     BUILD_VERSION: 
+  #       sh: echo "${VERSION:-dev}"
+  #     LDFLAGS: "-s -w -extldflags '-static' -X 'github.com/Mad-Pixels/go-dyno.Version={{.BUILD_VERSION}}'"
+  #     GCFLAGS: "-trimpath -N -l"
+  #     ASMFLAGS: "-trimpath"
+  #   cmds: 
+  #     - mkdir -p {{.OUTPUT_DIR}}
+  #     - |
+  #       GOOS={{.GOOS}} GOARCH={{.GOARCH}} CGO_ENABLED=0 go build \
+  #         -mod=vendor \
+  #         -ldflags="{{.LDFLAGS}}" \
+  #         -gcflags="{{.GCFLAGS}}" \
+  #         -asmflags="{{.ASMFLAGS}}" \
+  #         -o {{.OUTPUT_DIR}}/{{.BINARY_NAME}}_{{.GOOS}}_{{.GOARCH}}{{if eq .GOOS "windows"}}.exe{{end}} \
+  #         ./cmd/dyno
+  #   silent: true
+  #   internal: true
+
+
+
+  # _terraform/apply:
+  #   desc: Apply terraform to localstack
+  #   dir: "{{.DIR}}"
+  #   deps:
+  #     - _terraform/install
+  #   cmds:
+  #     - |
+  #       cat << EOF > backend.tf
+  #       terraform {
+  #         backend "local" {}
+  #       }
+  #       EOF
+
+  #       terraform init -reconfigure
+  #       terraform apply -input=false -auto-approve {{.TF_VARS}}
+  #   silent: true
+  #   internal: true
+
+  # _localstack/install:
+  #   desc: Install "localstack".
+  #   cmds:
+  #     - python3 -m venv {{.localstack_py_env}}
+  #     - "{{.localstack_py_env}}/bin/python3 -m pip install localstack"
+  #   sources:
+  #     - "{{.localstack_py_env}}/bin/localstack"
+  #   silent: true
+  #   internal: true
+
+  # _localstack/go/generate:
+  #   desc: Generate Go code from all schema examples.
+  #   dir: "{{.git_root}}"
+  #   cmds:
+  #   - rm -rf tests/localstack/generated 
+  #   - mkdir -p tests/localstack/generated 
+  #   - |
+  #     for schema in tests/fixtures/*.json; do 
+  #       filename=$(basename "${schema}" .json)
+        
+  #       if [[ "${filename}" == *__* ]]; then
+  #         mode="${filename##*__}"
+  #         echo "Generating with mode: ${mode} for ${schema}"
+          
+  #         go run ./cmd/dyno generate \
+  #           -schema "${schema}" \
+  #           -output-dir "tests/localstack/generated" \
+  #           -mode "${mode}"
+  #       else
+  #         echo "Generating without mode for ${schema}"
+  #         go run ./cmd/dyno generate \
+  #           -schema "${schema}" \
+  #           -output-dir "tests/localstack/generated"
+  #       fi
+  #     done
+  #   silent: true
+  #   internal: true
+
+  # _localstack/go/tidy:
+  #   desc: Generate go.sum file.
+  #   dir: "{{.git_root}}/tests/localstack"
+  #   cmd: go mod tidy
+  #   silent: true 
+  #   internal: true
+
+  # # =================================================
+  # # ----------------------PUBLIC--------------------#
+  # # =================================================
+
+  # localstack/run:
+  #   desc: Run localstack environment.
+  #   deps:
+  #     - _localstack/install
+  #   cmds:
+  #     - |
+  #       if [ -z "$LOCALSTACK_AUTH_TOKEN" ]; then
+  #         echo "Error: LOCALSTACK_AUTH_TOKEN is not set. Please set this environment variable before running LocalStack."
+  #         exit 1
+  #       fi
+  #       if ! curl -s https://localhost.localstack.cloud:4566 >/dev/null 2>&1; then
+  #         echo "Starting LocalStack..."
+  #         {{.localstack_py_env}}/bin/localstack start -d
+  #       else
+  #         echo "LocalStack already running"
+  #       fi
+  #     - task: _terraform/apply
+  #       vars:
+  #         DIR: "{{.git_root}}/tests/localstack/env"
+  #         TF_VARS: |
+  #           -var="use_localstack=true"
+  #     - task: localstack/go/prepare
+  #   silent: true
+
+  # go/mod/vendor:
+  #   desc: Run 'go mod vendor'.
+  #   dir: "{{.git_root}}"
+  #   deps:
+  #     - _go/version/check
+  #   cmds:
+  #     - |
+  #       if [ -d "{{.git_root}}/vendor" ]; then
+  #         cd {{.git_root}} && go mod tidy
+  #       else 
+  #         cd {{.git_root}} && go mod tidy && go mod vendor
+  #       fi
+  #   silent: true
+
+  # go/run/fumpt:
+  #   desc: Run 'gofumpt'.
+  #   dir: "{{.git_root}}"
+  #   deps:
+  #     - _go/install/fumpt
+  #   cmd: gofumpt -l -w .
+  #   silent: true
+
+  # go/run/lint:
+  #   desc: Run 'golangci-lint'.
+  #   dir: "{{.git_root}}"
+  #   deps:
+  #     - _go/install/lint
+  #     - go/mod/vendor 
+  #   cmds: 
+  #     - "{{.go_root}}/bin/golangci-lint run"
+  #   silent: true
+
+  # terraform/fmt/fix:
+  #   desc: Run 'terraform fix fmt'.
+  #   dir: "{{.git_root}}/tests/localstack/env"
+  #   deps:
+  #     - _terraform/install
+  #   cmd: terraform fmt -recursive --diff --write=true
+  #   silent: true
+
+  # localstack/ci-apply-only:
+  #   desc: Apply terraform to existing LocalStack (for CI).
+  #   deps:
+  #     - _terraform/install
+  #   cmds:
+  #   - task: _terraform/apply
+  #     vars:
+  #       DIR: "{{.git_root}}/tests/localstack/env"
+  #       TF_VARS: -var="use_localstack=true"
+  #   silent: true
+
+  # localstack/go/prepare:
+  #   desc: Prepare integration tests for localstack (for Test or Dev).
+  #   cmds:
+  #     - task: _localstack/go/generate
+  #     - task: _localstack/go/tidy
+  #   silent: true
+
+  # localstack/stop:
+  #   desc: Stop localstack container.
+  #   cmds:
+  #     - terraform -chdir="{{.git_root}}/tests/localstack/env" destroy -auto-approve
+  #     - "{{.localstack_py_env}}/bin/localstack stop"
+  #   silent: true
+
+  # localstack/remove:
+  #   desc: Remove localstack env.
+  #   deps:
+  #     - localstack/stop
+  #   cmds:
+  #     - rm -rf {{.localstack_py_env}}
+  #   silent: true
+
+  # # =================================================
+  # # -----------------------TEST---------------------#
+  # # =================================================
+
+  # go/tests/app:
+  #   desc: Tests app with basic cli checks.
+  #   dir: "{{ .git_root }}/internal" 
+  #   deps:
+  #     - go/mod/vendor 
+  #   cmd: go test -parallel 4 -shuffle=on -v ./... 
+  #   silent: true
+
+  # go/tests/compile:
+  #   desc: Tests full template fromtatter, build, vet.
+  #   dir: "{{ .git_root }}/tests/validation" 
+  #   deps:
+  #     - go/mod/vendor 
+  #     - _go/install/fumpt
+  #   cmd: go test -parallel 4 -shuffle=on -v ./... 
+  #   silent: true
+
+  # go/tests/localstack:
+  #   desc: Run local localstack integration tests.
+  #   dir: "{{ .git_root }}/tests/localstack/" 
+  #   deps:
+  #     - localstack/run
+  #   cmds:
+  #     # - defer: { task: localstack/stop }
+  #     - go test -parallel 4 -shuffle=on -v ./... 
+  #   silent: true
   
-  go/build/linux_amd64:
-    desc: Build for Linux x86_64 (linux/amd64).
-    cmds: 
-      - task: _go/dyno/build
-        vars:
-          GOOS: linux
-          GOARCH: amd64
-
-  go/build/linux_386:
-    desc: Build for linux 32-bit (linux/386).
-    cmds:
-      - task: _go/dyno/build
-        vars: 
-          GOOS: linux
-          GOARCH: "386"
-
-  go/build/linux_arm:
-    desc: Build for Linux ARM 32-bit (linux/arm).
-    cmds:
-      - task: _go/dyno/build
-        vars: 
-          GOOS: linux
-          GOARCH: arm
-          GOARM: "7"
-
-  go/build/linux_arm64:
-    desc: Build for Linux ARM 6640bit (linux/arm64).
-    cmds: 
-      - task: _go/dyno/build
-        vars:
-          GOOS: linux
-          GOARCH: arm64
+  # go/tests/ci-localstack:
+  #   desc: Run CI/CD localstack integration tests.
+  #   dir: "{{.git_root}}/tests/localstack"
+  #   deps:
+  #     - localstack/go/prepare
+  #   cmd: go test -parallel 4 -shuffle=on -v ./... 
+  #   silent: true
   
-  go/build/windows_amd64:
-    desc: Build for Windows 64-bit (windows/amd64).
-    cmds:
-      - task: _go/dyno/build
-        vars:
-          GOOS: windows
-          GOARCH: amd64
+  # # =================================================
+  # # ----------------------BUILD---------------------#
+  # # =================================================
 
-  go/build/windows_386:
-    desc: Build for Windows 32-bit (windows/386).
-    cmds:
-      - task: _go/dyno/build
-        vars:
-          GOOS: windows
-          GOARCH: "386"
+  # go/build/darwin_amd64:
+  #   desc: Build for macOS Intel (darwin/amd64).
+  #   cmds:
+  #     - task: _go/dyno/build
+  #       vars:
+  #         GOOS: darwin 
+  #         GOARCH: amd64 
 
-  go/build/freebsd_amd64:
-    desc: Build for FreeBSD 64-bit (freebsd/amd64).
-    cmds:
-      - task: _go/dyno/build
-        vars:
-          GOOS: freebsd
-          GOARCH: amd64
+  # go/build/darwin_arm64:
+  #   desc: Build for macOS Apple Silicon (darwin/arm64).
+  #   cmds: 
+  #     - task: _go/dyno/build
+  #       vars: 
+  #         GOOS: darwin 
+  #         GOARCH: arm64 
+  
+  # go/build/linux_amd64:
+  #   desc: Build for Linux x86_64 (linux/amd64).
+  #   cmds: 
+  #     - task: _go/dyno/build
+  #       vars:
+  #         GOOS: linux
+  #         GOARCH: amd64
 
-  go/build/openbsd_amd64:
-    desc: Build for OpenBSD 64-bit (openbsd/amd64).
-    cmds:
-      - task: _go/dyno/build
-        vars:
-          GOOS: openbsd
-          GOARCH: amd64
+  # go/build/linux_386:
+  #   desc: Build for linux 32-bit (linux/386).
+  #   cmds:
+  #     - task: _go/dyno/build
+  #       vars: 
+  #         GOOS: linux
+  #         GOARCH: "386"
 
-  go/build/all:
-    desc: Build for all supported platforms.
-    cmds:
-      - task: go/build/darwin_amd64
-      - task: go/build/darwin_arm64
-      - task: go/build/linux_amd64
-      - task: go/build/linux_386
-      - task: go/build/linux_arm
-      - task: go/build/linux_arm64
-      - task: go/build/windows_amd64
-      - task: go/build/windows_386
-      - task: go/build/freebsd_amd64
-      - task: go/build/openbsd_amd64
+  # go/build/linux_arm:
+  #   desc: Build for Linux ARM 32-bit (linux/arm).
+  #   cmds:
+  #     - task: _go/dyno/build
+  #       vars: 
+  #         GOOS: linux
+  #         GOARCH: arm
+  #         GOARM: "7"
 
-  go/build/clean:
-    desc: Clean build artifacts.
-    dir: "{{.git_root}}"
-    cmds:
-      - rm -rf build/
-    silent: true
+  # go/build/linux_arm64:
+  #   desc: Build for Linux ARM 6640bit (linux/arm64).
+  #   cmds: 
+  #     - task: _go/dyno/build
+  #       vars:
+  #         GOOS: linux
+  #         GOARCH: arm64
+  
+  # go/build/windows_amd64:
+  #   desc: Build for Windows 64-bit (windows/amd64).
+  #   cmds:
+  #     - task: _go/dyno/build
+  #       vars:
+  #         GOOS: windows
+  #         GOARCH: amd64
+
+  # go/build/windows_386:
+  #   desc: Build for Windows 32-bit (windows/386).
+  #   cmds:
+  #     - task: _go/dyno/build
+  #       vars:
+  #         GOOS: windows
+  #         GOARCH: "386"
+
+  # go/build/freebsd_amd64:
+  #   desc: Build for FreeBSD 64-bit (freebsd/amd64).
+  #   cmds:
+  #     - task: _go/dyno/build
+  #       vars:
+  #         GOOS: freebsd
+  #         GOARCH: amd64
+
+  # go/build/openbsd_amd64:
+  #   desc: Build for OpenBSD 64-bit (openbsd/amd64).
+  #   cmds:
+  #     - task: _go/dyno/build
+  #       vars:
+  #         GOOS: openbsd
+  #         GOARCH: amd64
+
+  # go/build/all:
+  #   desc: Build for all supported platforms.
+  #   cmds:
+  #     - task: go/build/darwin_amd64
+  #     - task: go/build/darwin_arm64
+  #     - task: go/build/linux_amd64
+  #     - task: go/build/linux_386
+  #     - task: go/build/linux_arm
+  #     - task: go/build/linux_arm64
+  #     - task: go/build/windows_amd64
+  #     - task: go/build/windows_386
+  #     - task: go/build/freebsd_amd64
+  #     - task: go/build/openbsd_amd64
+
+  # go/build/clean:
+  #   desc: Clean build artifacts.
+  #   dir: "{{.git_root}}"
+  #   cmds:
+  #     - rm -rf build/
+  #   silent: true

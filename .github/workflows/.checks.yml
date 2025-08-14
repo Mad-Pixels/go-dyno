@@ -3,57 +3,126 @@ name: Checks
 on:
   workflow_call:
     secrets:
-      gitleaks: 
+      gitleaks:
         required: true
 
+permissions:
+  contents: read
+
 jobs:
+  go-cache:
+    name: Go Vendor & Cache
+    runs-on: ubuntu-latest
+    outputs:
+      go_version: ${{ steps.norm_go.outputs.go_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect Go version (Taskfile)
+        id: get_go
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: go/get/version
+
+      - name: Normalize Go version
+        id: norm_go
+        shell: bash
+        env:
+          RAW: ${{ steps.get_go.outputs.task_output }}
+        run: |
+          set -euo pipefail
+          V="$(printf '%s' "${RAW:-}" | tr -d '\r' | head -n1 | xargs)"
+          if [ -z "$V" ]; then
+            echo "❌ Empty Go version from task 'go/get/version'"
+            exit 1
+          fi
+          echo "go_version=$V" >> "$GITHUB_OUTPUT"
+          echo "Detected Go version: $V"
+
+      - name: Restore Go cache
+        uses: ./.github/actions/go-cache-restore
+        with:
+          go-version: ${{ steps.norm_go.outputs.go_version }}
+
+      - name: go vendor
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: go/mod/vendor
+
+      - name: Save Go cache
+        if: always()
+        uses: ./.github/actions/go-cache-save
+        with:
+          go-version: ${{ steps.norm_go.outputs.go_version }}
+
   golang:
     name: GoLint
     runs-on: ubuntu-latest
+    needs: [go-cache]
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Go cache
+        uses: ./.github/actions/go-cache-restore
+        with:
+          go-version: ${{ needs.go-cache.outputs.go_version }}
+
       - name: Run GoLint
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/run/lint
-
-  terraform:
-    name: Terraform 
-    runs-on: ubuntu-latest
-    steps:
-      - name: TfFmt
-        uses: "Mad-Pixels/github-workflows/.github/actions/terraform-fmt@main"
-        with:
-          tf_dir: "./tests/localstack/env"
-          tf_version: "1.6.1"
 
   app-tests:
     name: App
     runs-on: ubuntu-latest
+    needs: [go-cache]
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Go cache
+        uses: ./.github/actions/go-cache-restore
+        with:
+          go-version: ${{ needs.go-cache.outputs.go_version }}
+
       - name: Run Go Tests
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/app
-          
+
   compile-tests:
     name: Compile
     runs-on: ubuntu-latest
+    needs: [go-cache]
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Go cache
+        uses: ./.github/actions/go-cache-restore
+        with:
+          go-version: ${{ needs.go-cache.outputs.go_version }}
+
       - name: Run template compile tests
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/compile
+
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: TfFmt
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: tf/fmt 
 
   leaks:
     name: GitLeaks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.gitleaks }}
-          GITLEAKS_CONFIG: ./.gitleaks.toml

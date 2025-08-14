@@ -28,6 +28,10 @@ tests/localstack/go.sum
 # Dependency directories (remove the comment below to include it)
 vendor/
 
+# Common cache
+.cache/
+.config/
+
 # Go workspace file
 go.work
 go.work.sum
