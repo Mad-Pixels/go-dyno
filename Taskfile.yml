@@ -12,10 +12,11 @@ vars:
   go_fumpt: latest
   go_lint: v2.4
 
+  localstack_py_env: "{{.HOME}}/.pyenv_localstack"
+  cache_dir: "{{.git_root}}/.cache"
   terraform: 1.8.5
 
 
-  localstack_py_env: "{{.HOME}}/.pyenv_localstack"
 
   base_name: godyno
   bin_dir: "{{.git_root}}/bin/"
@@ -58,8 +59,9 @@ tasks:
         --user $(id -u):$(id -g) \
         --workdir /workspace \
         {{if .ENVS}}{{range $e := .ENVS}}--env {{$e}} {{end}}{{end}}\
-        {{if .PORTS}}{{range $p := .PORTS}}--publish {{$p}} {{end}}{{end}}\
-        {{if .VOLUMES}}{{range $v := .VOLUMES}}--volume {{$v}} {{end}}{{end}}\
+        {{if .PORTS}}{{range $p := .PORTS}}--publish {{p}} {{end}}{{end}}\
+        {{if .GO_CACHE_BUILD}}--volume "{{.GO_CACHE_BUILD}}:/workspace/.cache/go-build:rw" {{end}}\
+        {{if .GO_CACHE_MOD}}--volume "{{.GO_CACHE_MOD}}:/workspace/.cache/go-mod:rw" {{end}}\
         --volume "{{.git_root}}/{{.MOUNT_DIR}}:/workspace:rw" \
         "{{.IMAGE}}" \
         {{.CMD}}

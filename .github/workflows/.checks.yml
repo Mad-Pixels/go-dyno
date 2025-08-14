@@ -32,35 +32,21 @@ jobs:
         run: |
           set -euo pipefail
           V="$(printf '%s' "${RAW:-}" | tr -d '\r' | head -n1 | xargs)"
-          if [ -z "$V" ]; then
-            echo "❌ Empty Go version from task 'go/get/version'"
-            exit 1
-          fi
           echo "go_version=$V" >> "$GITHUB_OUTPUT"
           echo "Detected Go version: $V"
 
-      - uses: ./.github/actions/go-cache-restore
-        with: 
-          go-version: ${{ steps.norm_go.outputs.go_version }}
-
-      - name: Prepare host go cache dirs
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/go-cache/build" "$RUNNER_TEMP/go-cache/mod"
-          chmod -R u+rwX "$RUNNER_TEMP/go-cache"
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: go-cache-${{ runner.os }}-${{ steps.norm_go.outputs.go_version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-cache-${{ runner.os }}-${{ steps.norm_go.outputs.go_version }}-
 
       - name: go vendor
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/mod/vendor
-          vars: >-
-            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
-
-      - if: always()
-        uses: ./.github/actions/go-cache-save
-        with:
-          go-version: ${{ steps.norm_go.outputs.go_version }}
 
   golint:
     name: GoLint
@@ -70,16 +56,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Restore Go cache
-        uses: ./.github/actions/go-cache-restore
+        uses: actions/cache/restore@v4
         with:
-          go-version: ${{ needs['go-cache'].outputs.go_version }}
+          path: .cache
+          key: go-cache-${{ runner.os }}-${{ needs['go-cache'].outputs.go_version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-cache-${{ runner.os }}-${{ needs['go-cache'].outputs.go_version }}-
 
       - name: Run GoLint
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/run/lint
-          vars: >-
-            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
 
   app-tests:
     name: App
@@ -89,16 +76,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Restore Go cache
-        uses: ./.github/actions/go-cache-restore
+        uses: actions/cache/restore@v4
         with:
-          go-version: ${{ needs['go-cache'].outputs.go_version }}
+          path: .cache
+          key: go-cache-${{ runner.os }}-${{ needs['go-cache'].outputs.go_version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-cache-${{ runner.os }}-${{ needs['go-cache'].outputs.go_version }}-
 
       - name: Run Go Tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/app
-          vars: >-
-            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
 
   compile-tests:
     name: Compile
@@ -108,16 +96,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Restore Go cache
-        uses: ./.github/actions/go-cache-restore
+        uses: actions/cache/restore@v4
         with:
-          go-version: ${{ needs['go-cache'].outputs.go_version }}
+          path: .cache
+          key: go-cache-${{ runner.os }}-${{ needs['go-cache'].outputs.go_version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-cache-${{ runner.os }}-${{ needs['go-cache'].outputs.go_version }}-
 
       - name: Run template compile tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/compile
-          vars: >-
-            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
 
   terraform:
     name: Terraform
