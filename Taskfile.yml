@@ -8,6 +8,7 @@ vars:
   go_version:
     sh: grep '^go ' ./go.mod | awk '{print $2}'
   
+  go_cache: "/workspace/.cache"
   go_imports: latest
   go_fumpt: latest
   go_lint: v2.4
@@ -86,8 +87,7 @@ tasks:
         CMD: "sh -c 'go mod tidy && go mod vendor'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE=/tmp/go-build"
-        - "GOMODCACHE=/tmp/go-mod"
+        - "GOCACHE={{.go_cache}}"
 
   go/run/lint:
     desc: Run 'golangci-lint'.
@@ -111,8 +111,8 @@ tasks:
         CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./internal/...'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE=/tmp/go-build"
-        - "GOMODCACHE=/tmp/go-mod"
+        - "GOCACHE={{.go_cache}}"
+        - "GOFLAGS=-mod=vendor"
         - "CGO_ENABLED=0"
 
   go/tests/compile:
@@ -125,8 +125,8 @@ tasks:
         CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./tests/validation/...'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE=/tmp/go-build"
-        - "GOMODCACHE=/tmp/go-mod"
+        - "GOCACHE={{.go_cache}}"
+        - "GOFLAGS=-mod=vendor"
         - "CGO_ENABLED=0"
 
   tf/fmt:
