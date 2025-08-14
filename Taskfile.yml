@@ -101,6 +101,8 @@ tasks:
         MOUNT_DIR: "."
         ENVS:
         - "HOME=/workspace"
+        - "GOCACHE=/workspace/.cache/go-build"
+        - "GOMODCACHE=/workspace/.cache/go-mod"
     
   go/tests/app:
     desc: Tests app with basic cli checks.

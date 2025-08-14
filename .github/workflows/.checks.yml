@@ -54,13 +54,15 @@ jobs:
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/mod/vendor
+          vars: >-
+            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
 
       - if: always()
         uses: ./.github/actions/go-cache-save
         with:
           go-version: ${{ steps.norm_go.outputs.go_version }}
 
-  golang:
+  golint:
     name: GoLint
     runs-on: ubuntu-latest
     needs: [go-cache]
@@ -76,6 +78,8 @@ jobs:
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/run/lint
+          vars: >-
+            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
 
   app-tests:
     name: App
@@ -93,6 +97,8 @@ jobs:
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/app
+          vars: >-
+            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
 
   compile-tests:
     name: Compile
@@ -110,6 +116,8 @@ jobs:
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/compile
+          vars: >-
+            VOLUMES=${{ runner.temp }}/go-cache/build:/workspace/.cache/go-build,${{ runner.temp }}/go-cache/mod:/workspace/.cache/go-mod
 
   terraform:
     name: Terraform
