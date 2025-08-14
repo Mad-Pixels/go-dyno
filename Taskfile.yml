@@ -13,7 +13,6 @@ vars:
   go_lint: v2.4
 
   localstack_py_env: "{{.HOME}}/.pyenv_localstack"
-  cache_dir: "{{.git_root}}/.cache"
   terraform: 1.8.5
 
 
@@ -50,17 +49,17 @@ tasks:
     internal: true
     dir: "{{.git_root}}"
     deps:
-    - task: _docker/pull
-      vars: { IMAGE: "{{.IMAGE}}" }
+      - task: _docker/pull
+        vars: { IMAGE: "{{.IMAGE}}" }
     cmd: |
       docker run --rm --init --pull=never {{if .TTY}}-it{{end}} \
         --cap-drop=ALL \
         --security-opt no-new-privileges \
-        --user 1001:1001 \
+        --user $(id -u):$(id -g) \
         --workdir /workspace \
         {{if .ENVS}}{{range $e := .ENVS}}--env {{$e}} {{end}}{{end}}\
-        {{if .PORTS}}{{range .PORTS}}--publish {{.}} {{end}}{{end}}\
-        {{if .VOLUMES}}{{range .VOLUMES}}--volume {{.}} {{end}}{{end}}\
+        {{if .PORTS}}{{range $p := .PORTS}}--publish {{$p}} {{end}}{{end}}\
+        {{if .VOLUMES}}{{range $v := .VOLUMES}}--volume {{$v}} {{end}}{{end}}\
         --volume "{{.git_root}}/{{.MOUNT_DIR}}:/workspace:rw" \
         "{{.IMAGE}}" \
         {{.CMD}}
@@ -87,9 +86,7 @@ tasks:
         CMD: "sh -c 'go mod tidy && go mod vendor'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE=/workspace/.cache/go-build"
-        - "GOMODCACHE=/workspace/.cache/go-mod"
-        - "GOPATH=/workspace/.cache/go"
+        - "GOCACHE=off"
 
   go/run/lint:
     desc: Run 'golangci-lint'.
@@ -102,8 +99,6 @@ tasks:
         MOUNT_DIR: "."
         ENVS:
         - "HOME=/workspace"
-        - "GOCACHE=/workspace/.cache/go-build"
-        - "GOMODCACHE=/workspace/.cache/go-mod"
     
   go/tests/app:
     desc: Tests app with basic cli checks.
@@ -115,9 +110,7 @@ tasks:
         CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./internal/...'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE=/workspace/.cache/go-build"
-        - "GOMODCACHE=/workspace/.cache/go-mod"
-        - "GOPATH=/workspace/.cache/go"
+        - "GOCACHE=off"
         - "CGO_ENABLED=0"
 
   go/tests/compile:
@@ -130,9 +123,7 @@ tasks:
         CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./tests/validation/...'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE=/workspace/.cache/go-build"
-        - "GOMODCACHE=/workspace/.cache/go-mod"
-        - "GOPATH=/workspace/.cache/go"
+        - "GOCACHE=off"
         - "CGO_ENABLED=0"
 
   tf/fmt:
