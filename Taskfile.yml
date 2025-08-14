@@ -87,7 +87,8 @@ tasks:
         CMD: "sh -c 'go mod tidy && go mod vendor'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE={{.go_cache}}"
+        - "GOCACHE={{.go_cache_root}}/go-build"
+        - "GOMODCACHE={{.go_cache_root}}/go-mod"
 
   go/run/lint:
     desc: Run 'golangci-lint'.
@@ -113,13 +114,15 @@ tasks:
         CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./internal/...'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE={{.go_cache}}"
+        - "GOCACHE={{.go_cache}}/go-build"
+        - "GOMODCACHE={{.go_cache}}/go-mod"
         - "GOFLAGS=-mod=vendor"
         - "CGO_ENABLED=0"
 
   go/tests/compile:
     desc: Tests full template formmatter, build, vet.
     silent: true
+    deps: [go/mod/vendor]
     cmds:
     - task: _docker/run
       vars:
@@ -127,7 +130,8 @@ tasks:
         CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./tests/validation/...'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE={{.go_cache}}"
+        - "GOCACHE={{.go_cache}}/go-build"
+        - "GOMODCACHE={{.go_cache}}/go-mod"
         - "GOFLAGS=-mod=vendor"
         - "CGO_ENABLED=0"
 
