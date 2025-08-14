@@ -6,9 +6,6 @@ on:
       gitleaks:
         required: true
 
-permissions:
-  contents: read
-
 jobs:
   go-cache:
     name: Go Vendor & Cache
