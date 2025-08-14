@@ -16,39 +16,51 @@ jobs:
     outputs:
       go_version: ${{ steps.norm_go.outputs.go_version }}
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Detect Go version
-      id: get_go
-      uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
-      with:
-        command: go/get/version
+      - name: Detect Go version
+        id: get_go
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: go/get/version
 
-    - name: Normalize Go version
-      id: norm_go
-      shell: bash
-      env:
-        RAW: ${{ steps.get_go.outputs.task_output }}
-      run: |
-        set -euo pipefail
-        V="$(printf '%s' "${RAW:-}" | tr -d '\r' | head -n1 | xargs)"
-        echo "go_version=$V" >> "$GITHUB_OUTPUT"
-        echo "Detected Go version: $V"
+      - name: Normalize Go version
+        id: norm_go
+        shell: bash
+        env:
+          RAW: ${{ steps.get_go.outputs.task_output }}
+        run: |
+          set -euo pipefail
+          V="$(printf '%s' "${RAW:-}" | tr -d '\r' | head -n1 | xargs)"
+          echo "go_version=$V" >> "$GITHUB_OUTPUT"
+          echo "Detected Go version: $V"
 
-    - name: Cache Go vendor
-      uses: actions/cache@v4
-      with:
-        path: |
-          vendor/
-          go.sum
-        key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
-        restore-keys: |
-          go-vendor-${{ runner.os }}-
+      - name: Restore Go vendor
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            vendor/
+            go.sum
+          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          restore-keys: |
+            go-vendor-${{ runner.os }}-
 
-    - name: Run go vendor
-      uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
-      with:
-        command: go/mod/vendor
+      - name: Run go vendor
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
+        with:
+          command: go/mod/vendor
+
+      - name: Verify vendoring
+        shell: bash
+        run: go mod verify
+
+      - name: Save Go vendor
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            vendor/
+            go.sum
+          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
 
   golint:
     name: GoLint
@@ -63,7 +75,7 @@ jobs:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
+          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
           restore-keys: |
             go-vendor-${{ runner.os }}-
 
@@ -85,7 +97,7 @@ jobs:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
+          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
           restore-keys: |
             go-vendor-${{ runner.os }}-
 
@@ -107,7 +119,7 @@ jobs:
           path: |
             vendor/
             go.sum
-          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
+          key: go-vendor-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
           restore-keys: |
             go-vendor-${{ runner.os }}-
 
@@ -125,7 +137,7 @@ jobs:
       - name: TfFmt
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
-          command: tf/fmt 
+          command: tf/fmt
 
   leaks:
     name: GitLeaks
