@@ -8,12 +8,12 @@ inputs:
     default: ''
 
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: Save Go cache
       uses: actions/cache/save@v4
       with:
         path: |
-          ./.cache/go-mod
-          ./.cache/go-build
+          ${{ runner.temp }}/go-cache/mod
+          ${{ runner.temp }}/go-cache/build
         key: go-${{ runner.os }}-${{ inputs.go-version }}-${{ hashFiles('**/go.sum') }}
