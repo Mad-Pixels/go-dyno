@@ -87,8 +87,8 @@ tasks:
         CMD: "sh -c 'go mod tidy && go mod vendor'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE={{.go_cache_root}}/go-build"
-        - "GOMODCACHE={{.go_cache_root}}/go-mod"
+        - "GOCACHE={{.go_cache}}/go-build"
+        - "GOMODCACHE={{.go_cache}}/go-mod"
 
   go/run/lint:
     desc: Run 'golangci-lint'.
