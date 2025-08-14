@@ -114,8 +114,8 @@ tasks:
         CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./internal/...'"
         MOUNT_DIR: "."
         ENVS:
-        - "GOCACHE={{.go_cache}}/go-build"
-        - "GOMODCACHE={{.go_cache}}/go-mod"
+        - "GOCACHE={{.go_cache}}/other/go-build"
+        - "GOMODCACHE={{.go_cache}}/other/go-mod"
         - "GOFLAGS=-mod=vendor"
         - "CGO_ENABLED=0"
 
