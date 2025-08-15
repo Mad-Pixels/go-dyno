@@ -16,14 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore Go vendor (exact key from go-vendor)
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            vendor/
-            go.sum
-          key: ${{ needs.go-vendor.outputs.vendor_key }}
-
       - name: Run GoLint
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
@@ -35,14 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore Go vendor (exact key from go-vendor)
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            vendor/
-            go.sum
-          key: ${{ needs.go-vendor.outputs.vendor_key }}
-
       - name: Run Go Tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
@@ -53,14 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Restore Go vendor (exact key from go-vendor)
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            vendor/
-            go.sum
-          key: ${{ needs.go-vendor.outputs.vendor_key }}
 
       - name: Run template compile tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
