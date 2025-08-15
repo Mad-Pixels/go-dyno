@@ -32,6 +32,15 @@ tasks:
 # ---------------------INTERNAL-------------------#
 # ================================================#
 
+  _go/mod/vendor:
+    desc: "Run vendor"
+    internal: true
+    silent: true
+    dir: "{{.git_root}}"
+    cmds:
+      - go mod tidy
+      - go mod vendor
+
   _docker/pull:
     internal: true
     cmds:
@@ -77,64 +86,48 @@ tasks:
     silent: true
     cmd: echo {{.go_version}}
 
-  go/mod/vendor:
-    desc: Run 'go mod vendor'.
-    silent: true
-    cmds:
-    - task: _docker/run 
-      vars:
-        IMAGE: "golang:{{.go_version}}"
-        CMD: "sh -c 'go mod tidy && go mod vendor'"
-        MOUNT_DIR: "."
-        ENVS:
-        - "GOCACHE={{.go_cache}}/go-build"
-        - "GOMODCACHE={{.go_cache}}/go-mod"
-
   go/run/lint:
-    desc: Run 'golangci-lint'.
+    desc: Run 'golangci-lint'
     silent: true
-    deps: [go/mod/vendor]
+    deps: [_go/mod/vendor]
     cmds:
-    - task: _docker/run
-      vars:
-        IMAGE: "golangci/golangci-lint:{{.go_lint}}"
-        CMD: "sh -c 'golangci-lint run'"
-        MOUNT_DIR: "."
-        ENVS:
-        - "HOME=/workspace"
+      - task: _docker/run
+        vars:
+          IMAGE: "golangci/golangci-lint:{{.go_lint}}"
+          CMD: "sh -c 'golangci-lint run'"
+          MOUNT_DIR: "."
+          ENVS:
+          - "HOME=/workspace"
 
-  go/tests/app:
-    desc: Tests app with basic cli checks.
+  go/test/app:
+    desc: Run app tests cases with basic checks.
     silent: true
-    deps: [go/mod/vendor]
+    deps: [_go/mod/vendor]
     cmds:
-    - task: _docker/run
-      vars:
-        IMAGE: "golang:{{.go_version}}"
-        CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./internal/...'"
-        MOUNT_DIR: "."
-        ENVS:
-        - "GOCACHE={{.go_cache}}/other/go-build"
-        - "GOMODCACHE={{.go_cache}}/other/go-mod"
-        - "GOFLAGS=-mod=vendor"
-        - "CGO_ENABLED=0"
+      - task: _docker/run
+        vars:
+          IMAGE: "golang:{{.go_version}}"
+          CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./internal/...'"
+          MOUNT_DIR: "."
+          ENVS:
+          - "GOCACHE={{.go_cache}}/go-build"
+          - "GOMODCACHE={{.go_cache}}/go-mod"
+          - "CGO_ENABLED=0"
 
-  go/tests/compile:
-    desc: Tests full template formmatter, build, vet.
+  go/test/compile:
+    desc: Test template formatter as build, vet.
     silent: true
-    deps: [go/mod/vendor]
+    deps: [_go/mod/vendor]
     cmds:
-    - task: _docker/run
-      vars:
-        IMAGE: "golang:{{.go_version}}"
-        CMD: "sh -c 'go test -parallel 4 -shuffle=on -v ./tests/validation/...'"
-        MOUNT_DIR: "."
-        ENVS:
-        - "GOCACHE={{.go_cache}}/go-build"
-        - "GOMODCACHE={{.go_cache}}/go-mod"
-        - "GOFLAGS=-mod=vendor"
-        - "CGO_ENABLED=0"
-
+      - task: _docker/run
+        vars:
+          IMAGE: "golang:{{.go_version}}"
+          CMD: "sh -c 'go test -parallel 4 --shuffle=on -v ./tests/validation/...'"
+          MOUNT_DIR: "."
+          ENVS:
+          - "GOCACHE={{.go_cache}}/go-build"
+          - "GOMODCACHE={{.go_cache}}/go-mod"
+          - "CGO_ENABLED=0"
   tf/fmt:
     desc: Check 'terraform fmt'.
     silent: true
@@ -144,7 +137,7 @@ tasks:
           IMAGE: "hashicorp/terraform:{{.terraform}}"
           CMD: "fmt -check -recursive -diff"
           MOUNT_DIR: "./tests/localstack/env"
-
+ 
 
 
 
