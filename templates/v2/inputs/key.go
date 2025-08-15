@@ -6,7 +6,6 @@ const KeyInputsTemplate = `
 // Extracts the primary key (hash + range) from the item and validates values.
 // Use when you have a complete item and need to create a key for operations.
 // Handles both simple (hash only) and composite (hash + range) keys automatically.
-// Example: keyMap, err := KeyInput(userItem)
 func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
     var hashKeyValue any
     {{range .AllAttributes}}{{if eq .Name $.HashKey}}
@@ -45,7 +44,6 @@ func KeyInput(item SchemaItem) (map[string]types.AttributeValue, error) {
 // More efficient than KeyInput when you already have validated key values.
 // Assumes validation has been done by the caller - use with caution.
 // Handles both simple (hash only) and composite (hash + range) keys automatically.
-// Example: keyMap, err := KeyInputFromRaw("user123", "session456")
 func KeyInputFromRaw(hashKeyValue any, rangeKeyValue any) (map[string]types.AttributeValue, error) {
     key := make(map[string]types.AttributeValue)
    

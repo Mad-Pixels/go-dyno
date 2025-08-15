@@ -5,7 +5,6 @@ const ScanBuilderBuildTemplate = `
 // BuildScan constructs the final DynamoDB ScanInput with all configured options.
 // Combines filter conditions, projection attributes, pagination, and parallel scan settings.
 // Handles expression building and attribute mapping automatically.
-// Example: input, err := scanBuilder.BuildScan()
 func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
     input := &dynamodb.ScanInput{
         TableName: aws.String(TableName),
@@ -54,7 +53,6 @@ func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
             input.ExpressionAttributeValues = expr.Values()
         }
     }
-    
     if sb.LimitValue != nil {
         input.Limit = aws.Int32(int32(*sb.LimitValue))
     }
@@ -71,13 +69,11 @@ func (sb *ScanBuilder) BuildScan() (*dynamodb.ScanInput, error) {
 // Execute runs the scan against DynamoDB and returns strongly-typed results.
 // Handles the complete scan lifecycle: build input, execute, unmarshal results.
 // Returns all items that match the filter conditions as SchemaItem structs.
-// Example: items, err := scanBuilder.Execute(ctx, dynamoClient)
 func (sb *ScanBuilder) Execute(ctx context.Context, client *dynamodb.Client) ([]SchemaItem, error) {
     input, err := sb.BuildScan()
     if err != nil {
         return nil, err
     }
-    
     result, err := client.Scan(ctx, input)
     if err != nil {
         return nil, fmt.Errorf("failed to execute scan: %v", err)

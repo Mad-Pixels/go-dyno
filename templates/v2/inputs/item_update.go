@@ -5,13 +5,11 @@ const UpdateInputsTemplate = `
 // UpdateItemInput creates an UpdateItemInput from a complete SchemaItem.
 // Automatically extracts the key and updates all non-key attributes.
 // Use when you want to update an entire item with new values.
-// Example: input, err := UpdateItemInput(modifiedUserItem)
 func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
     key, err := KeyInput(item)
     if err != nil {
         return nil, fmt.Errorf("failed to create key from item for update: %v", err)
     }
-   
     allAttributes, err := marshalItemToMap(item)
     if err != nil {
         return nil, fmt.Errorf("failed to marshal item for update: %v", err)
@@ -34,7 +32,6 @@ func UpdateItemInput(item SchemaItem) (*dynamodb.UpdateItemInput, error) {
 // UpdateItemInputFromRaw creates an UpdateItemInput from raw key values and update map.
 // More efficient for partial updates when you only want to modify specific attributes.
 // Use when you know exactly which fields to update without loading the full item.
-// Example: UpdateItemInputFromRaw("user123", nil, map[string]any{"status": "active", "last_login": time.Now()})
 func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[string]any) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
@@ -42,7 +39,6 @@ func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[str
     if err := validateUpdatesMap(updates); err != nil {
         return nil, err
     }
-
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for update: %v", err)
@@ -64,9 +60,14 @@ func UpdateItemInputFromRaw(hashKeyValue any, rangeKeyValue any, updates map[str
 
 // UpdateItemInputWithCondition creates a conditional UpdateItemInput.
 // Updates the item only if the condition expression evaluates to true.
-// Enables optimistic locking and prevents race conditions in concurrent updates.
-// Example: UpdateItemInputWithCondition("user123", nil, updates, "version = :v", nil, map[string]types.AttributeValue{":v": &types.AttributeValueMemberN{Value: "1"}})
-func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates map[string]any, conditionExpression string, conditionAttributeNames map[string]string, conditionAttributeValues map[string]types.AttributeValue) (*dynamodb.UpdateItemInput, error) {
+func UpdateItemInputWithCondition(
+    hashKeyValue any, 
+    rangeKeyValue any, 
+    updates map[string]any, 
+    conditionExpression string, 
+    conditionAttributeNames map[string]string, 
+    conditionAttributeValues map[string]types.AttributeValue,
+) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
@@ -76,7 +77,6 @@ func UpdateItemInputWithCondition(hashKeyValue any, rangeKeyValue any, updates m
     if err := validateConditionExpression(conditionExpression); err != nil {
         return nil, err
     }
-
     updateInput, err := UpdateItemInputFromRaw(hashKeyValue, rangeKeyValue, updates)
     if err != nil {
         return nil, err
@@ -103,12 +103,10 @@ func UpdateItemInputWithExpression(hashKeyValue any, rangeKeyValue any, updateBu
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
     }
-    
     key, err := KeyInputFromRaw(hashKeyValue, rangeKeyValue)
     if err != nil {
         return nil, fmt.Errorf("failed to create key for expression update: %v", err)
     }
-   
     var expr expression.Expression
     if conditionBuilder != nil {
         expr, err = expression.NewBuilder().
@@ -123,7 +121,6 @@ func UpdateItemInputWithExpression(hashKeyValue any, rangeKeyValue any, updateBu
     if err != nil {
         return nil, fmt.Errorf("failed to build update expression: %v", err)
     }
-   
     input := &dynamodb.UpdateItemInput{
         TableName:                 aws.String(TableSchema.TableName),
         Key:                       key,

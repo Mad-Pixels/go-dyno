@@ -6,13 +6,11 @@ const KeyConditionMixinSugarTemplate = `
 
 // WithEQ adds equality key condition.
 // Required for partition key, optional for sort key.
-// Example: .WithEQ("user_id", "123")
 func (kcm *KeyConditionMixin) WithEQ(field string, value any) {
     kcm.With(field, EQ, value)
 }
 
 // WithBetween adds range key condition for sort keys.
-// Example: .WithBetween("created_at", start_time, end_time)
 func (kcm *KeyConditionMixin) WithBetween(field string, start, end any) {
     kcm.With(field, BETWEEN, start, end)
 }

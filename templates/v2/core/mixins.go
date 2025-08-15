@@ -54,14 +54,12 @@ func NewPaginationMixin() PaginationMixin {
 }
 
 // Limit sets the maximum number of items to return in one request.
-// Example: .Limit(25)
 func (pm *PaginationMixin) Limit(limit int) {
     pm.LimitValue = &limit
 }
 
 // StartFrom sets the exclusive start key for pagination.
 // Use LastEvaluatedKey from previous response for next page.
-// Example: .StartFrom(previousResponse.LastEvaluatedKey)
 func (pm *PaginationMixin) StartFrom(lastEvaluatedKey map[string]types.AttributeValue) {
     pm.ExclusiveStartKey = lastEvaluatedKey
 }
@@ -87,7 +85,6 @@ func (kcm *KeyConditionMixin) With(field string, op OperatorType, values ...any)
     if !ValidateValues(op, values) {
         return
     }
-
     fieldInfo, exists := TableSchema.FieldsMap[field]
     if !exists {
         return

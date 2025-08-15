@@ -5,7 +5,6 @@ const AtomicHelpersTemplate = `
 // IncrementAttribute atomically increments a numeric attribute by a specified value.
 // Uses DynamoDB's ADD operation to ensure thread-safe increments without race conditions.
 // Creates the attribute with the increment value if it doesn't exist.
-// Example: IncrementAttribute("user123", nil, "view_count", 1)
 func IncrementAttribute(hashKeyValue any, rangeKeyValue any, attributeName string, incrementValue int) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
@@ -38,7 +37,6 @@ func IncrementAttribute(hashKeyValue any, rangeKeyValue any, attributeName strin
 // Uses DynamoDB's ADD operation for sets - duplicate values are automatically ignored.
 // Creates the set with provided values if the attribute doesn't exist.
 // Supports string sets ([]string) and numeric sets ([]int, []float64, etc.).
-// Example: AddToSet("user123", nil, "tags", []string{"premium", "verified"})
 func AddToSet(hashKeyValue any, rangeKeyValue any, attributeName string, values any) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err
@@ -91,7 +89,6 @@ func AddToSet(hashKeyValue any, rangeKeyValue any, attributeName string, values 
 // Uses DynamoDB's DELETE operation for sets - non-existent values are ignored.
 // If all values are removed, the attribute is deleted from the item.
 // Supports string sets ([]string) and numeric sets ([]int, []float64, etc.).
-// Example: RemoveFromSet("user123", nil, "tags", []string{"temporary"})
 func RemoveFromSet(hashKeyValue any, rangeKeyValue any, attributeName string, values any) (*dynamodb.UpdateItemInput, error) {
     if err := validateKeyInputs(hashKeyValue, rangeKeyValue); err != nil {
         return nil, err

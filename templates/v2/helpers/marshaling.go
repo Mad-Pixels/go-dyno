@@ -18,7 +18,6 @@ type Float interface {
 
 // toIntStrings converts any signed or unsigned integer slice to string slice.
 // DynamoDB requires numeric sets as string arrays for the wire protocol.
-// Example: toIntStrings([]int{1, 2, 3}) -> ["1", "2", "3"]
 func toIntStrings[T Signed | Unsigned](nums []T) []string {
 	out := make([]string, len(nums))
 	for i, n := range nums {
@@ -29,7 +28,6 @@ func toIntStrings[T Signed | Unsigned](nums []T) []string {
 
 // toFloatStrings converts any float slice to string slice.
 // Uses 'g' format for optimal precision and readability.
-// Example: toFloatStrings([]float64{1.5, 2.7}) -> ["1.5", "2.7"]
 func toFloatStrings[F Float](nums []F) []string {
 	out := make([]string, len(nums))
 	for i, f := range nums {
@@ -131,7 +129,6 @@ func marshalUpdatesWithSchema(updates map[string]any) (map[string]types.Attribut
 // marshalValueByType marshals value according to specific DynamoDB type.
 // Handles special cases like String Sets (SS) and Number Sets (NS) that require
 // custom marshaling logic not provided by the default AWS SDK marshaler.
-// Example: marshalValueByType([]int{1,2,3}, "NS") -> AttributeValueMemberNS
 func marshalValueByType(value any, dynamoType string) (types.AttributeValue, error) {
     switch dynamoType {
     case "SS":
