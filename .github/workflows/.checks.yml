@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run GoLint
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/run/lint
 
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: TfFmt
-        uses: "Mad-Pixels/github-workflows/.github/actions/terraform-fmt@main"
+        uses: "Mad-Pixels/github-workflows/actions/terraform-fmt@v1"
         with:
           tf_dir: "./tests/localstack/env"
           tf_version: "1.6.1"
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Go Tests
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/app
           
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run template compile tests
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/tests/compile
 
