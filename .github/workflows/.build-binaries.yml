@@ -30,7 +30,7 @@ jobs:
     
     steps:
       - name: Build Binary for ${{ matrix.platform }}
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
           command: go/build/${{ matrix.platform }}
         env:
