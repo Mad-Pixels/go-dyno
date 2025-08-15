@@ -30,7 +30,7 @@ jobs:
       - name: Run Go Tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
-          command: go/tests/app
+          command: go/test/app
 
   compile-tests:
     name: Compile
@@ -41,7 +41,7 @@ jobs:
       - name: Run template compile tests
         uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
-          command: go/tests/compile
+          command: go/test/compile
 
   terraform:
     name: Terraform
