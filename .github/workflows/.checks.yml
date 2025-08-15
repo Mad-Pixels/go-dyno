@@ -21,10 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: TfFmt
-        uses: "Mad-Pixels/github-workflows/actions/terraform-fmt@v1"
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
-          tf_dir: "./tests/localstack/env"
-          tf_version: "1.6.1"
+          command: tf/fmt
 
   app-tests:
     name: App
