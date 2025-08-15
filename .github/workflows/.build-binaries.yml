@@ -21,26 +21,26 @@ on:
 
 jobs:
   build:
-    name: Build ${{ matrix.platform }}
+    name: Build ${{matrix.platform}}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ fromJson(inputs.platforms) }}
-    
+        platform: ${{fromJson(inputs.platform)}}
+
     steps:
-      - name: Build Binary for ${{ matrix.platform }}
-        uses: Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main
+      - name: Build Binary for ${{matrix.platform}}
+        uses: Mad-Pixels/github-workflows/actions/taskfile-runner@v1
         with:
-          command: go/build/${{ matrix.platform }}
+          command: go/build/${{matrix.platform}}
         env:
-          VERSION: ${{ inputs.version != '' && inputs.version || format('dev-{0}', github.sha) }}
-      
-      - name: Upload Artifacts
+          VERSION: ${{inputs.version!='' && inputs.version || format('dev-{0}', github.sha)}}
+
+      - name: Upload artifacts
         if: inputs.upload_artifacts
         uses: actions/upload-artifact@v4
-        with:
-          name: godyno-${{ matrix.platform }}
+        with: 
+          name: godyno-${{matrix.platform}}
           path: bin/godyno_*
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: error

@@ -37,7 +37,7 @@ jobs:
           echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
 
       - name: Build and Push to DockerHub
-        uses: Mad-Pixels/github-workflows/.github/actions/dockerhub-build-push@main
+        uses: Mad-Pixels/github-workflows/actions/dockerhub-build-push@main
         with:
           docker_user:  ${{ secrets.docker_user }}
           docker_token: ${{ secrets.docker_token }}

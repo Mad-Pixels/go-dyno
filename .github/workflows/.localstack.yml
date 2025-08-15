@@ -35,12 +35,12 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:4566/_localstack/health; do sleep 2; done'
 
       - name: Apply
-        uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
+        uses: "Mad-Pixels/github-workflows/actions/taskfile-runner@main"
         with:
           command: localstack/ci-apply-only
 
       - name: Tests
-        uses: "Mad-Pixels/github-workflows/.github/actions/taskfile-runner@main"
+        uses: "Mad-Pixels/github-workflows/actions/taskfile-runner@v1"
         with:
           command: go/tests/ci-localstack
       
