@@ -13,6 +13,7 @@ vars:
   go_lint: v2.1.2
 
   terraform: 1.9.5
+  tf_version: 1.8.5
 
   localstack_py_env: "{{.HOME}}/.pyenv_localstack"
 
@@ -29,6 +30,43 @@ tasks:
   # =================================================
   # ---------------------INTERNAL-------------------#
   # =================================================
+  
+
+  _docker/pull:
+    internal: true
+    cmds:
+      - |
+        if ! docker image inspect "{{.IMAGE}}" >/dev/null 2>&1; then
+          docker pull -q "{{.IMAGE}}" >/dev/null 2>&1 || {
+            echo "Failed to pull image: {{.IMAGE}}"
+            exit 1
+          }
+        fi
+    silent: true
+    requires:
+      vars: [IMAGE]
+
+  _docker/run:
+    internal: true
+    dir: "{{.git_root}}"
+    deps:
+      - task: _docker/pull
+        vars: { IMAGE: "{{.IMAGE}}" }
+    cmd: |
+      docker run --rm --init --pull=never {{if .TTY}}-it{{end}} \
+        --cap-drop=ALL \
+        --security-opt no-new-privileges \
+        --user $(id -u):$(id -g) \
+        --workdir /workspace \
+        {{if .ENVS}}{{range $e := .ENVS}}--env {{$e}} {{end}}{{end}}\
+        {{if .PORTS}}{{range $p := .PORTS}}--publish {{$p}} {{end}}{{end}}\
+        {{if .VOLUMES}}{{range $v := .VOLUMES}}--volume {{$v}} {{end}}{{end}}\
+        --volume "{{.git_root}}/{{.MOUNT_DIR}}:/workspace:rw" \
+        "{{.IMAGE}}" \
+        {{.CMD}}
+    silent: true
+    requires:
+      vars: [IMAGE, CMD, MOUNT_DIR]
 
   _go/version/check:
     desc: Check actual golang version.
@@ -179,6 +217,16 @@ tasks:
   # =================================================
   # ----------------------PUBLIC--------------------#
   # =================================================
+
+  tf/fmt:
+    desc: Check 'terraform fmt' compliance (fails if not formatted).
+    cmds:
+      - task: _docker/run
+        vars:
+          IMAGE: "hashicorp/terraform:{{.tf_version}}"
+          CMD: "fmt -check -recursive -diff"
+          MOUNT_DIR: "terraform"
+    silent: true
 
   localstack/run:
     desc: Run localstack environment.
