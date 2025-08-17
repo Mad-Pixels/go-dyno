@@ -47,6 +47,7 @@ func Command() *cli.Command {
 			flags.LocalFilename.Object,
 			flags.LocalPackageName.Object,
 			flags.LocalGenerateMode.Object,
+			flags.LocalWithStreamEvents.Object,
 		},
 	}
 }

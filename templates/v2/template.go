@@ -41,7 +41,7 @@ package {{.PackageName}}
 ` + inputs.ItemInputsTemplate + inputs.UpdateInputsTemplate + inputs.DeleteInputsTemplate + inputs.KeyInputsTemplate + `
 
 ` + helpers.AtomicHelpersTemplate + `
-{{if IsALL .Mode}}
+{{if .UseStreamEvents}}
 ` + helpers.StreamHelpersTemplate + `
 {{end}}
 ` + helpers.ConverterHelpersTemplate + helpers.MarshalingHelpersTemplate + helpers.ValidationHelpersTemplate + `

@@ -86,4 +86,18 @@ var (
 			Value:    mode.GetDefault().String(),
 		},
 	}
+
+	// LocalWithStreamEvents defines the --with-stream-events for methods which work with DynamoDB stream
+	// By default, stream events methods not included.
+	LocalWithStreamEvents = Flag{
+		Object: &cli.BoolFlag{
+			Name:    "with-stream-events",
+			Usage:   "Add methods with works with DynamoDB streams",
+			Aliases: []string{},
+			EnvVars: []string{
+				fmt.Sprintf("%s_%s", godyno.EnvPrefix, strings.ToUpper("with-stream-events")),
+			},
+			Required: false,
+		},
+	}
 )
