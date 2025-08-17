@@ -27,6 +27,9 @@ EXAMPLES:
    # Using environment variables
    $ {{.EnvPrefix}}_SCHEMA=./schema.json {{.EnvPrefix}}_OUTPUT_DIR=./gen godyno {{.Command}}
 
+   # With DynamoDB stream events methods
+   $ godyno {{.Command}} -s ./schema.json --output-dir ./generated --with-stream-events
+
 GENERATED FEATURES:
    ✨ Type-safe structs with dynamodbav tags
    ✨ Table/column/index constants (no magic strings!)

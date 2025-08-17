@@ -41,4 +41,7 @@ type TemplateMap struct {
 
 	// SecondaryIndexes defines all global and local secondary indexes for the table.
 	SecondaryIndexes []index.Index
+
+	// UseStreamEvents option: generate or not methods related with DynmaoDB StreamEvents.
+	UseStreamEvents bool
 }

@@ -11,10 +11,11 @@ import (
 // RenderBuilder provides a customizing code generation.
 // Allows overriding schema defaults (package name, filename) via CLI flags.
 type RenderBuilder struct {
-	generator   *Generator
-	mode        *mode.Mode
-	packageName *string
-	filename    *string
+	generator       *Generator
+	mode            *mode.Mode
+	packageName     *string
+	filename        *string
+	useStreamEvents *bool
 }
 
 // WithPackageName overrides the package name with safe conversion.
@@ -40,6 +41,12 @@ func (rb *RenderBuilder) WithMode(mode mode.Mode) *RenderBuilder {
 	if mode.IsValid() {
 		rb.mode = &mode
 	}
+	return rb
+}
+
+// WithStreamEvents overrides the 'useStreamEvents' flag.
+func (rb *RenderBuilder) WithStreamEvents(value bool) *RenderBuilder {
+	rb.useStreamEvents = &value
 	return rb
 }
 
@@ -70,6 +77,14 @@ func (rb *RenderBuilder) GetFilename() string {
 	return rb.generator.schema.Filename()
 }
 
+// GetStreamEventsOpt return the final option: generate or not DynamoDB event stream methods.
+func (rb *RenderBuilder) GetStreamEventsOpt() bool {
+	if rb.useStreamEvents != nil {
+		return *rb.useStreamEvents
+	}
+	return false
+}
+
 // GetMode returns the current generation mode (or default if not set).
 func (rb *RenderBuilder) GetMode() mode.Mode {
 	if rb.mode != nil {
@@ -84,10 +99,11 @@ func (rb *RenderBuilder) buildTemplateMap() v2.TemplateMap {
 
 	return v2.TemplateMap{
 		PackageName:      rb.getPackageName(),
+		Mode:             rb.GetMode(),
+		UseStreamEvents:  rb.GetStreamEventsOpt(),
 		TableName:        schema.TableName(),
 		HashKey:          schema.HashKey(),
 		RangeKey:         schema.RangeKey(),
-		Mode:             rb.GetMode(),
 		Attributes:       schema.Attributes(),
 		CommonAttributes: schema.CommonAttributes(),
 		AllAttributes:    schema.AllAttributes(),

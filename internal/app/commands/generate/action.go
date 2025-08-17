@@ -15,9 +15,10 @@ import (
 
 func action(ctx *cli.Context) error {
 	var (
-		schemaPath = ctx.String(flags.LocalSchema.GetName())
-		outputPath = ctx.String(flags.LocalOutputDir.GetName())
-		modeRaw    = ctx.String(flags.LocalGenerateMode.GetName())
+		schemaPath       = ctx.String(flags.LocalSchema.GetName())
+		outputPath       = ctx.String(flags.LocalOutputDir.GetName())
+		modeRaw          = ctx.String(flags.LocalGenerateMode.GetName())
+		withStreamEvents = ctx.Bool(flags.LocalWithStreamEvents.GetName())
 	)
 
 	m, err := mode.ParseMode(modeRaw)
@@ -29,6 +30,7 @@ func action(ctx *cli.Context) error {
 		Str("schema", schemaPath).
 		Str("output", outputPath).
 		Str("mode", m.String()).
+		Bool("withStreamEvents", withStreamEvents).
 		Msg("Starting code generation")
 
 	g, err := generator.NewGenerator(schemaPath)
@@ -67,12 +69,19 @@ func action(ctx *cli.Context) error {
 			Str("safe", safe).
 			Msg("Filename overridden via CLI flag")
 	}
+	if ctx.IsSet(flags.LocalWithStreamEvents.GetName()) {
+		builder.WithStreamEvents(true)
+		logger.Log.Debug().
+			Str("flag", flags.LocalWithStreamEvents.GetName()).
+			Msg("Stream events option overridden vai CLI flag")
+	}
 
 	var w writer.Writer
 	switch outputPath {
 	case "":
 		w = writer.NewStdoutWriter()
-		logger.Log.Debug().Msg("Using stdout writer")
+		logger.Log.Debug().
+			Msg("Using stdout writer")
 	default:
 		outputFilePath := path.Join(
 			outputPath,
