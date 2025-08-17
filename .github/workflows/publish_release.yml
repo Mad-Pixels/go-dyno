@@ -68,7 +68,7 @@ jobs:
 
           CHANGELOG=""
 
-          FEATURES=$(git log --pretty=format:"- %s" --grep="^\[feature\]" $PREVIOUS_TAG..${{ github.ref_name }} | head -20)
+          FEATURES=$(git log --pretty=format:"- %s" --grep="^\[feature\]" --grep="^\[feat\]" $PREVIOUS_TAG..${{ github.ref_name }} | head -20)
           if [ -n "$FEATURES" ]; then
             CHANGELOG="$CHANGELOG### ✨ Features\n$FEATURES\n\n"
           fi 
